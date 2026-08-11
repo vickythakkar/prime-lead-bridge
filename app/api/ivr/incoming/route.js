@@ -1,17 +1,14 @@
 import twilio from 'twilio';
-import { supabase } from '@/lib/supabase'; // We need a service role key for backend operations
+import { supabase } from '@/lib/supabase';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
 export async function POST(request) {
   const formData = await request.formData();
-  const to = formData.get('To'); // The Twilio number that was called
-  const callSid = formData.get('CallSid');
+  const to = formData.get('To');
+  
+  let orgData = null;
 
-  let companyName = "our office";
-  let orgId = null;
-
-  // Lookup the organization based on the Twilio Number dialed
   if (to) {
     const { data: numData } = await supabase
       .from('organization_numbers')
@@ -21,22 +18,35 @@ export async function POST(request) {
       .single();
 
     if (numData) {
-      orgId = numData.organization_id;
-      const { data: orgData } = await supabase
+      const { data } = await supabase
         .from('organizations')
-        .select('company_name')
-        .eq('id', orgId)
+        .select('*')
+        .eq('id', numData.organization_id)
         .single();
-      
-      if (orgData && orgData.company_name) {
-        companyName = orgData.company_name;
-      }
+      orgData = data;
     }
   }
 
   const twiml = new VoiceResponse();
+
+  if (!orgData) {
+    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'This number is not configured correctly. Goodbye.');
+    twiml.hangup();
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
+
+  // If IVR Greeting is disabled, immediately route to office (digit '1')
+  if (orgData.play_ivr_greeting === false) {
+    twiml.redirect('/api/ivr/handle-menu?Digits=1');
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
+
+  // Use custom greeting or fallback
+  const defaultGreeting = `Welcome to ${orgData.company_name || 'our office'}. To connect with the office, press 1.` 
+    + (orgData.enable_listing_lookup !== false ? ` If you are a buyer inquiring about a property, press 2.` : ``);
   
-  // Create a gather verb to collect 1 digit
+  const greetingText = orgData.ivr_greeting || defaultGreeting;
+
   const gather = twiml.gather({
     numDigits: 1,
     action: '/api/ivr/handle-menu',
@@ -45,10 +55,9 @@ export async function POST(request) {
 
   gather.say(
     { voice: 'Polly.Matthew-Neural' },
-    `Welcome to ${companyName}. To connect with the office, press 1. If you are a buyer inquiring about a property, press 2.`
+    greetingText
   );
 
-  // If the user doesn't enter input, loop back to the same menu
   twiml.redirect('/api/ivr/incoming');
 
   return new Response(twiml.toString(), {

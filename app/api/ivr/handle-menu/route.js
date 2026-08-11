@@ -1,49 +1,94 @@
 import twilio from 'twilio';
+import { supabase } from '@/lib/supabase';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
 export async function POST(request) {
   const formData = await request.formData();
   const digits = formData.get('Digits');
+  const to = formData.get('To');
   
+  let orgData = null;
+  if (to) {
+    const { data: numData } = await supabase
+      .from('organization_numbers')
+      .select('organization_id')
+      .eq('phone_number', to)
+      .eq('status', 'active')
+      .single();
+
+    if (numData) {
+      const { data } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', numData.organization_id)
+        .single();
+      orgData = data;
+    }
+  }
+
   const twiml = new VoiceResponse();
 
+  if (!orgData) {
+    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'System error. Goodbye.');
+    twiml.hangup();
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
+
   if (digits === '1') {
-    // Route to office (for now, simply saying connecting to office and ending, 
-    // but typically you would use <Dial> to a specific office number)
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
-    // twiml.dial('+1234567890'); // Placeholder for office number
+    // Route to office
+    if (orgData.receive_office_calls) {
+      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
+      
+      const dial = twiml.dial({ record: 'record-from-answer', action: `/api/twilio/call-ended?org_id=${orgData.id}` });
+      dial.client('support_agent'); // browser dialer client name
+    } else {
+      if (orgData.fallback_when_unavailable === 'fallback_number' && orgData.fallback_phone_number) {
+        twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
+        const dial = twiml.dial({ record: 'record-from-answer', action: `/api/twilio/call-ended?org_id=${orgData.id}` });
+        dial.number(orgData.fallback_phone_number);
+      } else {
+        // Voicemail fallback
+        twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Our office is currently unavailable. Please leave a message after the beep.');
+        twiml.record({
+          action: `/api/twilio/call-ended?org_id=${orgData.id}`,
+          recordingStatusCallback: `/api/twilio/recording?org_id=${orgData.id}`
+        });
+      }
+    }
   } else if (digits === '2') {
-    // Ask for property lookup
-    const gather = twiml.gather({
-      action: '/api/ivr/lookup-property',
-      method: 'POST',
-    });
+    if (orgData.enable_listing_lookup === false) {
+      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Listing lookup is not enabled.');
+      twiml.redirect('/api/ivr/incoming');
+    } else {
+      // Ask for property lookup
+      const gather = twiml.gather({
+        action: '/api/ivr/lookup-property',
+        method: 'POST',
+      });
 
-    gather.say(
-      { voice: 'Polly.Matthew-Neural' },
-      'Please enter the street number or zip code of the property you are inquiring about, followed by the pound sign.'
-    );
+      gather.say(
+        { voice: 'Polly.Matthew-Neural' },
+        'Please enter the street number or zip code of the property you are inquiring about, followed by the pound sign.'
+      );
 
-    // If no input, ask again
-    twiml.redirect('/api/ivr/handle-menu?Digits=2');
+      twiml.redirect('/api/ivr/handle-menu?Digits=2&To=' + encodeURIComponent(to));
+    }
   } else {
     // Invalid option
     twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Sorry, I don\'t understand that choice.');
     twiml.redirect('/api/ivr/incoming');
   }
 
-  // Also handle GET for redirect
   return new Response(twiml.toString(), {
-    headers: {
-      'Content-Type': 'text/xml',
-    },
+    headers: { 'Content-Type': 'text/xml' },
   });
 }
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const digits = searchParams.get('Digits');
+  const to = searchParams.get('To');
   
   const twiml = new VoiceResponse();
   
@@ -56,14 +101,12 @@ export async function GET(request) {
       { voice: 'Polly.Matthew-Neural' },
       'Please enter the street number or zip code of the property you are inquiring about, followed by the pound sign.'
     );
-    twiml.redirect('/api/ivr/handle-menu?Digits=2');
+    twiml.redirect('/api/ivr/handle-menu?Digits=2&To=' + encodeURIComponent(to || ''));
   } else {
     twiml.redirect('/api/ivr/incoming');
   }
 
   return new Response(twiml.toString(), {
-    headers: {
-      'Content-Type': 'text/xml',
-    },
+    headers: { 'Content-Type': 'text/xml' },
   });
 }
