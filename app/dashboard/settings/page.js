@@ -191,71 +191,69 @@ export default function Settings() {
 
           {activeTab === 'Inbound Calls' && (
             <div className="glass-card rounded-2xl p-8 mb-8 max-w-3xl">
-              <h2 className="text-xl font-bold text-white mb-6">Inbound Call Settings</h2>
+              <h2 className="text-xl font-bold text-white mb-6">Inbound Call Flow</h2>
+              <p className="text-slate-400 mb-8">Configure what happens when a customer calls your Twilio phone number.</p>
               <form onSubmit={handleSave} className="space-y-6">
                 
-                <div>
-                  <label className="flex items-center space-x-3 text-white font-medium mb-2 cursor-pointer">
+                {/* Step 1: Greeting */}
+                <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="bg-indigo-500/20 text-indigo-400 font-bold rounded-full h-8 w-8 flex items-center justify-center">1</div>
+                    <h3 className="text-lg font-bold text-white">Main Greeting</h3>
+                  </div>
+                  
+                  <label className="flex items-center space-x-3 text-white font-medium mb-2 cursor-pointer ml-11">
                     <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500"
                       checked={formData.play_ivr_greeting}
                       onChange={(e) => setFormData({...formData, play_ivr_greeting: e.target.checked})}
                     />
-                    <span>Play an IVR greeting</span>
+                    <span>Play a greeting message to callers</span>
                   </label>
-                  <p className="text-sm text-slate-400 ml-8 mb-4">Play a custom message before callers choose how to route their call.</p>
                   
                   {formData.play_ivr_greeting && (
-                    <div className="ml-8">
-                      <label className="block text-sm font-medium text-slate-300 mb-1">IVR GREETING</label>
+                    <div className="ml-11 mt-4">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">CUSTOM MESSAGE</label>
                       <textarea
                         className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 h-24"
-                        placeholder="Thank you for calling Homelystic. To connect with the office, press 1..."
+                        placeholder={`Thank you for calling ${formData.company_name || 'our office'}. To connect with a representative, press 1...`}
                         value={formData.ivr_greeting}
                         onChange={(e) => setFormData({...formData, ivr_greeting: e.target.value})}
                       />
-                      <p className="text-xs text-slate-500 mt-2">This message is played exactly as entered. Turn off the greeting option when you do not want an announcement.</p>
+                      <p className="text-xs text-slate-500 mt-2">The AI voice will speak this message exactly as entered.</p>
                     </div>
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
-                  <label className="flex items-center space-x-3 text-white font-medium mb-1 cursor-pointer">
-                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500"
-                      checked={formData.enable_listing_lookup}
-                      onChange={(e) => setFormData({...formData, enable_listing_lookup: e.target.checked})}
-                    />
-                    <span>Enable listing lookup and seller routing</span>
-                  </label>
-                  <p className="text-sm text-slate-400 ml-8">Callers can press 2, search all of your active listings by street number or ZIP code, and then be routed using that listing's routing settings.</p>
-                </div>
-
-                <div className="pt-4 border-t border-white/10">
-                  <label className="flex items-center space-x-3 text-white font-medium mb-1 cursor-pointer">
-                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500"
-                      checked={formData.receive_office_calls}
-                      onChange={(e) => setFormData({...formData, receive_office_calls: e.target.checked})}
-                    />
-                    <span>Receive office calls in the browser dialer</span>
-                  </label>
-                  <p className="text-sm text-slate-400 ml-8">Callers who stay on the line will ring your browser dialer. The dialer must be open and ready to receive calls.</p>
-                </div>
-
-                {!formData.receive_office_calls && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ml-8">
+                {/* Step 2: Press 1 */}
+                <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="bg-indigo-500/20 text-indigo-400 font-bold rounded-full h-8 w-8 flex items-center justify-center">2</div>
+                    <h3 className="text-lg font-bold text-white">Press 1: Office Routing</h3>
+                  </div>
+                  <p className="text-sm text-slate-400 ml-11 mb-4">When callers press 1 to reach the office, where should the call ring?</p>
+                  
+                  <div className="ml-11 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-1 uppercase text-xs">When Browser is Unavailable</label>
                       <select
                         className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                        value={formData.fallback_when_unavailable}
-                        onChange={(e) => setFormData({...formData, fallback_when_unavailable: e.target.value})}
+                        value={formData.receive_office_calls ? 'browser' : formData.fallback_when_unavailable}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'browser') {
+                            setFormData({...formData, receive_office_calls: true});
+                          } else {
+                            setFormData({...formData, receive_office_calls: false, fallback_when_unavailable: val});
+                          }
+                        }}
                       >
-                        <option value="voicemail">Send caller to voicemail</option>
-                        <option value="fallback_number">Forward to a fallback phone number</option>
+                        <option value="browser">Ring Browser Dialer</option>
+                        <option value="fallback_number">Forward to Phone Number</option>
+                        <option value="voicemail">Send to Voicemail</option>
                       </select>
                     </div>
-                    {formData.fallback_when_unavailable === 'fallback_number' && (
+                    
+                    {!formData.receive_office_calls && formData.fallback_when_unavailable === 'fallback_number' && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1 uppercase text-xs">Fallback Phone Number</label>
                         <input
                           type="tel"
                           placeholder="+1 555 123 4567"
@@ -266,12 +264,29 @@ export default function Settings() {
                       </div>
                     )}
                   </div>
-                )}
+                </div>
+
+                {/* Step 3: Press 2 */}
+                <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="bg-indigo-500/20 text-indigo-400 font-bold rounded-full h-8 w-8 flex items-center justify-center">3</div>
+                    <h3 className="text-lg font-bold text-white">Press 2: Property Search</h3>
+                  </div>
+                  
+                  <label className="flex items-center space-x-3 text-white font-medium mb-1 cursor-pointer ml-11">
+                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 bg-slate-900 border-slate-700 rounded focus:ring-indigo-500"
+                      checked={formData.enable_listing_lookup}
+                      onChange={(e) => setFormData({...formData, enable_listing_lookup: e.target.checked})}
+                    />
+                    <span>Enable property search for callers</span>
+                  </label>
+                  <p className="text-sm text-slate-400 ml-11 mt-2">Allows buyers to enter a street number or ZIP code to search active listings, and automatically routes them to the listing's assigned agent or seller.</p>
+                </div>
 
                 <div className="pt-6 flex items-center justify-between">
                   <div className="text-sm text-emerald-400">{message}</div>
                   <button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors">
-                    {saving ? 'Saving...' : 'Save Inbound Call Settings'}
+                    {saving ? 'Saving...' : 'Save Call Flow Settings'}
                   </button>
                 </div>
               </form>
