@@ -24,11 +24,19 @@ export async function POST(request) {
       return new Response('Twilio Voice SDK credentials not configured', { status: 500 });
     }
 
+    const { data: agentData } = await supabaseAdmin
+      .from('agents')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    const identity = agentData?.organization_id ? `org_${agentData.organization_id}` : user.id;
+
     const accessToken = new AccessToken(
       twilioAccountSid,
       twilioApiKey,
       twilioApiSecret,
-      { identity: user.id }
+      { identity: identity }
     );
 
     const voiceGrant = new VoiceGrant({

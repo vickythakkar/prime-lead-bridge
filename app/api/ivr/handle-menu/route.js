@@ -41,7 +41,7 @@ export async function POST(request) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
       
       const dial = twiml.dial({ record: 'record-from-answer', action: `/api/twilio/call-ended?org_id=${orgData.id}` });
-      dial.client('support_agent'); // browser dialer client name
+      dial.client(`org_${orgData.id}`); // browser dialer client name scoped to organization
     } else {
       if (orgData.fallback_when_unavailable === 'fallback_number' && orgData.fallback_phone_number) {
         twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
