@@ -124,7 +124,7 @@ export default function WebDialer() {
       // Create the outbound call
       const call = await device.connect({ 
         params: { 
-          To: phoneNumber,
+          targetNumber: phoneNumber,
           callerId: callerId || ''
         } 
       });

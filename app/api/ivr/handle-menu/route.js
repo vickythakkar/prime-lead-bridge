@@ -1,5 +1,8 @@
 import twilio from 'twilio';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
@@ -10,7 +13,7 @@ export async function POST(request) {
   
   let orgData = null;
   if (to) {
-    const { data: numData } = await supabase
+    const { data: numData } = await supabaseAdmin
       .from('organization_numbers')
       .select('organization_id')
       .eq('phone_number', to)
@@ -18,7 +21,7 @@ export async function POST(request) {
       .single();
 
     if (numData) {
-      const { data } = await supabase
+      const { data } = await supabaseAdmin
         .from('organizations')
         .select('*')
         .eq('id', numData.organization_id)
@@ -40,19 +43,37 @@ export async function POST(request) {
     if (orgData.receive_office_calls) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
       
-      const dial = twiml.dial({ record: 'record-from-answer', action: `/api/twilio/call-ended?org_id=${orgData.id}` });
+      const dial = twiml.dial({ record: 'record-from-answer', action: `/api/calls/status?org_id=${orgData.id}` });
       dial.client(`org_${orgData.id}`); // browser dialer client name scoped to organization
     } else {
       if (orgData.fallback_when_unavailable === 'fallback_number' && orgData.fallback_phone_number) {
         twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
-        const dial = twiml.dial({ record: 'record-from-answer', action: `/api/twilio/call-ended?org_id=${orgData.id}` });
+        const dial = twiml.dial({ record: 'record-from-answer', action: `/api/calls/status?org_id=${orgData.id}` });
         dial.number(orgData.fallback_phone_number);
       } else {
         // Voicemail fallback
+        
+        const fromNumber = formData.get('From');
+        if (process.env.RESEND_API_KEY) {
+          const notifyEmail = orgData.notify_email || process.env.NOTIFY_EMAIL;
+          if (notifyEmail) {
+            try {
+              await resend.emails.send({
+                from: 'info@primerealops.com',
+                to: notifyEmail,
+                subject: `Missed call from ${fromNumber}`,
+                html: `<p>You missed a call from <strong>${fromNumber}</strong>. They were sent to voicemail.</p>`
+              });
+            } catch (err) {
+              console.error('Failed to send missed call email:', err);
+            }
+          }
+        }
+
         twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Our office is currently unavailable. Please leave a message after the beep.');
         twiml.record({
-          action: `/api/twilio/call-ended?org_id=${orgData.id}`,
-          recordingStatusCallback: `/api/twilio/recording?org_id=${orgData.id}`
+          action: `/api/calls/status?org_id=${orgData.id}`,
+          recordingStatusCallback: `/api/calls/status?org_id=${orgData.id}`
         });
       }
     }

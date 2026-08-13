@@ -1,5 +1,8 @@
 import twilio from 'twilio';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
@@ -10,7 +13,7 @@ export async function POST(request) {
   let orgData = null;
 
   if (to) {
-    const { data: numData } = await supabase
+    const { data: numData } = await supabaseAdmin
       .from('organization_numbers')
       .select('organization_id')
       .eq('phone_number', to)
@@ -18,12 +21,29 @@ export async function POST(request) {
       .single();
 
     if (numData) {
-      const { data } = await supabase
+      const { data } = await supabaseAdmin
         .from('organizations')
         .select('*')
         .eq('id', numData.organization_id)
         .single();
       orgData = data;
+    }
+  }
+  
+  const from = formData.get('From');
+  if (orgData && process.env.RESEND_API_KEY) {
+    const notifyEmail = orgData.notify_email || process.env.NOTIFY_EMAIL;
+    if (notifyEmail) {
+      try {
+        await resend.emails.send({
+          from: 'info@primerealops.com',
+          to: notifyEmail,
+          subject: `Incoming call from ${from}`,
+          html: `<p>You are receiving an incoming call from <strong>${from}</strong>.</p>`
+        });
+      } catch (err) {
+        console.error('Failed to send incoming call email:', err);
+      }
     }
   }
 

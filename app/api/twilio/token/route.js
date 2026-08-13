@@ -1,5 +1,6 @@
 import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
 export async function POST(request) {
   try {
@@ -7,9 +8,32 @@ export async function POST(request) {
     if (!authHeader) return new Response('Unauthorized', { status: 401 });
 
     const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     
-    if (error || !user) return new Response('Unauthorized', { status: 401 });
+    // Check if it's an Admin token first
+    const adminPayload = verifyAdminToken(request);
+    let identity = 'unknown';
+    let isAuthorized = false;
+
+    if (adminPayload) {
+      identity = 'admin';
+      isAuthorized = true;
+    } else {
+      // Check if it's a Supabase Agent token
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+      
+      if (!error && user) {
+        const { data: agentData } = await supabaseAdmin
+          .from('agents')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single();
+        
+        identity = agentData?.organization_id ? `org_${agentData.organization_id}` : user.id;
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
 
     const AccessToken = twilio.jwt.AccessToken;
     const VoiceGrant = AccessToken.VoiceGrant;
@@ -23,14 +47,6 @@ export async function POST(request) {
     if (!twilioApiKey || !twilioApiSecret || !twimlAppSid) {
       return new Response('Twilio Voice SDK credentials not configured', { status: 500 });
     }
-
-    const { data: agentData } = await supabaseAdmin
-      .from('agents')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-
-    const identity = agentData?.organization_id ? `org_${agentData.organization_id}` : user.id;
 
     const accessToken = new AccessToken(
       twilioAccountSid,

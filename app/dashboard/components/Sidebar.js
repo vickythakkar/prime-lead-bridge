@@ -11,6 +11,8 @@ export default function Sidebar() {
     { href: '/dashboard/properties', label: 'Properties', icon: '🏠' },
     { href: '/dashboard/agents', label: 'Agents / Directory', icon: '👥' },
     { href: '/dashboard/leads', label: 'Leads', icon: '🎯' },
+    { href: '/dashboard/messages', label: 'Messages', icon: '💬' },
+    { href: '/dashboard/contacts', label: 'Contacts', icon: '👥' },
     { href: '/dashboard/calls', label: 'Activity Log', icon: '📞' },
     { href: '/dashboard/dialer', label: 'Web Dialer', icon: '☎️' },
     { href: '/dashboard/billing', label: 'Billing', icon: '💳' },
