@@ -37,11 +37,15 @@ export async function POST(request) {
     }]);
 
     // Log the call
+    const to = formData.get('To') || '';
     await supabaseAdmin.from('call_logs').insert([{
       organization_id: property.organization_id,
       property_id: property.id,
-      caller_number: caller,
+      from_number: caller,
+      to_number: to,
+      call_type: 'inbound',
       call_sid: callSid,
+      status: 'in-progress',
       duration: 0
     }]);
 

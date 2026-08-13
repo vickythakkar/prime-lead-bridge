@@ -107,10 +107,8 @@ export default function BrokersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mr-4">View</button>
-                      <button className="text-red-400 hover:text-red-300 text-sm font-medium">
-                        Disable
-                      </button>
+                      <a href={`/admin/brokers/${broker.id}`} className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mr-4">View</a>
+                      <button className="text-slate-400 hover:text-white text-sm font-medium">Edit</button>
                     </td>
                   </tr>
                 ))}

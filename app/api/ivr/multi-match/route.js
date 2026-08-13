@@ -50,11 +50,15 @@ export async function POST(request) {
     }]);
 
     // Log the call
+    const to = formData.get('To') || '';
     await supabaseAdmin.from('call_logs').insert([{
       organization_id: property.organization_id,
       property_id: property.id,
-      caller_number: caller,
+      from_number: caller,
+      to_number: to,
+      call_type: 'inbound',
       call_sid: callSid,
+      status: 'in-progress',
       duration: 0
     }]);
 
@@ -72,7 +76,13 @@ export async function POST(request) {
 
     if (dialNumber) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${personName} for ${property.address}.`);
-      twiml.dial(dialNumber);
+      twiml.dial({
+        record: 'record-from-answer',
+        recordingStatusCallback: `/api/twilio/recording?call_sid=${callSid}&org_id=${property.organization_id}`,
+        recordingStatusCallbackEvent: 'completed',
+        action: `/api/twilio/call-ended?call_sid=${callSid}`,
+        method: 'POST'
+      }, dialNumber);
     } else {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, 'We do not have a valid phone number on file for this property. Goodbye.');
     }
