@@ -19,6 +19,16 @@ export default function Sidebar() {
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
   ];
 
+  const handleLogout = async () => {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.href = '/login';
+  };
+
   return (
     <aside className="w-64 border-r border-white/5 glass h-screen sticky top-0 flex flex-col p-4">
       <div className="flex items-center gap-2 px-2 py-4 mb-6">
@@ -49,7 +59,10 @@ export default function Sidebar() {
       </nav>
 
       <div className="mt-auto pt-4 border-t border-white/5">
-        <button className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all text-left">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all text-left"
+        >
           <span className="text-xl">🚪</span>
           Logout
         </button>
