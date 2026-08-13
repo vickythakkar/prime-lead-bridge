@@ -67,21 +67,21 @@ export default function AdminDashboard() {
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">📞</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Calls (This Month)</h3>
-              <p className="text-3xl font-bold text-white">{stats?.callsThisMonth.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-white">{stats?.callsThisMonth?.toLocaleString() || 0}</p>
               <div className="mt-4 text-xs text-emerald-400 font-medium">↑ 12% vs last month</div>
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">⏱️</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Minutes (This Month)</h3>
-              <p className="text-3xl font-bold text-white">{stats?.minutesThisMonth.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-white">{stats?.minutesThisMonth?.toLocaleString() || 0}</p>
               <div className="mt-4 text-xs text-slate-400 font-medium">Average 2.8m per call</div>
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-emerald-500/30 border relative overflow-hidden bg-gradient-to-br from-emerald-900/20 to-transparent">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">💰</div>
               <h3 className="text-emerald-400/80 text-sm font-medium mb-1">Revenue (This Month)</h3>
-              <p className="text-3xl font-bold text-emerald-400">${stats?.revenueThisMonth.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+              <p className="text-3xl font-bold text-emerald-400">${stats?.revenueThisMonth?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}</p>
               <div className="mt-4 text-xs text-emerald-400 font-medium">↑ 8% vs last month</div>
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {stats?.topOrgs.map(org => (
+                    {stats?.topOrgs?.map(org => (
                       <tr key={org.id} className="hover:bg-white/5 transition-colors">
                         <td className="px-4 py-4 font-medium text-white">{org.name}</td>
                         <td className="px-4 py-4">
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
                             {org.status}
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-right text-slate-300 font-mono">{org.usage.toLocaleString()}</td>
+                        <td className="px-4 py-4 text-right text-slate-300 font-mono">{org.usage?.toLocaleString() || 0}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
             <div className="glass-card p-6 rounded-2xl border border-white/5">
               <h2 className="text-lg font-bold text-white mb-6">Recent Activity</h2>
               <div className="space-y-6">
-                {stats?.recentActivity.map((activity, i) => (
+                {stats?.recentActivity?.map((activity, i) => (
                   <div key={activity.id} className="relative pl-6 border-l-2 border-indigo-500/30 last:border-transparent pb-6 last:pb-0">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#0a0a0e] border-2 border-indigo-500" />
                     <p className="text-sm font-bold text-white leading-tight mb-1">{activity.action}</p>
