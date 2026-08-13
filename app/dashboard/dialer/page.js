@@ -80,14 +80,17 @@ export default function WebDialer() {
           stopTimer();
         });
 
-        await newDevice.register();
+        // Do not await register() because it might block on browser microphone permissions
+        // We just let it run in the background. Outbound calls will still work.
+        newDevice.register().catch(e => console.warn('Registration failed (might need mic permission):', e));
+        
         setDevice(newDevice);
       } catch (err) {
         setStatus('Configuration Error. Ensure TWILIO_API_KEY is set.');
         console.error(err);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     }
     
     if (Device) {
