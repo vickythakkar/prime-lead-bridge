@@ -45,11 +45,22 @@ export async function POST(request) {
         await client.recordings(recordingSid).remove();
       } else {
         console.error("Error uploading recording to Supabase:", uploadError);
+        return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' }
+        });
       }
     } catch (err) {
-      console.error("Failed to process recording:", err);
+      console.error('Error in recording webhook:', err);
+      return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
+        status: 500,
+        headers: { 'Content-Type': 'text/xml' }
+      });
     }
   }
 
-  return new Response('OK', { status: 200 });
+  return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
+    status: 200,
+    headers: { 'Content-Type': 'text/xml' }
+  });
 }

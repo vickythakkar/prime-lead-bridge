@@ -97,9 +97,16 @@ export async function POST(request) {
       });
     }
 
-    return new Response('OK', { status: 200 });
+    // Return valid empty TwiML so Twilio doesn't read the text "OK" aloud if this is an action URL
+    return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
+      status: 200,
+      headers: { 'Content-Type': 'text/xml' }
+    });
   } catch (err) {
     console.error('Error in call status webhook:', err);
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
+      status: 500,
+      headers: { 'Content-Type': 'text/xml' }
+    });
   }
 }
