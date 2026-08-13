@@ -16,6 +16,33 @@ export default function Login() {
     setLoading(true);
     setError(null);
 
+    // Check if it's the Admin
+    if (email.toLowerCase().trim() === 'info@primerealops.com') {
+      try {
+        const res = await fetch('/api/admin/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.token) {
+            localStorage.setItem('admin_token', data.token);
+            window.location.href = '/admin/dashboard';
+            return;
+          }
+        }
+        setError('Invalid credentials');
+        setLoading(false);
+        return;
+      } catch (err) {
+        setError('Server error');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Standard Broker Login
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -25,7 +52,7 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     }
   };
 
