@@ -19,11 +19,14 @@ export async function POST(request) {
     twiml.say({ voice: 'Polly.Matthew-Neural' }, "Congratulations! You have successfully connected to the Twilio web dialer. No destination number was provided.");
   } else {
     // Record the outbound call as well, from answer
-    twiml.dial({ 
-      callerId: callerId,
-      record: 'record-from-answer'
-      // You could also add the recordingStatusCallback here if you want to log outbound calls
-    }, to);
+    const dialAttributes = { record: 'record-from-answer' };
+    
+    // Only pass callerId if it exists and is a valid string, otherwise Twilio will throw an Application Error
+    if (callerId && callerId !== 'undefined' && callerId.trim() !== '') {
+      dialAttributes.callerId = callerId.trim();
+    }
+    
+    twiml.dial(dialAttributes, to);
   }
 
   return new Response(twiml.toString(), {

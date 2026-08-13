@@ -121,14 +121,42 @@ export default function WebDialer() {
     
     setStatus('Dialing...');
     try {
-      // The params here are sent as form data to /api/twilio/voice
+      // Create the outbound call
       const call = await device.connect({ 
         params: { 
           To: phoneNumber,
-          callerId: callerId || undefined
+          callerId: callerId || ''
         } 
       });
+      
       setActiveCall(call);
+
+      // Attach event listeners to the specific Call object
+      call.on('accept', () => {
+        setStatus('Connected');
+        startTimer();
+      });
+
+      call.on('disconnect', () => {
+        setStatus('Ready to Call');
+        setActiveCall(null);
+        stopTimer();
+      });
+
+      call.on('error', (err) => {
+        setStatus('Call Failed');
+        console.error('Call error:', err);
+        setActiveCall(null);
+        stopTimer();
+      });
+      
+      // Some versions of Twilio SDK use 'reject' if the call is rejected before answer
+      call.on('reject', () => {
+        setStatus('Call Rejected');
+        setActiveCall(null);
+        stopTimer();
+      });
+
     } catch (err) {
       setStatus('Call Failed');
       console.error(err);
