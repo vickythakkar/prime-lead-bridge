@@ -3,8 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+// Resend will be instantiated inside the handler to prevent Vercel build errors
 export async function POST(request) {
   try {
     const formData = await request.formData();
@@ -53,6 +52,7 @@ export async function POST(request) {
       });
 
       if (notifyEmail && process.env.RESEND_API_KEY) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
         await resend.emails.send({
           from: 'info@primerealops.com',
           to: notifyEmail,
