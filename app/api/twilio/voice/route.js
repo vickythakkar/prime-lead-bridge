@@ -28,6 +28,30 @@ export async function POST(request) {
     callerId = process.env.TWILIO_PHONE_NUMBER || '';
   }
 
+  // FAILSAFE: If callerId is missing, or it is the known typo number (+19298338186),
+  // fetch the corrected active number directly from the database to prevent Twilio Error 13214.
+  if (!callerId || callerId === '+19298338186' || callerId === '19298338186') {
+    try {
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+      const { data } = await supabaseAdmin
+        .from('organization_numbers')
+        .select('phone_number')
+        .eq('status', 'active')
+        .limit(1)
+        .single();
+      
+      if (data && data.phone_number) {
+        callerId = data.phone_number;
+      }
+    } catch (e) {
+      console.error('Failed to fetch fallback callerId from DB:', e);
+    }
+  }
+
   const twiml = new VoiceResponse();
   
   if (!to) {
