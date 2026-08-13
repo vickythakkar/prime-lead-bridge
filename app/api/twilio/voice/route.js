@@ -6,12 +6,18 @@ export async function POST(request) {
   const formData = await request.formData();
   
   // Custom param from JS client, fallback to Twilio's standard To
-  const to = formData.get('targetNumber') || formData.get('To');
+  let to = formData.get('targetNumber') || formData.get('To');
+  if (to) to = decodeURIComponent(to);
   
   // In a real production app, we would look up the agent's assigned Twilio Number
   // and use it as the callerId to ensure compliant routing.
   // For MVP, we'll extract it if passed, or fallback to a hardcoded/env var.
-  const callerId = formData.get('callerId') || process.env.TWILIO_PHONE_NUMBER; 
+  let callerId = formData.get('callerId');
+  if (callerId) {
+    callerId = decodeURIComponent(callerId);
+  } else {
+    callerId = process.env.TWILIO_PHONE_NUMBER;
+  }
 
   const twiml = new VoiceResponse();
   
