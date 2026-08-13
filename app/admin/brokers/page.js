@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 export default function BrokersPage() {
   const [brokers, setBrokers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [planFilter, setPlanFilter] = useState('all');
 
   useEffect(() => {
     async function fetchBrokers() {
@@ -44,8 +46,14 @@ export default function BrokersPage() {
             type="text" 
             placeholder="Search organizations..." 
             className="flex-1 bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <select className="bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-sm">
+          <select 
+            className="bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-sm"
+            value={planFilter}
+            onChange={(e) => setPlanFilter(e.target.value)}
+          >
             <option value="all">All Plans</option>
             <option value="pro">Pro</option>
             <option value="basic">Basic</option>
@@ -69,7 +77,13 @@ export default function BrokersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {brokers.map((broker) => (
+                {brokers
+                  .filter(broker => {
+                    const matchesSearch = (broker.company_name || broker.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesPlan = planFilter === 'all' || (broker.subscription_plan || 'basic') === planFilter;
+                    return matchesSearch && matchesPlan;
+                  })
+                  .map((broker) => (
                   <tr key={broker.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-white">{broker.company_name || broker.name}</div>

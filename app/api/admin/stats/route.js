@@ -72,15 +72,19 @@ export async function GET(request) {
     // Get org names
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name');
+      .select('id, name, company_name, subscription_plan');
 
     const orgUsage = (orgs || []).map(org => ({
       id: org.id,
       name: org.company_name || org.name,
       calls: orgBreakdown[org.id]?.calls || 0,
       minutes: orgBreakdown[org.id]?.minutes || 0,
+      usage: orgBreakdown[org.id]?.minutes || 0,
+      status: org.subscription_plan || 'basic',
       estimatedCost: ((orgBreakdown[org.id]?.minutes || 0) * parseFloat(rate)).toFixed(2),
     }));
+    
+    orgUsage.sort((a, b) => b.usage - a.usage);
 
     return Response.json({
       totalOrgs,
@@ -89,7 +93,7 @@ export async function GET(request) {
       totalRevenue,
       ratePerMinute: rate,
       invoiceSummary,
-      orgUsage,
+      topOrgs: orgUsage,
     });
   } catch (err) {
     console.error('Admin stats error:', err);

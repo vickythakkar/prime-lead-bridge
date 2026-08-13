@@ -16,6 +16,7 @@ export default function WebDialer() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [activeCall, setActiveCall] = useState(null);
   const [callerId, setCallerId] = useState(''); // The Twilio number the agent is dialing from
+  const [orgId, setOrgId] = useState(''); // The agent's organization ID
 
   const [callDuration, setCallDuration] = useState(0);
   const timerRef = useRef(null);
@@ -27,6 +28,7 @@ export default function WebDialer() {
       if (session) {
         const { data: agentData } = await supabase.from('agents').select('organization_id').limit(1).single();
         if (agentData) {
+          setOrgId(agentData.organization_id);
           const { data: numData } = await supabase
             .from('organization_numbers')
             .select('phone_number')
@@ -128,7 +130,8 @@ export default function WebDialer() {
       const call = await device.connect({ 
         params: { 
           targetNumber: phoneNumber,
-          callerId: callerId || ''
+          callerId: callerId || '',
+          orgId: orgId || ''
         } 
       });
       
