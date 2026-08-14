@@ -10,10 +10,10 @@ if (typeof window !== 'undefined') {
 }
 
 export default function WebDialer() {
+  const [phoneNumber, setPhoneNumber] = useState(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('phone') || '' : '');
   const [loading, setLoading] = useState(true);
   const [device, setDevice] = useState(null);
   const [status, setStatus] = useState('Initializing...');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [activeCall, setActiveCall] = useState(null);
   const [callerId, setCallerId] = useState(''); // The Twilio number the agent is dialing from
   const [orgId, setOrgId] = useState(''); // The agent's organization ID
@@ -61,13 +61,21 @@ export default function WebDialer() {
           enableRingingState: true
         });
 
+        // Immediately set ready since we just want outbound for now,
+        // and register() might fail or hang on mic permissions.
+        setStatus('Ready to Call');
+
         newDevice.on('ready', () => {
           setStatus('Ready to Call');
         });
 
         newDevice.on('error', (error) => {
           console.error('Twilio.Device Error:', error);
-          setStatus('Error: ' + error.message);
+          if (error.message.includes('permission')) {
+            setStatus('Microphone Permission Denied');
+          } else {
+            setStatus('Error: ' + error.message);
+          }
         });
 
         newDevice.on('connect', (conn) => {
@@ -84,7 +92,12 @@ export default function WebDialer() {
 
         // Do not await register() because it might block on browser microphone permissions
         // We just let it run in the background. Outbound calls will still work.
-        newDevice.register().catch(e => console.warn('Registration failed (might need mic permission):', e));
+        newDevice.register().catch(e => {
+          console.warn('Registration failed (might need mic permission):', e);
+          if (e.message && e.message.includes('permission')) {
+            setStatus('Mic Permission Required for Inbound');
+          }
+        });
         
         setDevice(newDevice);
       } catch (err) {

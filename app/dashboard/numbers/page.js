@@ -71,19 +71,21 @@ export default function MyNumbers() {
     e.preventDefault();
     setSearching(true);
     setSelectedNumber(null);
+    setSearchResults([]);
     
-    // In a real app, this would hit a Next.js API route that calls twilio.availablePhoneNumbers('US').local.list({areaCode})
-    // For MVP, we simulate results
-    setTimeout(() => {
-      const mockResults = [
-        `+1${areaCode}5550101`,
-        `+1${areaCode}5550293`,
-        `+1${areaCode}5550488`,
-        `+1${areaCode}5559921`
-      ];
-      setSearchResults(mockResults);
+    try {
+      const res = await fetch(`/api/twilio/search-numbers?areaCode=${areaCode}`);
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch numbers');
+      
+      setSearchResults(data.numbers || []);
+    } catch (err) {
+      console.error(err);
+      alert("Error searching numbers: " + err.message);
+    } finally {
       setSearching(false);
-    }, 1000);
+    }
   }
 
   async function handlePurchase() {
@@ -191,7 +193,7 @@ export default function MyNumbers() {
           </button>
         </form>
 
-        {searchResults.length > 0 && (
+        {searchResults.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-slate-400 mb-3">Available Numbers:</h3>
@@ -241,6 +243,10 @@ export default function MyNumbers() {
               </div>
             )}
           </div>
+        ) : (
+          !searching && areaCode.length === 3 && searchResults.length === 0 && (
+            <div className="text-slate-400">No numbers found for this area code.</div>
+          )
         )}
       </div>
     </div>

@@ -399,7 +399,7 @@ export default function OrganizationDetailsPage() {
                   <div className="text-sm text-white mb-2">
                     <span className="text-slate-400">To:</span> {log.to_number}
                   </div>
-                  <div className="flex justify-between items-center text-xs">
+                  <div className="flex justify-between items-center text-xs mb-2">
                     <span className={`px-2 py-0.5 rounded uppercase font-bold tracking-wider ${
                       log.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
                       log.status === 'missed' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
@@ -409,6 +409,41 @@ export default function OrganizationDetailsPage() {
                     </span>
                     <span className="text-slate-400 font-mono">{log.duration}s</span>
                   </div>
+                  
+                  {log.audio_link && (
+                    <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-white/5">
+                      <audio 
+                        controls 
+                        src={log.audio_link}
+                        className="h-8 w-full [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white"
+                      />
+                      <button 
+                        onClick={async () => {
+                          if(confirm('Permanently delete this recording?')) {
+                            try {
+                              const token = localStorage.getItem('admin_token');
+                              const res = await fetch(`/api/recordings/${log.id}`, { 
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              });
+                              if (res.ok) {
+                                setData({...data, callLogs: data.callLogs.map(c => c.id === log.id ? {...c, audio_link: null} : c)});
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-full hover:bg-red-500/10 shrink-0"
+                        title="Delete Recording"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                          <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               {data.callLogs.length === 0 && <div className="p-6 text-slate-400 text-center text-sm">No recent calls.</div>}

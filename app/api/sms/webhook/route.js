@@ -1,76 +1,97 @@
-import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { Resend } from 'resend';
+import twilio from 'twilio';
 
-const VoiceResponse = twilio.twiml.VoiceResponse;
-// Resend will be instantiated inside the handler to prevent Vercel build errors
+const MessagingResponse = twilio.twiml.MessagingResponse;
+
 export async function POST(request) {
   try {
     const formData = await request.formData();
-    
-    const to = formData.get('To');
     const from = formData.get('From');
+    const to = formData.get('To');
     const body = formData.get('Body');
-    const sid = formData.get('MessageSid');
-    const status = formData.get('MessageStatus');
+    const messageSid = formData.get('MessageSid');
 
-    let orgId = null;
-    let notifyEmail = process.env.NOTIFY_EMAIL;
-
-    if (to) {
-      const { data: numData } = await supabaseAdmin
-        .from('organization_numbers')
-        .select('organization_id')
-        .eq('phone_number', to)
-        .eq('status', 'active')
-        .single();
-
-      if (numData) {
-        orgId = numData.organization_id;
-        
-        const { data: orgData } = await supabaseAdmin
-          .from('organizations')
-          .select('notify_email, company_name')
-          .eq('id', orgId)
-          .single();
-          
-        if (orgData && orgData.notify_email) {
-          notifyEmail = orgData.notify_email;
-        }
-      }
+    if (!from || !to || !body) {
+      return new Response('Missing fields', { status: 400 });
     }
 
-    if (orgId) {
-      await supabaseAdmin.from('messages').insert({
-        organization_id: orgId,
-        twilio_sid: sid,
-        direction: 'inbound',
-        from_number: from,
-        to_number: to,
-        body: body,
-        status: status || 'received'
-      });
+    // Get the org by phone number
+    const { data: numData } = await supabaseAdmin
+      .from('organization_numbers')
+      .select('organization_id')
+      .eq('phone_number', to)
+      .eq('status', 'active')
+      .single();
 
-      if (notifyEmail && process.env.RESEND_API_KEY) {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: 'info@primerealops.com',
-          to: notifyEmail,
-          subject: `New SMS from ${from}`,
-          html: `<p>You received a new SMS message from ${from}:</p><p><strong>${body}</strong></p>`
+    if (numData) {
+      const orgId = numData.organization_id;
+
+      // Find or create conversation
+      let { data: conversation } = await supabaseAdmin
+        .from('conversations')
+        .select('id')
+        .eq('organization_id', orgId)
+        .eq('contact_phone', from)
+        .single();
+
+      if (!conversation) {
+        let contactId = null;
+        const { data: contact } = await supabaseAdmin
+          .from('contacts')
+          .select('id')
+          .eq('organization_id', orgId)
+          .eq('phone', from)
+          .single();
+          
+        if (contact) {
+          contactId = contact.id;
+        } else {
+          const { data: newContact } = await supabaseAdmin
+            .from('contacts')
+            .insert({ organization_id: orgId, phone: from, name: 'Unknown Contact' })
+            .select('id')
+            .single();
+          if (newContact) contactId = newContact.id;
+        }
+
+        const { data: newConv } = await supabaseAdmin
+          .from('conversations')
+          .insert({
+            organization_id: orgId,
+            contact_phone: from,
+            contact_id: contactId,
+            last_message_at: new Date().toISOString(),
+            last_message_body: body
+          })
+          .select('id')
+          .single();
+          
+        conversation = newConv;
+      } else {
+        await supabaseAdmin
+          .from('conversations')
+          .update({ last_message_at: new Date().toISOString(), last_message_body: body })
+          .eq('id', conversation.id);
+      }
+
+      if (conversation) {
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: conversation.id,
+          direction: 'inbound',
+          body: body,
+          message_sid: messageSid
         });
       }
     }
 
-    const twiml = new twilio.twiml.MessagingResponse();
+    const twiml = new MessagingResponse();
     return new Response(twiml.toString(), {
+      status: 200,
       headers: { 'Content-Type': 'text/xml' }
     });
+
   } catch (err) {
-    console.error('Error in SMS webhook:', err);
-    const twiml = new twilio.twiml.MessagingResponse();
-    return new Response(twiml.toString(), {
-      headers: { 'Content-Type': 'text/xml' }
-    });
+    console.error('Error handling inbound SMS:', err);
+    return new Response('Error', { status: 500 });
   }
 }

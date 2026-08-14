@@ -41,11 +41,21 @@ export async function GET(request, { params }) {
       .order('created_at', { ascending: false })
       .limit(50);
 
+    const callLogsWithUrls = (callLogs || []).map(call => {
+      if (call.recording_url) {
+        const { data: urlData } = supabaseAdmin.storage
+          .from('call_recordings')
+          .getPublicUrl(call.recording_url);
+        return { ...call, audio_link: urlData.publicUrl };
+      }
+      return call;
+    });
+
     return Response.json({
       organization: org,
       numbers: numbers || [],
       agents: agents || [],
-      callLogs: callLogs || []
+      callLogs: callLogsWithUrls
     });
   } catch (err) {
     console.error('Error fetching org details:', err);

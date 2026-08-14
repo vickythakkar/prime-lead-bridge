@@ -2,7 +2,6 @@ import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
 
-// Resend will be instantiated inside the handler to prevent Vercel build errors
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
 export async function POST(request) {
@@ -55,9 +54,17 @@ export async function POST(request) {
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
-  // If IVR Greeting is disabled, immediately route to office (digit '1')
+  const flowConfig = orgData.ivr_flow_config || {};
+
+  // If IVR Greeting is disabled (legacy fallback) or no keypress options exist
   if (orgData.play_ivr_greeting === false) {
     twiml.redirect('/api/ivr/handle-menu?Digits=1');
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
+
+  if (flowConfig.keyPress && Object.keys(flowConfig.keyPress).length === 0) {
+    twiml.say({ voice: 'Polly.Matthew-Neural' }, flowConfig.greeting || 'Welcome, but this menu is not configured.');
+    twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
@@ -65,7 +72,7 @@ export async function POST(request) {
   const defaultGreeting = `Welcome to ${orgData.company_name || 'our office'}. To connect with the office, press 1.` 
     + (orgData.enable_listing_lookup !== false ? ` If you are a buyer inquiring about a property, press 2.` : ``);
   
-  const greetingText = orgData.ivr_greeting || defaultGreeting;
+  const greetingText = flowConfig.greeting || orgData.ivr_greeting || defaultGreeting;
 
   const gather = twiml.gather({
     numDigits: 1,
@@ -81,8 +88,6 @@ export async function POST(request) {
   twiml.redirect('/api/ivr/incoming');
 
   return new Response(twiml.toString(), {
-    headers: {
-      'Content-Type': 'text/xml',
-    },
+    headers: { 'Content-Type': 'text/xml' },
   });
 }

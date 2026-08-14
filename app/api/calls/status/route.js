@@ -30,13 +30,15 @@ export async function POST(request) {
     // The actual external number involved
     const contactNumber = direction === 'inbound' ? finalFrom : finalTo;
     
-    // Map status
-    let mappedStatus = callStatus;
+    // Map status - we'll treat any webhook here as a loggable event.
+    let mappedStatus = callStatus || 'completed'; // default if missing
+    
+    // For outbound dials specifically
     if (dialCallStatus) {
       if (['completed', 'answered'].includes(dialCallStatus)) mappedStatus = 'completed';
       else if (['no-answer', 'canceled'].includes(dialCallStatus)) mappedStatus = 'missed';
       else if (['busy', 'failed'].includes(dialCallStatus)) mappedStatus = dialCallStatus;
-    } else {
+    } else if (callStatus) {
       if (['completed', 'in-progress'].includes(callStatus)) mappedStatus = 'completed';
       else if (['no-answer', 'canceled'].includes(callStatus)) mappedStatus = 'missed';
       else if (['busy', 'failed'].includes(callStatus)) mappedStatus = callStatus;
@@ -89,11 +91,9 @@ export async function POST(request) {
       // Create a voicemail record if it was missed and has a recording
       await supabaseAdmin.from('voicemails').insert({
         organization_id: orgId,
-        call_sid: callSid,
         from_number: finalFrom,
         recording_url: recordingUrl,
-        duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0,
-        contact_id: contactId
+        duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0
       });
     }
 

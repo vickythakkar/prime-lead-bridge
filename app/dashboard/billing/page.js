@@ -45,7 +45,8 @@ export default function BillingDashboard() {
       setStats({
         totalMinutes: Math.ceil(totalSeconds / 60),
         totalCalls: callData?.length || 0,
-        activeNumbersCount: numData?.length || 0
+        activeNumbersCount: numData?.length || 0,
+        activeNumbers: numData || []
       });
 
       setLoading(false);
@@ -66,8 +67,46 @@ export default function BillingDashboard() {
   const numbersCost = stats.activeNumbersCount * rates.monthly_number_charge;
   const totalEstimatedBill = baseMonthlyCost + estimatedOverageCost + numbersCost;
 
+  const handleDowngrade = async () => {
+    if (!confirm('Are you sure you want to downgrade to the Basic plan? You will lose access to Pro features.')) return;
+    const { error } = await supabase.from('organizations').update({ subscription_plan: 'basic' }).eq('id', org.id);
+    if (!error) {
+      setOrg({ ...org, subscription_plan: 'basic' });
+      alert('Plan downgraded successfully.');
+    } else {
+      alert('Failed to downgrade plan.');
+    }
+  };
+
+  const handleDownloadInvoice = () => {
+    // Generate a simple mock invoice for the MVP
+    const invoiceContent = `
+    INVOICE - Prime Real Ops
+    Date: ${new Date().toLocaleDateString()}
+    Organization: ${org.name}
+    
+    Current Plan: ${planName}
+    Base Cost: $${baseMonthlyCost.toFixed(2)}
+    Phone Numbers: $${numbersCost.toFixed(2)}
+    Minute Overages: $${estimatedOverageCost.toFixed(2)}
+    
+    Total Estimated Bill: $${totalEstimatedBill.toFixed(2)}
+    
+    Thank you for your business!
+    `;
+    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Invoice_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="animate-in fade-in duration-500 max-w-5xl">
+    <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-white">Billing & Usage</h1>
         <p className="text-slate-400 mt-1">Manage your plan, view usage, and download invoices.</p>
@@ -125,6 +164,11 @@ export default function BillingDashboard() {
                 <span className="text-slate-400">Phone Numbers ({stats.activeNumbersCount})</span>
                 <span className="text-slate-200">${numbersCost.toFixed(2)}</span>
               </div>
+              {stats.activeNumbersCount > 0 && (
+                <div className="pl-4 text-xs font-mono text-slate-500">
+                  {stats.activeNumbers.map(n => <div key={n.id}>{n.phone_number}</div>)}
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-400">Minute Overages</span>
                 <span className="text-slate-200">${estimatedOverageCost.toFixed(2)}</span>
@@ -135,50 +179,97 @@ export default function BillingDashboard() {
 
       </div>
 
-      {/* Available Plans */}
-      <h2 className="text-xl font-bold text-white mb-6">Available Plans</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Basic Plan */}
-        <div className={`glass-card rounded-2xl p-6 border ${org.subscription_plan === 'basic' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-white">Basic</h3>
-            {org.subscription_plan === 'basic' && <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full">Current Plan</span>}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div>
+          {/* Available Plans */}
+          <h2 className="text-xl font-bold text-white mb-6">Available Plans</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Basic Plan */}
+            <div className={`glass-card rounded-xl p-5 border ${org.subscription_plan === 'basic' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold text-white">Basic</h3>
+                {org.subscription_plan === 'basic' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+              </div>
+              <div className="text-2xl font-bold text-white mb-3">$29<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                <li className="flex items-center gap-2"><span>✓</span> 250 Included Minutes</li>
+                <li className="flex items-center gap-2"><span>✓</span> Standard IVR Routing</li>
+                <li className="flex items-center gap-2"><span>✓</span> Basic Analytics</li>
+              </ul>
+              {org.subscription_plan !== 'basic' && (
+                <button onClick={handleDowngrade} className="w-full py-2 rounded bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors border border-white/10">
+                  Downgrade to Basic
+                </button>
+              )}
+            </div>
+
+            {/* Pro Plan */}
+            <div className={`glass-card rounded-xl p-5 border ${org.subscription_plan === 'pro' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold text-white">Pro</h3>
+                {org.subscription_plan === 'pro' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+              </div>
+              <div className="text-2xl font-bold text-white mb-3">$99<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                <li className="flex items-center gap-2 text-indigo-300 font-medium"><span>✓</span> 1000 Included Minutes</li>
+                <li className="flex items-center gap-2"><span>✓</span> Advanced IVR Routing</li>
+                <li className="flex items-center gap-2"><span>✓</span> Outbound Web Dialer</li>
+              </ul>
+              {org.subscription_plan !== 'pro' && (
+                <button className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+                  Upgrade to Pro
+                </button>
+              )}
+            </div>
+
           </div>
-          <div className="text-3xl font-bold text-white mb-4">$29<span className="text-base font-normal text-slate-400">/mo</span></div>
-          <ul className="space-y-3 text-sm text-slate-300 mb-6">
-            <li className="flex items-center gap-2"><span>✓</span> 250 Included Minutes</li>
-            <li className="flex items-center gap-2"><span>✓</span> Standard IVR Routing</li>
-            <li className="flex items-center gap-2"><span>✓</span> Basic Analytics</li>
-            <li className="flex items-center gap-2"><span>✓</span> ${rates.broker_per_minute_charge}/min Overage</li>
-          </ul>
-          {org.subscription_plan !== 'basic' && (
-            <button className="w-full py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors border border-white/10">
-              Downgrade to Basic
-            </button>
-          )}
         </div>
 
-        {/* Pro Plan */}
-        <div className={`glass-card rounded-2xl p-6 border ${org.subscription_plan === 'pro' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-white">Pro</h3>
-            {org.subscription_plan === 'pro' && <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full">Current Plan</span>}
+        <div>
+          {/* Invoice History */}
+          <h2 className="text-xl font-bold text-white mb-6">Invoice History</h2>
+          <div className="glass-card rounded-xl overflow-hidden">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-900/40 border-b border-white/10">
+                <tr>
+                  <th className="px-4 py-3 font-semibold text-slate-400">Date</th>
+                  <th className="px-4 py-3 font-semibold text-slate-400">Amount</th>
+                  <th className="px-4 py-3 font-semibold text-slate-400">Status</th>
+                  <th className="px-4 py-3 font-semibold text-slate-400 text-right">Download</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {/* Mock historical invoice row */}
+                <tr className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 text-slate-300">{new Date().toLocaleDateString()} (Current)</td>
+                  <td className="px-4 py-3 text-slate-300">${totalEstimatedBill.toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">Pending</span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={handleDownloadInvoice} className="text-indigo-400 hover:text-indigo-300 font-medium text-xs">
+                      PDF
+                    </button>
+                  </td>
+                </tr>
+                {/* Mock paid invoice row */}
+                <tr className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 text-slate-300">{new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-slate-300">${baseMonthlyCost.toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">Paid</span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={handleDownloadInvoice} className="text-indigo-400 hover:text-indigo-300 font-medium text-xs">
+                      PDF
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div className="text-3xl font-bold text-white mb-4">$99<span className="text-base font-normal text-slate-400">/mo</span></div>
-          <ul className="space-y-3 text-sm text-slate-300 mb-6">
-            <li className="flex items-center gap-2 text-indigo-300 font-medium"><span>✓</span> 1000 Included Minutes</li>
-            <li className="flex items-center gap-2"><span>✓</span> Advanced IVR Routing</li>
-            <li className="flex items-center gap-2"><span>✓</span> Outbound Web Dialer</li>
-            <li className="flex items-center gap-2"><span>✓</span> Priority Support</li>
-          </ul>
-          {org.subscription_plan !== 'pro' && (
-            <button className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors">
-              Upgrade to Pro
-            </button>
-          )}
         </div>
-
       </div>
 
     </div>
