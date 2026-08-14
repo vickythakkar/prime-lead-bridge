@@ -26,6 +26,15 @@ export default function AgentsDirectory() {
     setLoading(false);
   };
 
+  const formatE164 = (num) => {
+    if (!num) return '';
+    let cleaned = num.replace(/[^\d+]/g, '');
+    if (cleaned.startsWith('+')) return cleaned;
+    if (cleaned.length === 10) return '+1' + cleaned;
+    if (cleaned.length === 11 && cleaned.startsWith('1')) return '+' + cleaned;
+    return cleaned;
+  };
+
   useEffect(() => {
     async function loadData() {
       // Get current user's org (for MVP, we just get the first org they are attached to as an agent)

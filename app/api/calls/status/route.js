@@ -57,6 +57,10 @@ export async function POST(request) {
       }
     }
 
+    const callDuration = formData.get('CallDuration');
+
+    const durationVal = dialCallDuration ? parseInt(dialCallDuration, 10) : (callDuration ? parseInt(callDuration, 10) : 0);
+
     const logData = {
       organization_id: orgId,
       twilio_call_sid: callSid,
@@ -64,7 +68,7 @@ export async function POST(request) {
       from_number: finalFrom,
       to_number: finalTo,
       status: mappedStatus,
-      duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0,
+      duration: durationVal,
       recording_url: recordingUrl,
       contact_id: contactId,
     };
@@ -72,11 +76,17 @@ export async function POST(request) {
     // Upsert
     const { data: existingLog, error: fetchErr } = await supabaseAdmin
       .from('call_logs')
-      .select('id')
+      .select('id, duration, recording_url')
       .eq('twilio_call_sid', callSid)
       .maybeSingle();
 
     if (existingLog) {
+      if (durationVal === 0 && existingLog.duration > 0) {
+        logData.duration = existingLog.duration;
+      }
+      if (!recordingUrl && existingLog.recording_url) {
+        logData.recording_url = existingLog.recording_url;
+      }
       await supabaseAdmin
         .from('call_logs')
         .update(logData)
