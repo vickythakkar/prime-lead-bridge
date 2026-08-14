@@ -32,10 +32,15 @@ export default function BillingDashboard() {
       // Load Active Numbers
       const { data: numData } = await supabase.from('organization_numbers').select('id').eq('organization_id', oId);
       
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
       // Load Call Logs for this billing cycle
       const { data: callData } = await supabase.from('call_logs')
         .select('duration')
-        .eq('organization_id', oId);
+        .eq('organization_id', oId)
+        .gte('created_at', startOfMonth.toISOString());
 
       let totalSeconds = 0;
       if (callData) {
