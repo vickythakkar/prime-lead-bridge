@@ -61,6 +61,47 @@ export async function POST(request) {
 
     const durationVal = dialCallDuration ? parseInt(dialCallDuration, 10) : (callDuration ? parseInt(callDuration, 10) : 0);
 
+    let finalRecordingUrl = recordingUrl;
+
+    if (recordingUrl && recordingSid && recordingUrl.includes('api.twilio.com')) {
+      try {
+        const fetchUrl = recordingUrl.endsWith('.mp3') ? recordingUrl : `${recordingUrl}.mp3`;
+        const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
+        
+        const response = await fetch(fetchUrl, {
+          headers: { 'Authorization': `Basic ${auth}` }
+        });
+
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          
+          const filePath = `${orgId}/${recordingSid}.mp3`;
+          
+          const { error: uploadError } = await supabaseAdmin.storage
+            .from('call_recordings')
+            .upload(filePath, buffer, {
+              contentType: 'audio/mpeg',
+              upsert: true
+            });
+            
+          if (!uploadError) {
+            finalRecordingUrl = filePath;
+            
+            // Delete from Twilio
+            const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+            try {
+              await client.recordings(recordingSid).remove();
+            } catch (delErr) {
+              console.error("Error deleting from Twilio:", delErr);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error migrating recording to Supabase:", e);
+      }
+    }
+
     const logData = {
       organization_id: orgId,
       twilio_call_sid: callSid,
@@ -69,7 +110,7 @@ export async function POST(request) {
       to_number: finalTo,
       status: mappedStatus,
       duration: durationVal,
-      recording_url: recordingUrl,
+      recording_url: finalRecordingUrl,
       contact_id: contactId,
     };
 
@@ -97,12 +138,12 @@ export async function POST(request) {
         .insert(logData);
     }
 
-    if (recordingUrl && mappedStatus === 'missed') {
+    if (finalRecordingUrl && mappedStatus === 'missed') {
       // Create a voicemail record if it was missed and has a recording
       await supabaseAdmin.from('voicemails').insert({
         organization_id: orgId,
         from_number: finalFrom,
-        recording_url: recordingUrl,
+        recording_url: finalRecordingUrl,
         duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0
       });
     }
