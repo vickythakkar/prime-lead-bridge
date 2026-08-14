@@ -59,8 +59,8 @@ export async function POST(request) {
 
     const logData = {
       organization_id: orgId,
-      call_sid: callSid,
-      direction,
+      twilio_call_sid: callSid,
+      call_type: direction,
       from_number: finalFrom,
       to_number: finalTo,
       status: mappedStatus,
@@ -70,11 +70,11 @@ export async function POST(request) {
     };
 
     // Upsert
-    const { data: existingLog } = await supabaseAdmin
+    const { data: existingLog, error: fetchErr } = await supabaseAdmin
       .from('call_logs')
       .select('id')
-      .eq('call_sid', callSid)
-      .single();
+      .eq('twilio_call_sid', callSid)
+      .maybeSingle();
 
     if (existingLog) {
       await supabaseAdmin

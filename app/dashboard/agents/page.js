@@ -122,12 +122,25 @@ export default function AgentsDirectory() {
 
       // Upsert to contacts CRM as well
       if (payload.cell_phone) {
-        await supabase.from('contacts').upsert({
-          organization_id: orgId,
-          phone: payload.cell_phone,
-          name: payload.name,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'organization_id,phone' });
+        const { data: existingContact } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('organization_id', orgId)
+          .eq('phone', payload.cell_phone)
+          .maybeSingle();
+
+        if (existingContact) {
+          await supabase.from('contacts').update({
+            name: payload.name,
+            updated_at: new Date().toISOString()
+          }).eq('id', existingContact.id);
+        } else {
+          await supabase.from('contacts').insert({
+            organization_id: orgId,
+            phone: payload.cell_phone,
+            name: payload.name
+          });
+        }
       }
 
       setShowModal(false);

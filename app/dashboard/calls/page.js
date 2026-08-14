@@ -42,8 +42,8 @@ export default function CallLogs() {
     const headers = ['Date', 'Direction', 'Contact / Number', 'Property', 'Duration (seconds)', 'Recording URL'];
     const rows = calls.map(c => [
       new Date(c.created_at).toLocaleString(),
-      c.direction || 'inbound',
-      c.contacts?.name || (c.direction === 'outbound' ? c.to_number : c.from_number) || '',
+      c.call_type || 'inbound',
+      c.contacts?.name || (c.call_type === 'outbound' ? c.to_number : c.from_number) || '',
       c.properties?.address || 'Office Menu',
       c.duration || 0,
       c.audio_link || ''
@@ -104,7 +104,7 @@ export default function CallLogs() {
                 {calls.map((call) => (
                   <tr key={call.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
-                      {call.direction === 'outbound' ? (
+                      {call.call_type === 'outbound' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Outbound</span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inbound</span>
@@ -114,10 +114,10 @@ export default function CallLogs() {
                       {call.contacts?.name ? (
                         <div className="flex flex-col">
                           <span>{call.contacts.name}</span>
-                          <span className="text-xs text-slate-500 font-mono">{call.direction === 'outbound' ? call.to_number : call.from_number}</span>
+                          <span className="text-xs text-slate-500 font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>
                         </div>
                       ) : (
-                        <span className="font-mono">{call.direction === 'outbound' ? call.to_number : call.from_number}</span>
+                        <span className="font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
@@ -130,7 +130,7 @@ export default function CallLogs() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
                         <a 
-                          href={`/dashboard/dialer?phone=${encodeURIComponent(call.direction === 'outbound' ? call.to_number : call.from_number)}`}
+                          href={`/dashboard/dialer?phone=${encodeURIComponent(call.call_type === 'outbound' ? call.to_number : call.from_number)}`}
                           className="text-slate-400 hover:text-emerald-400 transition-colors p-2 rounded-full hover:bg-emerald-500/10"
                           title="Call Back"
                         >
