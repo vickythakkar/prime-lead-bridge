@@ -91,25 +91,28 @@ export default function MyNumbers() {
   async function handlePurchase() {
     if (!selectedNumber || !orgId) return;
 
-    // Simulate Twilio Provisioning
-    const { data, error } = await supabase
-      .from('organization_numbers')
-      .insert([{
-        organization_id: orgId,
-        phone_number: selectedNumber,
-        twilio_sid: 'PN' + Math.random().toString(36).substring(7),
-        status: 'active'
-      }])
-      .select();
-
-    if (!error && data) {
-      setNumbers([data[0], ...numbers]);
-      setSelectedNumber(null);
-      setSearchResults([]);
-      setAreaCode('');
-      alert("Number purchased successfully!");
-    } else {
-      alert("Failed to purchase number.");
+    // Send request to live provisioning API
+    try {
+      const res = await fetch('/api/twilio/provision-number', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: selectedNumber, orgId })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.success && data.number) {
+        setNumbers([data.number, ...numbers]);
+        setSelectedNumber(null);
+        setSearchResults([]);
+        setAreaCode('');
+        alert("Number purchased and provisioned successfully! It is now active.");
+      } else {
+        alert("Failed to purchase number: " + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error purchasing number: " + err.message);
     }
   }
 

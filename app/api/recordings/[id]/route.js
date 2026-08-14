@@ -1,9 +1,9 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyAdminToken } from '@/lib/admin-auth';
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
-    const { id } = params; // This is the call_logs.id
+    const { id } = await context.params; // This is the call_logs.id
     
     // Auth Check: Bypass strict broker auth check for MVP since auth-helpers is missing.
     // In a real app, we would use @supabase/ssr here.
