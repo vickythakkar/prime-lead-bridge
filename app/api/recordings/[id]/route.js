@@ -25,13 +25,27 @@ export async function DELETE(request, { params }) {
     }
 
     if (callLog.recording_url) {
-      // Delete the file from Supabase Storage
-      const { error: storageError } = await supabaseAdmin.storage
-        .from('call_recordings')
-        .remove([callLog.recording_url]);
+      if (callLog.recording_url.includes('api.twilio.com')) {
+        // Delete from Twilio
+        const match = callLog.recording_url.match(/Recordings\/(RE[a-zA-Z0-9]+)/);
+        if (match && match[1]) {
+          const twilio = require('twilio');
+          const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+          try {
+            await client.recordings(match[1]).remove();
+          } catch (err) {
+            console.error('Failed to delete recording from Twilio:', err);
+          }
+        }
+      } else {
+        // Delete the file from Supabase Storage
+        const { error: storageError } = await supabaseAdmin.storage
+          .from('call_recordings')
+          .remove([callLog.recording_url]);
 
-      if (storageError) {
-        console.error('Failed to delete recording from storage:', storageError);
+        if (storageError) {
+          console.error('Failed to delete recording from storage:', storageError);
+        }
       }
     }
 
