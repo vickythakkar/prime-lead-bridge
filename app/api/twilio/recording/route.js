@@ -1,66 +1,39 @@
-import twilio from 'twilio';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { NextResponse } from 'next/server';
 
-export async function POST(request) {
-  const formData = await request.formData();
-  
-  const callSid = formData.get('CallSid');
-  const recordingUrl = formData.get('RecordingUrl');
-  const recordingSid = formData.get('RecordingSid');
-  
+export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const orgId = searchParams.get('org_id');
-
-  if (recordingUrl && recordingSid && callSid) {
-    try {
-      // 1. Download the recording from Twilio
-      const response = await fetch(`${recordingUrl}.mp3`, {
-        headers: {
-          'Authorization': 'Basic ' + Buffer.from(
-            process.env.TWILIO_ACCOUNT_SID + ':' + process.env.TWILIO_AUTH_TOKEN
-          ).toString('base64')
-        }
-      });
-      
-      const audioBuffer = await response.arrayBuffer();
-
-      // 2. Upload to Supabase Storage
-      const fileName = `${orgId}/${callSid}_${recordingSid}.mp3`;
-      const { data: uploadData, error: uploadError } = await supabaseAdmin
-        .storage
-        .from('call_recordings')
-        .upload(fileName, audioBuffer, {
-          contentType: 'audio/mpeg'
-        });
-
-      if (!uploadError) {
-        // 3. Update Call Log with Supabase URL path
-        await supabaseAdmin
-          .from('call_logs')
-          .update({ recording_url: fileName })
-          .eq('call_sid', callSid);
-
-        // 4. Delete recording from Twilio to save costs / privacy
-        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        await client.recordings(recordingSid).remove();
-      } else {
-        console.error("Error uploading recording to Supabase:", uploadError);
-        return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
-          status: 200,
-          headers: { 'Content-Type': 'text/xml' }
-        });
-      }
-    } catch (err) {
-      console.error('Error in recording webhook:', err);
-      return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
-        status: 500,
-        headers: { 'Content-Type': 'text/xml' }
-      });
-    }
+  const url = searchParams.get('url');
+  
+  if (!url || !url.includes('api.twilio.com')) {
+    return new NextResponse('Invalid URL', { status: 400 });
   }
 
-  return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
-    status: 200,
-    headers: { 'Content-Type': 'text/xml' }
-  });
+  try {
+    const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
+    
+    // Ensure the URL ends with .mp3 for native playback
+    const fetchUrl = url.endsWith('.mp3') ? url : `${url}.mp3`;
+
+    const response = await fetch(fetchUrl, {
+      headers: {
+        'Authorization': `Basic ${auth}`
+      }
+    });
+
+    if (!response.ok) {
+      return new NextResponse('Failed to fetch recording from Twilio', { status: response.status });
+    }
+
+    // Stream the audio directly to the client
+    return new NextResponse(response.body, {
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Content-Disposition': 'inline',
+        'Accept-Ranges': 'bytes'
+      }
+    });
+  } catch (error) {
+    console.error('Recording Proxy Error:', error);
+    return new NextResponse('Error fetching recording', { status: 500 });
+  }
 }

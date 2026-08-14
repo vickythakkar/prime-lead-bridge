@@ -23,15 +23,14 @@ export default function CallLogs() {
           // Resolve public URLs for recordings
           const callsWithUrls = data.map(call => {
             if (call.recording_url) {
-              if (call.recording_url.includes('api.twilio.com') && !call.recording_url.endsWith('.mp3')) {
-                return { ...call, audio_link: `${call.recording_url}.mp3` };
-              } else if (!call.recording_url.includes('api.twilio.com')) {
+              if (call.recording_url.includes('api.twilio.com')) {
+                return { ...call, audio_link: `/api/twilio/recording?url=${encodeURIComponent(call.recording_url)}` };
+              } else {
                 const { data: urlData } = supabase.storage
                   .from('call_recordings')
                   .getPublicUrl(call.recording_url);
                 return { ...call, audio_link: urlData.publicUrl };
               }
-              return { ...call, audio_link: call.recording_url };
             }
             return call;
           });
@@ -44,7 +43,7 @@ export default function CallLogs() {
   }, []);
 
   function exportCSV() {
-    const headers = ['Date', 'Direction', 'Contact / Number', 'Property', 'Duration (seconds)', 'Recording URL'];
+    const headers = ['Date', 'Type', 'Contact / Number', 'Property', 'Duration (seconds)', 'Recording URL'];
     const rows = calls.map(c => [
       new Date(c.created_at).toLocaleString(),
       c.call_type || 'inbound',
@@ -68,7 +67,7 @@ export default function CallLogs() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-6xl">
+    <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
       <header className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">Call Activity Log</h1>
@@ -94,7 +93,7 @@ export default function CallLogs() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[800px]">
+            <table className="w-full text-left min-w-[1000px]">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
@@ -102,7 +101,7 @@ export default function CallLogs() {
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 text-right">Recording</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -132,56 +131,56 @@ export default function CallLogs() {
                     <td className="px-6 py-4 text-slate-300 text-sm">
                       {call.duration ? `${call.duration}s` : '0s'}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <a 
-                          href={`/dashboard/dialer?phone=${encodeURIComponent(call.call_type === 'outbound' ? call.to_number : call.from_number)}`}
-                          className="text-slate-400 hover:text-emerald-400 transition-colors p-2 rounded-full hover:bg-emerald-500/10"
-                          title="Call Back"
-                        >
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M1.5 4.5a3 3 0 0 1 3-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 0 1-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 0 0 6.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 0 1 1.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 0 1-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5Z" clipRule="evenodd" /></svg>
-                        </a>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-2 w-full max-w-[400px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
+                          <div className="flex items-center gap-2">
+                            <a 
+                              href={`/dashboard/dialer?phone=${encodeURIComponent(call.call_type === 'outbound' ? call.to_number : call.from_number)}`}
+                              className="text-slate-400 hover:text-emerald-400 transition-colors p-1.5 rounded-full hover:bg-emerald-500/10 flex items-center gap-1 text-xs"
+                              title="Call Back"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M1.5 4.5a3 3 0 0 1 3-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 0 1-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 0 0 6.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 0 1 1.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 0 1-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5Z" clipRule="evenodd" /></svg>
+                              <span className="font-medium hidden sm:inline">Call Back</span>
+                            </a>
+                            {call.audio_link && (
+                              <button 
+                                onClick={async () => {
+                                  if(confirm('Are you sure you want to permanently delete this recording?')) {
+                                    try {
+                                      const res = await fetch(`/api/recordings/${call.id}`, { method: 'DELETE' });
+                                      if (res.ok) {
+                                        setCalls(calls.map(c => c.id === call.id ? {...c, audio_link: null} : c));
+                                      }
+                                    } catch (e) {
+                                      console.error(e);
+                                    }
+                                  }
+                                }}
+                                className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-red-500/10"
+                                title="Delete Recording"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                  <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        </div>
                         {call.audio_link ? (
-                          <div className="flex items-center space-x-2">
+                          <div className="w-full">
                             <audio 
                               controls 
                               src={call.audio_link}
-                              className="h-10 w-full min-w-[250px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white"
+                              className="h-10 w-full min-w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white"
                             />
-                            <button 
-                              onClick={async () => {
-                                if(confirm('Are you sure you want to permanently delete this recording?')) {
-                                  try {
-                                    const res = await fetch(`/api/recordings/${call.id}`, { method: 'DELETE' });
-                                    if (res.ok) {
-                                      setCalls(calls.map(c => c.id === call.id ? {...c, audio_link: null} : c));
-                                    }
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
-                                }
-                              }}
-                              className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-full hover:bg-red-500/10"
-                              title="Delete Recording"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                              </svg>
-                            </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500 w-[150px] inline-block text-center">No recording</span>
+                          <div className="h-10 w-full bg-white/5 rounded-full flex items-center justify-center border border-white/5">
+                            <span className="text-xs text-slate-500 font-medium">No recording available</span>
+                          </div>
                         )}
                       </div>
                     </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
