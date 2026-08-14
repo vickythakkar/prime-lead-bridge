@@ -120,7 +120,7 @@ export default function Settings() {
 
   const renderTabs = () => (
     <div className="flex space-x-6 border-b border-white/10 mb-8">
-      {['Profile', 'Inbound Calls', 'Billing'].map(tab => (
+      {['Profile', 'Inbound Calls'].map(tab => (
         <button
           key={tab}
           onClick={() => setActiveTab(tab)}
