@@ -22,6 +22,16 @@ export default function WebDialer() {
   const [callDuration, setCallDuration] = useState(0);
   const timerRef = useRef(null);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const phoneParam = new URLSearchParams(window.location.search).get('phone');
+      if (phoneParam) {
+        // Just in case it's double encoded or needs cleanup
+        setPhoneNumber(decodeURIComponent(phoneParam));
+      }
+    }
+  }, []);
+
   function toggleMute() {
     if (activeCall) {
       const newMuted = !isMuted;

@@ -134,18 +134,18 @@ export default function ContactsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-3 items-center">
-                        <Link 
+                        <a 
                           href={`/dashboard/messages?phone=${encodeURIComponent(contact.phone)}`} 
                           className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                         >
                           Message
-                        </Link>
-                        <Link 
+                        </a>
+                        <a 
                           href={`/dashboard/dialer?phone=${encodeURIComponent(contact.phone)}`} 
                           className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                         >
                           Call
-                        </Link>
+                        </a>
                         <button 
                           onClick={() => startEditing(contact)} 
                           className="text-slate-400 hover:text-white transition-colors ml-2"

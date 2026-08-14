@@ -15,7 +15,7 @@ export default function CallLogs() {
       if (agentData) {
         const { data, error } = await supabase
           .from('call_logs')
-          .select('*, properties(address)')
+          .select('*, properties(address), contacts(name)')
           .eq('organization_id', agentData.organization_id)
           .order('created_at', { ascending: false });
           
@@ -39,10 +39,11 @@ export default function CallLogs() {
   }, []);
 
   function exportCSV() {
-    const headers = ['Date', 'Caller', 'Property', 'Duration (seconds)', 'Recording URL'];
+    const headers = ['Date', 'Direction', 'Contact / Number', 'Property', 'Duration (seconds)', 'Recording URL'];
     const rows = calls.map(c => [
       new Date(c.created_at).toLocaleString(),
-      c.caller_number || '',
+      c.direction || 'inbound',
+      c.contacts?.name || (c.direction === 'outbound' ? c.to_number : c.from_number) || '',
       c.properties?.address || 'Office Menu',
       c.duration || 0,
       c.audio_link || ''
@@ -91,7 +92,8 @@ export default function CallLogs() {
             <table className="w-full text-left min-w-[800px]">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Caller</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
@@ -101,13 +103,29 @@ export default function CallLogs() {
               <tbody className="divide-y divide-white/5">
                 {calls.map((call) => (
                   <tr key={call.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 font-medium text-white">{call.caller_number}</td>
+                    <td className="px-6 py-4">
+                      {call.direction === 'outbound' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Outbound</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inbound</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-white">
+                      {call.contacts?.name ? (
+                        <div className="flex flex-col">
+                          <span>{call.contacts.name}</span>
+                          <span className="text-xs text-slate-500 font-mono">{call.direction === 'outbound' ? call.to_number : call.from_number}</span>
+                        </div>
+                      ) : (
+                        <span className="font-mono">{call.direction === 'outbound' ? call.to_number : call.from_number}</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
                     <td className="px-6 py-4 text-slate-400 text-sm">
                       {new Date(call.created_at).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-slate-300 text-sm">
-                      {call.duration ? `${call.duration}s` : 'Unknown'}
+                      {call.duration ? `${call.duration}s` : '0s'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {call.audio_link ? (
