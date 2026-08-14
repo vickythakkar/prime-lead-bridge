@@ -97,8 +97,22 @@ export async function POST(request) {
       });
     }
 
-    // Return valid empty TwiML so Twilio doesn't read the text "OK" aloud if this is an action URL
-    return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
+    // Return valid TwiML
+    const VoiceResponse = twilio.twiml.VoiceResponse;
+    const twiml = new VoiceResponse();
+
+    const fallback = searchParams.get('fallback');
+    if (fallback === 'voicemail' && dialCallStatus && ['no-answer', 'busy', 'failed', 'canceled'].includes(dialCallStatus)) {
+      // The dial failed or timed out, redirect to voicemail node
+      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'The agent is currently unavailable. Please leave a message after the beep.');
+      twiml.record({
+        action: `/api/calls/status?org_id=${orgId}`,
+        recordingStatusCallback: `/api/calls/status?org_id=${orgId}`,
+        recordingStatusCallbackEvent: 'completed',
+      });
+    }
+
+    return new Response(twiml.toString() || '<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { 
       status: 200,
       headers: { 'Content-Type': 'text/xml' }
     });

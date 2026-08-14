@@ -60,9 +60,9 @@ export async function POST(request) {
     // Record the outbound call as well, from answer
     let orgId = formData.get('orgId');
     if (!orgId || orgId === 'undefined') {
-      // Default to Master Org ID for Admin calls
       orgId = '8a564ec4-9544-4b63-ac58-98ec66d69a76';
     }
+    
     const actionUrl = `/api/calls/status?org_id=${orgId}&real_direction=outbound&real_to=${encodeURIComponent(to)}&real_from=${encodeURIComponent(callerId)}`;
     const dialAttributes = { 
       record: 'record-from-answer',

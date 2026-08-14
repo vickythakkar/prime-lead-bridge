@@ -121,24 +121,28 @@ export default function PropertiesPage() {
 
       // Auto-save Seller to Contacts
       if (formData.seller_phone) {
-        await supabase.from('contacts').upsert({
-          organization_id: orgId,
-          phone: formData.seller_phone,
-          name: formData.seller_name,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'organization_id,phone' });
+        try {
+          const { data: existingSeller } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', formData.seller_phone).single();
+          if (existingSeller) {
+            await supabase.from('contacts').update({ name: formData.seller_name, updated_at: new Date().toISOString() }).eq('id', existingSeller.id);
+          } else {
+            await supabase.from('contacts').insert({ organization_id: orgId, phone: formData.seller_phone, name: formData.seller_name });
+          }
+        } catch(e) { console.error('Seller sync error', e); }
       }
 
       // Auto-save Agent to Contacts
       if (formData.agent_id) {
         const agent = agents.find(a => a.id === formData.agent_id);
         if (agent && agent.cell_phone) {
-          await supabase.from('contacts').upsert({
-            organization_id: orgId,
-            phone: agent.cell_phone,
-            name: agent.name,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'organization_id,phone' });
+          try {
+            const { data: existingAgent } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', agent.cell_phone).single();
+            if (existingAgent) {
+              await supabase.from('contacts').update({ name: agent.name, updated_at: new Date().toISOString() }).eq('id', existingAgent.id);
+            } else {
+              await supabase.from('contacts').insert({ organization_id: orgId, phone: agent.cell_phone, name: agent.name });
+            }
+          } catch(e) { console.error('Agent sync error', e); }
         }
       }
 

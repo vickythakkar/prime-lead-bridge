@@ -85,7 +85,11 @@ export async function POST(request) {
       const { data: agent } = await supabaseAdmin.from('agents').select('cell_phone, name').eq('id', actionData.agentId).single();
       if (agent && agent.cell_phone) {
         twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${agent.name}.`);
-        const dial = twiml.dial({ record: 'record-from-answer', action: `/api/calls/status?org_id=${orgData.id}` });
+        const dial = twiml.dial({ 
+          record: 'record-from-answer', 
+          action: `/api/calls/status?org_id=${orgData.id}&fallback=voicemail`,
+          timeout: 20 
+        });
         dial.number(agent.cell_phone);
       } else {
         twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Sorry, that agent could not be reached.');

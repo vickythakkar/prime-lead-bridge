@@ -17,9 +17,18 @@ export default function WebDialer() {
   const [activeCall, setActiveCall] = useState(null);
   const [callerId, setCallerId] = useState(''); // The Twilio number the agent is dialing from
   const [orgId, setOrgId] = useState(''); // The agent's organization ID
+  const [isMuted, setIsMuted] = useState(false);
 
   const [callDuration, setCallDuration] = useState(0);
   const timerRef = useRef(null);
+
+  function toggleMute() {
+    if (activeCall) {
+      const newMuted = !isMuted;
+      activeCall.mute(newMuted);
+      setIsMuted(newMuted);
+    }
+  }
 
   useEffect(() => {
     async function setupDevice() {
@@ -256,7 +265,21 @@ export default function WebDialer() {
           </div>
 
           {/* Call Controls */}
-          <div className="flex justify-center w-full">
+          <div className="flex justify-center items-center gap-6 w-full">
+            {activeCall && (
+              <button
+                onClick={toggleMute}
+                className={`h-12 w-12 rounded-full flex items-center justify-center transition-all shadow-lg ${isMuted ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06zM8.5 4a.5.5 0 0 0 0 1c1.5 0 2.5 1.5 2.5 3s-1 3-2.5 3a.5.5 0 0 0 0 1c2 0 3.5-2 3.5-4s-1.5-4-3.5-4z"/><path d="M11.5 4a.5.5 0 0 0 0 1c2.5 0 4.5 2.5 4.5 5s-2 5-4.5 5a.5.5 0 0 0 0 1c3 0 5.5-3 5.5-6s-2.5-6-5.5-6z"/></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a2.81 2.81 0 0 1-1.28-1.503 6.474 6.474 0 0 1-2.21 4.522l.999.991zm-1.096-1.085-1.002-.992A5.474 5.474 0 0 1 7.5 13.5v-1a4.474 4.474 0 0 0 1.528-1.042l1.412 1.467zm-2.022-2.005-1.002-.992a3.475 3.475 0 0 1-.916-1.092l.988 1.018a4.475 4.475 0 0 0 .93 1.066zm-1.042-1.03-1.003-.992a2.475 2.475 0 0 1-.371-.568l.968.997a3.475 3.475 0 0 0 .406.563zm-.985-.975L5.418 7.94a1.474 1.474 0 0 1-.168-.23l.913.939c.068.083.143.16.228.232zM3.825 10.5 6.188 8.61l-.999-.99L3.825 8.5H1.5V6h2.325l.89-.713-1.048-1.04-1.343 1.074A.5.5 0 0 0 2 6v4a.5.5 0 0 0 .5.5h1.325zm2.363-1.89-1.01-1A.5.5 0 0 0 5 7.5h1.188zM7 4a.5.5 0 0 0-.283-.45l.98-.98A1.5 1.5 0 0 1 8 4v2.586l-1-1V4zM2.854.146a.5.5 0 1 0-.708.708l12 12a.5.5 0 0 0 .708-.708l-12-12z"/></svg>
+                )}
+              </button>
+            )}
+
             {activeCall ? (
               <button
                 onClick={handleHangup}
@@ -276,6 +299,13 @@ export default function WebDialer() {
                   <path fillRule="evenodd" d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
                 </svg>
               </button>
+            )}
+
+            {activeCall && (
+              <div className="h-12 w-12 flex items-center justify-center flex-col gap-1 text-red-500" title="Call is being recorded">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                <span className="text-[10px] font-bold tracking-widest uppercase">REC</span>
+              </div>
             )}
           </div>
         </div>
