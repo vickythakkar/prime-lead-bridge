@@ -125,7 +125,16 @@ export default function ContactsPage() {
                         <div className="h-10 w-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold">
                           {(contact.name || contact.phone || '?').charAt(0).toUpperCase()}
                         </div>
-                        <div className="font-medium text-white">{contact.name || 'Unknown Contact'}</div>
+                        <div className="flex flex-col">
+                          <div className="font-medium text-white flex items-center gap-2">
+                            {contact.name || 'Unknown Contact'}
+                            {contact.custom_fields?.role && (
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${contact.custom_fields.role === 'Agent' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                {contact.custom_fields.role}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-slate-300 font-mono text-sm">{contact.phone}</td>

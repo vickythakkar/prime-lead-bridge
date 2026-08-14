@@ -23,10 +23,15 @@ export default function CallLogs() {
           // Resolve public URLs for recordings
           const callsWithUrls = data.map(call => {
             if (call.recording_url) {
-              const { data: urlData } = supabase.storage
-                .from('call_recordings')
-                .getPublicUrl(call.recording_url);
-              return { ...call, audio_link: urlData.publicUrl };
+              if (call.recording_url.includes('api.twilio.com') && !call.recording_url.endsWith('.mp3')) {
+                return { ...call, audio_link: `${call.recording_url}.mp3` };
+              } else if (!call.recording_url.includes('api.twilio.com')) {
+                const { data: urlData } = supabase.storage
+                  .from('call_recordings')
+                  .getPublicUrl(call.recording_url);
+                return { ...call, audio_link: urlData.publicUrl };
+              }
+              return { ...call, audio_link: call.recording_url };
             }
             return call;
           });
@@ -141,7 +146,7 @@ export default function CallLogs() {
                             <audio 
                               controls 
                               src={call.audio_link}
-                              className="h-8 max-w-[150px] [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white"
+                              className="h-10 w-full min-w-[250px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white"
                             />
                             <button 
                               onClick={async () => {

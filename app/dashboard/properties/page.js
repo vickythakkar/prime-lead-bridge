@@ -122,11 +122,11 @@ export default function PropertiesPage() {
       // Auto-save Seller to Contacts
       if (formData.seller_phone) {
         try {
-          const { data: existingSeller } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', formData.seller_phone).single();
+          const { data: existingSeller } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', formData.seller_phone).maybeSingle();
           if (existingSeller) {
-            await supabase.from('contacts').update({ name: formData.seller_name, updated_at: new Date().toISOString() }).eq('id', existingSeller.id);
+            await supabase.from('contacts').update({ name: formData.seller_name, updated_at: new Date().toISOString(), custom_fields: { role: 'Seller' } }).eq('id', existingSeller.id);
           } else {
-            await supabase.from('contacts').insert({ organization_id: orgId, phone: formData.seller_phone, name: formData.seller_name });
+            await supabase.from('contacts').insert({ organization_id: orgId, phone: formData.seller_phone, name: formData.seller_name, custom_fields: { role: 'Seller' } });
           }
         } catch(e) { console.error('Seller sync error', e); }
       }
@@ -136,11 +136,11 @@ export default function PropertiesPage() {
         const agent = agents.find(a => a.id === formData.agent_id);
         if (agent && agent.cell_phone) {
           try {
-            const { data: existingAgent } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', agent.cell_phone).single();
+            const { data: existingAgent } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', agent.cell_phone).maybeSingle();
             if (existingAgent) {
-              await supabase.from('contacts').update({ name: agent.name, updated_at: new Date().toISOString() }).eq('id', existingAgent.id);
+              await supabase.from('contacts').update({ name: agent.name, updated_at: new Date().toISOString(), custom_fields: { role: 'Agent' } }).eq('id', existingAgent.id);
             } else {
-              await supabase.from('contacts').insert({ organization_id: orgId, phone: agent.cell_phone, name: agent.name });
+              await supabase.from('contacts').insert({ organization_id: orgId, phone: agent.cell_phone, name: agent.name, custom_fields: { role: 'Agent' } });
             }
           } catch(e) { console.error('Agent sync error', e); }
         }

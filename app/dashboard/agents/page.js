@@ -141,13 +141,15 @@ export default function AgentsDirectory() {
         if (existingContact) {
           await supabase.from('contacts').update({
             name: payload.name,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            custom_fields: { role: 'Agent' }
           }).eq('id', existingContact.id);
         } else {
           await supabase.from('contacts').insert({
             organization_id: orgId,
             phone: payload.cell_phone,
-            name: payload.name
+            name: payload.name,
+            custom_fields: { role: 'Agent' }
           });
         }
       }
