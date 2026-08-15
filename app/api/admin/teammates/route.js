@@ -37,7 +37,7 @@ export async function POST(request) {
 
     const { data: teammate, error } = await supabaseAdmin
       .from('agents')
-      .insert([{ organization_id: org_id, name, email, cell_phone: formatted, role: role || 'Teammate' }])
+      .insert([{ organization_id: org_id, name, cell_phone: formatted }])
       .select()
       .single();
 
@@ -47,9 +47,9 @@ export async function POST(request) {
     if (formatted) {
       const { data: existing } = await supabaseAdmin.from('contacts').select('id').eq('organization_id', org_id).eq('phone', formatted).maybeSingle();
       if (existing) {
-        await supabaseAdmin.from('contacts').update({ name, custom_fields: { role: 'Teammate' }, updated_at: new Date().toISOString() }).eq('id', existing.id);
+        await supabaseAdmin.from('contacts').update({ name, email, custom_fields: { role: 'Teammate', teammate_role: role }, updated_at: new Date().toISOString() }).eq('id', existing.id);
       } else {
-        await supabaseAdmin.from('contacts').insert({ organization_id: org_id, name, phone: formatted, email, custom_fields: { role: 'Teammate' } });
+        await supabaseAdmin.from('contacts').insert({ organization_id: org_id, name, phone: formatted, email, custom_fields: { role: 'Teammate', teammate_role: role } });
       }
     }
 

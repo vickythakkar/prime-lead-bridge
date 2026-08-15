@@ -67,6 +67,8 @@ export default function AdminDialer() {
           stopTimer();
         });
 
+        // Immediately set ready since we just want outbound for now
+        setStatus('Ready to Call');
         // Do not await register() because it might block on browser microphone permissions
         // We just let it run in the background. Outbound calls will still work.
         newDevice.register().catch(e => console.warn('Registration failed (might need mic permission):', e));

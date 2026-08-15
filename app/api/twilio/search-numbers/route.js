@@ -24,7 +24,12 @@ export async function GET(request) {
 
     const availableNumbers = await client.availablePhoneNumbers('US').local.list(searchParamsObj);
     
-    const formattedNumbers = availableNumbers.map(n => n.phoneNumber);
+    const formattedNumbers = availableNumbers.map(n => ({
+      phoneNumber: n.phoneNumber,
+      friendlyName: n.friendlyName,
+      locality: n.locality || '',
+      region: n.region || ''
+    }));
 
     return new Response(JSON.stringify({ numbers: formattedNumbers }), {
       status: 200,

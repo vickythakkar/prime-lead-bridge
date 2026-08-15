@@ -27,24 +27,14 @@ export default function AdminLoginPage() {
           localStorage.setItem('admin_token', data.token);
           router.push('/admin/dashboard');
         } else {
-          // Mock login for UI development
-          localStorage.setItem('admin_token', 'mock-admin-token');
-          router.push('/admin/dashboard');
-        }
-      } else {
-        // Mock fallback
-        if (email === 'admin@primeleadbridge.com' || password.length > 0) {
-          localStorage.setItem('admin_token', 'mock-admin-token');
-          router.push('/admin/dashboard');
-        } else {
           setError('Invalid admin credentials.');
         }
+      } else {
+        setError('Invalid email or password');
       }
     } catch (err) {
       console.error(err);
-      // Mock fallback
-      localStorage.setItem('admin_token', 'mock-admin-token');
-      router.push('/admin/dashboard');
+      setError('An error occurred during login.');
     } finally {
       setLoading(false);
     }

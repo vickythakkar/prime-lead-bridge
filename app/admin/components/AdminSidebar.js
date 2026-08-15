@@ -16,7 +16,7 @@ export default function AdminSidebar() {
     { href: '/admin/dialer', label: 'Admin Dialer', icon: '☎️' },
     { href: '/admin/messages', label: 'Messages', icon: '💬' },
     { href: '/admin/voicemails', label: 'Voicemails', icon: '🎙️' },
-    { href: '/admin/brokers', label: 'Brokers & Orgs', icon: '🏢' },
+    { href: '/admin/brokers', label: 'All Clients', icon: '🏢' },
     { href: '/admin/billing', label: 'Billing & Invoices', icon: '💳' },
     { href: '/admin/rates', label: 'Rates & Settings', icon: '⚙️' },
     { href: '/admin/settings', label: 'Platform Settings', icon: '🛠️' },
@@ -24,7 +24,7 @@ export default function AdminSidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
-    window.location.href = '/admin';
+    window.location.href = '/login';
   };
 
   return (

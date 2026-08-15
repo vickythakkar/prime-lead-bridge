@@ -11,7 +11,8 @@ export default function DashboardOverview() {
     activeNumbers: 0,
     potentialInvoice: 0,
     planName: 'Basic',
-    minutesUsed: 0
+    minutesUsed: 0,
+    planLimit: 250
   });
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function DashboardOverview() {
       
       // Data counts
       const { count: leadsCount } = await supabase.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', oId);
-      const { count: propsCount } = await supabase.from('properties').select('id', { count: 'exact', head: true }).eq('organization_id', oId).eq('is_active', true);
+      const { count: propsCount } = await supabase.from('properties').select('id', { count: 'exact', head: true }).eq('organization_id', oId).eq('is_active', true).eq('is_deleted', false);
       const { count: numsCount } = await supabase.from('organization_numbers').select('id', { count: 'exact', head: true }).eq('organization_id', oId);
       
       // Minutes used
@@ -56,7 +57,8 @@ export default function DashboardOverview() {
         activeNumbers: numsCount || 0,
         potentialInvoice: estimatedInvoice,
         planName,
-        minutesUsed: totalMinutes
+        minutesUsed: totalMinutes,
+        planLimit: planName === 'Pro' ? 1000 : 250
       });
 
       setLoading(false);
@@ -79,7 +81,7 @@ export default function DashboardOverview() {
             <StatsCard title="Total Leads" value={stats.totalLeads} trend="3 new today" trendUp={true} />
             <StatsCard title="Active Properties" value={stats.activeProperties} />
             <StatsCard title="Active Numbers" value={stats.activeNumbers} />
-            <StatsCard title="Minutes Used" value={stats.minutesUsed} />
+            <StatsCard title="Minutes Used" value={`${stats.minutesUsed}/${stats.planLimit}`} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

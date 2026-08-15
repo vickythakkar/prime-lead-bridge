@@ -1,55 +1,115 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-export default function BrokersPage() {
-  const [brokers, setBrokers] = useState([]);
+export default function AllClientsPage() {
+  const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingOrg, setEditingOrg] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    async function fetchBrokers() {
-      try {
-        const token = localStorage.getItem('admin_token');
-        const res = await fetch('/api/admin/organizations', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setBrokers(data.organizations || []);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
+  const initial = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', subscription_plan: 'basic', notify_email: '', rate_per_minute: '', overage_multiplier: '', payment_window_days: '' };
+  const [form, setForm] = useState(initial);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+
+  useEffect(() => { fetchOrgs(); }, []);
+
+  async function fetchOrgs() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setOrgs(data.organizations || []);
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
-    fetchBrokers();
-  }, []);
+  }
+
+  function openCreate() {
+    setEditingOrg(null);
+    setForm(initial);
+    setShowModal(true);
+  }
+
+  function openEdit(org) {
+    setEditingOrg(org);
+    setForm({
+      company_name: org.company_name || org.name || '',
+      contact_name: org.contact_name || '',
+      contact_email: org.notify_email || '',
+      contact_phone: org.organization_numbers?.[0]?.phone_number || '',
+      subscription_plan: org.subscription_plan || 'basic',
+      notify_email: org.notify_email || '',
+      rate_per_minute: org.rate_per_minute || '',
+      overage_multiplier: org.overage_multiplier || '',
+      payment_window_days: org.payment_window_days || ''
+    });
+    setShowModal(true);
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const method = editingOrg ? 'PATCH' : 'POST';
+      const url = editingOrg ? `/api/admin/organizations/${editingOrg.id}` : '/api/admin/organizations';
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      await fetchOrgs();
+      setShowModal(false);
+      setEditingOrg(null);
+      setForm(initial);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const filtered = orgs.filter(org => {
+    const name = (org.company_name || org.name || '').toLowerCase();
+    const matchesSearch = name.includes(searchQuery.toLowerCase()) || (org.notify_email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPlan = planFilter === 'all' || (org.subscription_plan || 'basic') === planFilter;
+    return matchesSearch && matchesPlan;
+  });
 
   return (
     <div className="animate-in fade-in duration-500">
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">Brokers & Organizations</h1>
-          <p className="text-indigo-300 mt-1">Manage tenant accounts, usage, and statuses.</p>
+          <h1 className="text-3xl font-bold text-white">All Clients</h1>
+          <p className="text-slate-400 mt-1">Manage broker accounts, usage, and configurations.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg font-medium shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all">
+        <button
+          onClick={openCreate}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg font-medium shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
+        >
           + New Organization
         </button>
       </header>
 
       <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
         <div className="p-4 border-b border-white/5 bg-white/5 flex gap-4">
-          <input 
-            type="text" 
-            placeholder="Search organizations..." 
+          <input
+            type="text"
+            placeholder="Search organizations..."
             className="flex-1 bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <select 
+          <select
             className="bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors text-sm"
             value={planFilter}
             onChange={(e) => setPlanFilter(e.target.value)}
@@ -62,53 +122,56 @@ export default function BrokersPage() {
 
         {loading ? (
           <div className="p-8 text-center text-slate-400">Loading organizations...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="text-4xl mb-4">🏢</div>
+            <h3 className="text-lg font-medium text-white mb-2">No organizations found</h3>
+            <p className="text-slate-400 text-sm">Click "+ New Organization" to onboard a client.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-[#0a0a0e]/50 border-b border-white/10">
                 <tr>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Organization</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Contact Person</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Plan</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Calls (Mtd)</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Mins (Mtd)</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Calls (MTD)</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Mins (MTD)</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {brokers
-                  .filter(broker => {
-                    const matchesSearch = (broker.company_name || broker.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-                    const matchesPlan = planFilter === 'all' || (broker.subscription_plan || 'basic') === planFilter;
-                    return matchesSearch && matchesPlan;
-                  })
-                  .map((broker) => (
-                  <tr key={broker.id} className="hover:bg-white/5 transition-colors">
+                {filtered.map((org) => (
+                  <tr key={org.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-white">{broker.company_name || broker.name}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">Joined {new Date(broker.created_at).toLocaleDateString()}</div>
+                      <div className="font-medium text-white">{org.company_name || org.name}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Joined {new Date(org.created_at).toLocaleDateString()}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-slate-300 text-sm">{broker.notify_email || 'No email set'}</div>
-                      <div className="text-slate-500 text-xs mt-0.5">{broker.organization_numbers?.[0]?.phone_number || 'No number'}</div>
+                      <div className="text-white text-sm font-medium">{org.contact_name || '—'}</div>
+                      <div className="text-slate-400 text-xs mt-0.5">{org.notify_email || 'No email set'}</div>
+                      <div className="text-slate-500 text-xs mt-0.5 font-mono">{org.organization_numbers?.[0]?.phone_number || 'No number'}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${broker.subscription_plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
-                        {broker.subscription_plan || 'basic'}
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${org.subscription_plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                        {org.subscription_plan || 'basic'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{broker.currentMonth?.totalCalls?.toLocaleString() || 0}</td>
-                    <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{broker.currentMonth?.totalMinutes?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{org.currentMonth?.totalCalls?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{org.currentMonth?.totalMinutes?.toLocaleString() || 0}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 text-emerald-400 text-sm font-medium`}>
-                        <span className={`w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]`}></span>
+                      <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-medium">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
                         Active
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <a href={`/admin/brokers/${broker.id}`} className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mr-4">View</a>
-                      <button className="text-slate-400 hover:text-white text-sm font-medium">Edit</button>
+                      <div className="flex items-center justify-end gap-3">
+                        <a href={`/admin/brokers/${org.id}`} className="text-indigo-400 hover:text-indigo-300 text-sm font-medium">View</a>
+                        <button onClick={() => openEdit(org)} className="text-slate-400 hover:text-white text-sm font-medium">Edit</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -117,6 +180,80 @@ export default function BrokersPage() {
           </div>
         )}
       </div>
+
+      {/* Create / Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">{editingOrg ? 'Edit Organization' : 'New Organization'}</h2>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white text-xl">✕</button>
+            </div>
+            <form onSubmit={handleSave} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Company Name *</label>
+                <input type="text" required className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.company_name} onChange={e => setForm({ ...form, company_name: e.target.value })} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Contact Person Name</label>
+                  <input type="text" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.contact_name} onChange={e => setForm({ ...form, contact_name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Contact Email</label>
+                  <input type="email" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.contact_email} onChange={e => setForm({ ...form, contact_email: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Contact Phone</label>
+                  <input type="tel" placeholder="+12125551234" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.contact_phone} onChange={e => setForm({ ...form, contact_phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Subscription Plan *</label>
+                  <select required className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.subscription_plan} onChange={e => setForm({ ...form, subscription_plan: e.target.value })}>
+                    <option value="basic">Basic ($59/mo — 250 min)</option>
+                    <option value="pro">Pro ($99/mo — 1000 min)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Notification Email</label>
+                <input type="email" placeholder="alerts@company.com" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.notify_email} onChange={e => setForm({ ...form, notify_email: e.target.value })} />
+              </div>
+
+              {/* Billing Overrides */}
+              <div className="border-t border-white/10 pt-5 mt-5">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Billing Rate Override <span className="text-slate-500 font-normal normal-case">(leave blank for default)</span></h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Rate / Min ($)</label>
+                    <input type="number" step="0.001" placeholder="Default" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.rate_per_minute} onChange={e => setForm({ ...form, rate_per_minute: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Overage Mult.</label>
+                    <input type="number" step="0.1" placeholder="Default" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.overage_multiplier} onChange={e => setForm({ ...form, overage_multiplier: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Pay Window (d)</label>
+                    <input type="number" placeholder="Default" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.payment_window_days} onChange={e => setForm({ ...form, payment_window_days: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium transition-colors">Cancel</button>
+                <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50">
+                  {saving ? 'Saving...' : editingOrg ? 'Update Organization' : 'Create Organization'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

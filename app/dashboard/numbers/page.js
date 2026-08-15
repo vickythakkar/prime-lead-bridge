@@ -202,16 +202,19 @@ export default function MyNumbers() {
               <h3 className="text-sm font-medium text-slate-400 mb-3">Available Numbers:</h3>
               {searchResults.map((res) => (
                 <div 
-                  key={res} 
-                  onClick={() => setSelectedNumber(res)}
+                  key={res.phoneNumber || res} 
+                  onClick={() => setSelectedNumber(res.phoneNumber || res)}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedNumber === res 
+                    selectedNumber === (res.phoneNumber || res)
                       ? 'bg-indigo-500/20 border-indigo-500 text-white' 
                       : 'bg-slate-900/50 border-slate-700 text-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  <span className="font-bold text-lg">{res}</span>
-                  {selectedNumber === res && <span className="text-indigo-400 font-bold">✓ Selected</span>}
+                  <div>
+                    <span className="font-bold text-lg">{res.phoneNumber || res}</span>
+                    {res.locality && <span className="text-xs text-slate-500 ml-2">{res.locality}, {res.region}</span>}
+                  </div>
+                  {selectedNumber === (res.phoneNumber || res) && <span className="text-indigo-400 font-bold">✓ Selected</span>}
                 </div>
               ))}
             </div>
