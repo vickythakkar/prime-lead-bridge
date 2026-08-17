@@ -25,7 +25,7 @@ export async function GET(request) {
     // Get all organizations
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name, rate_per_minute, overage_multiplier, payment_window_days');
+      .select('id, name, company_name, subscription_plan, rate_per_minute, overage_multiplier, payment_window_days');
 
     if (orgs) {
       for (const org of orgs) {
@@ -53,7 +53,29 @@ export async function GET(request) {
         const totalCalls = (calls || []).length;
         // Round each call up to the nearest minute individually (Twilio billing style)
         const totalMinutes = (calls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
-        const subtotal = parseFloat((totalMinutes * orgRate).toFixed(2));
+        
+        let baseFee = 0;
+        let includedMins = 0;
+        let perMinRate = orgRate;
+        const plan = org.subscription_plan || 'pay_as_you_go';
+
+        if (plan === 'starter') {
+          baseFee = 39.00;
+          includedMins = 500;
+          perMinRate = 0.12;
+        } else if (plan === 'growth') {
+          baseFee = 79.00;
+          includedMins = 1000;
+          perMinRate = 0.10;
+        } else {
+          // Pay As You Go or default
+          baseFee = 5.00;
+          includedMins = 0;
+          perMinRate = orgRate; // Defaults to 0.05 if not overridden
+        }
+
+        const billableMinutes = Math.max(0, totalMinutes - includedMins);
+        const subtotal = parseFloat((baseFee + (billableMinutes * perMinRate)).toFixed(2));
 
         // Due date: org specific window from generation
         const dueDate = new Date();
@@ -65,11 +87,11 @@ export async function GET(request) {
           billing_period_end: billingPeriodEnd,
           total_minutes: totalMinutes,
           total_calls: totalCalls,
-          rate_per_minute: orgRate,
+          rate_per_minute: perMinRate,
           subtotal: subtotal,
           overage_amount: 0,
           total_amount: subtotal,
-          status: totalMinutes === 0 ? 'paid' : 'due', // Auto-mark $0 invoices as paid
+          status: subtotal === 0 ? 'paid' : 'due', // Auto-mark $0 invoices as paid
           due_date: dueDate.toISOString().split('T')[0],
         });
       }

@@ -135,8 +135,9 @@ export default function AllClientsPage() {
             onChange={(e) => setPlanFilter(e.target.value)}
           >
             <option value="all">All Plans</option>
-            <option value="pro">Pro</option>
-            <option value="basic">Basic</option>
+            <option value="starter">Starter</option>
+            <option value="growth">Growth</option>
+            <option value="pay_as_you_go">Pay As You Go</option>
           </select>
         </div>
 
@@ -175,8 +176,8 @@ export default function AllClientsPage() {
                       <div className="text-slate-500 text-xs mt-0.5 font-mono">{org.organization_numbers?.[0]?.phone_number || 'No number'}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${org.subscription_plan === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
-                        {org.subscription_plan || 'basic'}
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${org.subscription_plan === 'growth' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : org.subscription_plan === 'starter' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                        {org.subscription_plan === 'pay_as_you_go' ? 'PAYG' : org.subscription_plan || 'pay_as_you_go'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{org.currentMonth?.totalCalls?.toLocaleString() || 0}</td>
@@ -237,8 +238,9 @@ export default function AllClientsPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Subscription Plan *</label>
                   <select required className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.subscription_plan} onChange={e => setForm({ ...form, subscription_plan: e.target.value })}>
-                    <option value="basic">Basic ($59/mo — 250 min)</option>
-                    <option value="pro">Pro ($99/mo — 1000 min)</option>
+                    <option value="pay_as_you_go">Pay As You Go ($5/mo — $0.05/min)</option>
+                    <option value="starter">Starter ($39/mo — 500 min)</option>
+                    <option value="growth">Growth ($79/mo — 1000 min)</option>
                   </select>
                 </div>
               </div>
