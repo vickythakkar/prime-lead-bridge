@@ -83,8 +83,7 @@ export default function BillingDashboard() {
   const overageMinutes = Math.max(0, stats.totalMinutes - includedMinutes);
   const estimatedOverageCost = overageMinutes * overageRate;
   
-  const numbersCost = stats.activeNumbersCount * rates.monthly_number_charge;
-  const totalEstimatedBill = baseMonthlyCost + estimatedOverageCost + numbersCost;
+  const totalEstimatedBill = baseMonthlyCost + estimatedOverageCost;
 
   const handlePlanChange = async (newPlan) => {
     if (!confirm(`Are you sure you want to switch to this plan?`)) return;
@@ -98,30 +97,90 @@ export default function BillingDashboard() {
   };
 
   const handleDownloadInvoice = () => {
-    // Generate a simple mock invoice for the MVP
-    const invoiceContent = `
-    INVOICE - Prime Real Ops
-    Date: ${new Date().toLocaleDateString()}
-    Organization: ${org.name}
-    
-    Current Plan: ${planName}
-    Base Cost: $${baseMonthlyCost.toFixed(2)}
-    Phone Numbers: $${numbersCost.toFixed(2)}
-    Minute Overages: $${estimatedOverageCost.toFixed(2)}
-    
-    Total Estimated Bill: $${totalEstimatedBill.toFixed(2)}
-    
-    Thank you for your business!
+    const invoiceWindow = window.open('', '_blank');
+    const invoiceHtml = `
+      <html>
+      <head>
+        <title>Invoice - ${org.name}</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
+          .invoice-box { max-width: 800px; margin: auto; padding: 40px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); font-size: 16px; line-height: 24px; color: #555; }
+          .invoice-box table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; }
+          .invoice-box table td { padding: 5px; vertical-align: top; }
+          .invoice-box table tr.top table td { padding-bottom: 20px; }
+          .invoice-box table tr.top table td.title { font-size: 32px; line-height: 45px; color: #4f46e5; font-weight: 800; }
+          .invoice-box table tr.information table td { padding-bottom: 40px; }
+          .invoice-box table tr.heading td { background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-weight: bold; color: #1e293b; padding: 10px; }
+          .invoice-box table tr.details td { padding-bottom: 20px; }
+          .invoice-box table tr.item td { border-bottom: 1px solid #f1f5f9; padding: 15px 10px; }
+          .invoice-box table tr.item.last td { border-bottom: none; }
+          .invoice-box table tr.total td:nth-child(2) { border-top: 2px solid #e2e8f0; font-weight: bold; font-size: 18px; color: #0f172a; padding: 15px 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-box">
+          <table cellpadding="0" cellspacing="0">
+            <tr class="top">
+              <td colspan="2">
+                <table>
+                  <tr>
+                    <td class="title">Prime Lead Bridge</td>
+                    <td style="text-align: right;">
+                      <strong>Estimated Invoice</strong><br>
+                      Date: ${new Date().toLocaleDateString()}<br>
+                      Org ID: ${org.id.split('-')[0].toUpperCase()}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr class="information">
+              <td colspan="2">
+                <table>
+                  <tr>
+                    <td>
+                      <strong>Prime Lead Bridge LLC.</strong><br>
+                      support@primeleadbridge.com
+                    </td>
+                    <td style="text-align: right;">
+                      <strong>${org.company_name || org.name}</strong><br>
+                      ${org.contact_name || ''}<br>
+                      ${org.contact_email || ''}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr class="heading">
+              <td>Description</td>
+              <td style="text-align: right;">Amount</td>
+            </tr>
+            <tr class="item">
+              <td>${planName}</td>
+              <td style="text-align: right;">$${baseMonthlyCost.toFixed(2)}</td>
+            </tr>
+            <tr class="item last">
+              <td>Minute Overages (${overageMinutes} mins)</td>
+              <td style="text-align: right;">$${estimatedOverageCost.toFixed(2)}</td>
+            </tr>
+            <tr class="total">
+              <td></td>
+              <td style="text-align: right;">Total: $${totalEstimatedBill.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
     `;
-    const blob = new Blob([invoiceContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Invoice_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    invoiceWindow.document.write(invoiceHtml);
+    invoiceWindow.document.close();
   };
 
   return (
@@ -179,15 +238,6 @@ export default function BillingDashboard() {
                 <span className="text-slate-400">Plan Base</span>
                 <span className="text-slate-200">${baseMonthlyCost.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Phone Numbers ({stats.activeNumbersCount})</span>
-                <span className="text-slate-200">${numbersCost.toFixed(2)}</span>
-              </div>
-              {stats.activeNumbersCount > 0 && (
-                <div className="pl-4 text-xs font-mono text-slate-500">
-                  {stats.activeNumbers.map(n => <div key={n.id}>{n.phone_number}</div>)}
-                </div>
-              )}
               <div className="flex justify-between">
                 <span className="text-slate-400">Minute Overages</span>
                 <span className="text-slate-200">${estimatedOverageCost.toFixed(2)}</span>
@@ -284,19 +334,6 @@ export default function BillingDashboard() {
                   <td className="px-4 py-3 text-slate-300">${totalEstimatedBill.toFixed(2)}</td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">Pending</span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={handleDownloadInvoice} className="text-indigo-400 hover:text-indigo-300 font-medium text-xs">
-                      PDF
-                    </button>
-                  </td>
-                </tr>
-                {/* Mock paid invoice row */}
-                <tr className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 text-slate-300">{new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-slate-300">${baseMonthlyCost.toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">Paid</span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={handleDownloadInvoice} className="text-indigo-400 hover:text-indigo-300 font-medium text-xs">
