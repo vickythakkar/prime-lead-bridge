@@ -124,9 +124,12 @@ export default function BillingDashboard() {
               <td colspan="2">
                 <table>
                   <tr>
-                    <td class="title">Prime Lead Bridge</td>
-                    <td style="text-align: right;">
-                      <strong>Estimated Invoice</strong><br>
+                    <td class="title">
+                      Prime Lead Bridge
+                      <div style="font-size: 14px; font-weight: normal; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 4px;">A PrimeRealOps Product</div>
+                    </td>
+                    <td style="text-align: right; font-size: 14px; color: #64748b; line-height: 1.6;">
+                      <strong style="color: #0f172a; font-size: 16px;">Estimated Invoice</strong><br>
                       Date: ${new Date().toLocaleDateString()}<br>
                       Org ID: ${org.id.split('-')[0].toUpperCase()}
                     </td>
@@ -138,12 +141,12 @@ export default function BillingDashboard() {
               <td colspan="2">
                 <table>
                   <tr>
-                    <td>
-                      <strong>Prime Lead Bridge LLC.</strong><br>
-                      support@primeleadbridge.com
+                    <td style="color: #475569; line-height: 1.6;">
+                      <strong style="color: #0f172a;">Prime Lead Bridge</strong><br>
+                      info@primerealops.com
                     </td>
-                    <td style="text-align: right;">
-                      <strong>${org.company_name || org.name}</strong><br>
+                    <td style="text-align: right; color: #475569; line-height: 1.6;">
+                      <strong style="color: #0f172a;">${org.company_name || org.name}</strong><br>
                       ${org.contact_name || ''}<br>
                       ${org.contact_email || ''}
                     </td>
