@@ -62,24 +62,38 @@ export default function BillingDashboard() {
   if (loading) return <div className="p-8 text-slate-400">Loading billing details...</div>;
   if (!org || !rates) return <div className="p-8 text-red-400">Error loading billing data.</div>;
 
-  const planName = org.subscription_plan === 'pro' ? 'Pro Plan' : 'Basic Plan';
-  const includedMinutes = org.subscription_plan === 'pro' ? 1000 : 250;
-  const baseMonthlyCost = org.subscription_plan === 'pro' ? 99 : 29;
+  const plan = org.subscription_plan || 'pay_as_you_go';
+  let planName = 'Pay As You Go';
+  let includedMinutes = 0;
+  let baseMonthlyCost = 5;
+  let overageRate = rates.broker_per_minute_charge;
+
+  if (plan === 'starter') {
+    planName = 'Starter Plan';
+    includedMinutes = 500;
+    baseMonthlyCost = 39;
+    overageRate = 0.12;
+  } else if (plan === 'growth') {
+    planName = 'Growth Plan';
+    includedMinutes = 1000;
+    baseMonthlyCost = 79;
+    overageRate = 0.10;
+  }
   
   const overageMinutes = Math.max(0, stats.totalMinutes - includedMinutes);
-  const estimatedOverageCost = overageMinutes * rates.broker_per_minute_charge;
+  const estimatedOverageCost = overageMinutes * overageRate;
   
   const numbersCost = stats.activeNumbersCount * rates.monthly_number_charge;
   const totalEstimatedBill = baseMonthlyCost + estimatedOverageCost + numbersCost;
 
-  const handleDowngrade = async () => {
-    if (!confirm('Are you sure you want to downgrade to the Basic plan? You will lose access to Pro features.')) return;
-    const { error } = await supabase.from('organizations').update({ subscription_plan: 'basic' }).eq('id', org.id);
+  const handlePlanChange = async (newPlan) => {
+    if (!confirm(`Are you sure you want to switch to this plan?`)) return;
+    const { error } = await supabase.from('organizations').update({ subscription_plan: newPlan }).eq('id', org.id);
     if (!error) {
-      setOrg({ ...org, subscription_plan: 'basic' });
-      alert('Plan downgraded successfully.');
+      setOrg({ ...org, subscription_plan: newPlan });
+      alert('Plan updated successfully.');
     } else {
-      alert('Failed to downgrade plan.');
+      alert('Failed to update plan.');
     }
   };
 
@@ -141,8 +155,8 @@ export default function BillingDashboard() {
             {/* Progress bar */}
             <div className="w-full bg-slate-800 rounded-full h-2.5">
               <div 
-                className={`h-2.5 rounded-full ${stats.totalMinutes > includedMinutes ? 'bg-red-500' : 'bg-indigo-500'}`}
-                style={{ width: `${Math.min(100, (stats.totalMinutes / includedMinutes) * 100)}%` }}
+                className={`h-2.5 rounded-full ${includedMinutes > 0 && stats.totalMinutes > includedMinutes ? 'bg-red-500' : 'bg-indigo-500'}`}
+                style={{ width: `${includedMinutes > 0 ? Math.min(100, (stats.totalMinutes / includedMinutes) * 100) : 100}%` }}
               ></div>
             </div>
             {stats.totalMinutes > includedMinutes && (
@@ -190,40 +204,59 @@ export default function BillingDashboard() {
           <h2 className="text-xl font-bold text-white mb-6">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Basic Plan */}
-            <div className={`glass-card rounded-xl p-5 border ${org.subscription_plan === 'basic' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
+            {/* Pay As You Go */}
+            <div className={`glass-card rounded-xl p-5 border ${plan === 'pay_as_you_go' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-white">Basic</h3>
-                {org.subscription_plan === 'basic' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+                <h3 className="font-bold text-white">Pay As You Go</h3>
+                {plan === 'pay_as_you_go' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
               </div>
-              <div className="text-2xl font-bold text-white mb-3">$29<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <div className="text-2xl font-bold text-white mb-3">$5<span className="text-sm font-normal text-slate-400">/mo</span></div>
               <ul className="space-y-2 text-xs text-slate-300 mb-4">
-                <li className="flex items-center gap-2"><span>✓</span> 250 Included Minutes</li>
-                <li className="flex items-center gap-2"><span>✓</span> Standard IVR Routing</li>
+                <li className="flex items-center gap-2"><span>✓</span> 0 Included Minutes</li>
+                <li className="flex items-center gap-2"><span>✓</span> $0.05 / minute</li>
                 <li className="flex items-center gap-2"><span>✓</span> Basic Analytics</li>
               </ul>
-              {org.subscription_plan !== 'basic' && (
-                <button onClick={handleDowngrade} className="w-full py-2 rounded bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors border border-white/10">
-                  Downgrade to Basic
+              {plan !== 'pay_as_you_go' && (
+                <button onClick={() => handlePlanChange('pay_as_you_go')} className="w-full py-2 rounded bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors border border-white/10">
+                  Switch to PAYG
                 </button>
               )}
             </div>
 
-            {/* Pro Plan */}
-            <div className={`glass-card rounded-xl p-5 border ${org.subscription_plan === 'pro' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
+            {/* Starter Plan */}
+            <div className={`glass-card rounded-xl p-5 border ${plan === 'starter' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-white">Pro</h3>
-                {org.subscription_plan === 'pro' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+                <h3 className="font-bold text-white">Starter</h3>
+                {plan === 'starter' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
               </div>
-              <div className="text-2xl font-bold text-white mb-3">$99<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <div className="text-2xl font-bold text-white mb-3">$39<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                <li className="flex items-center gap-2"><span>✓</span> 500 Included Minutes</li>
+                <li className="flex items-center gap-2"><span>✓</span> $0.12 / extra minute</li>
+                <li className="flex items-center gap-2"><span>✓</span> Incoming & Outgoing Calls</li>
+              </ul>
+              {plan !== 'starter' && (
+                <button onClick={() => handlePlanChange('starter')} className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+                  {plan === 'growth' ? 'Downgrade to Starter' : 'Upgrade to Starter'}
+                </button>
+              )}
+            </div>
+
+            {/* Growth Plan */}
+            <div className={`glass-card rounded-xl p-5 border ${plan === 'growth' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-bold text-white">Growth</h3>
+                {plan === 'growth' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+              </div>
+              <div className="text-2xl font-bold text-white mb-3">$79<span className="text-sm font-normal text-slate-400">/mo</span></div>
               <ul className="space-y-2 text-xs text-slate-300 mb-4">
                 <li className="flex items-center gap-2 text-indigo-300 font-medium"><span>✓</span> 1000 Included Minutes</li>
-                <li className="flex items-center gap-2"><span>✓</span> Advanced IVR Routing</li>
-                <li className="flex items-center gap-2"><span>✓</span> Outbound Web Dialer</li>
+                <li className="flex items-center gap-2"><span>✓</span> $0.10 / extra minute</li>
+                <li className="flex items-center gap-2"><span>✓</span> Advanced Analytics</li>
               </ul>
-              {org.subscription_plan !== 'pro' && (
-                <button className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
-                  Upgrade to Pro
+              {plan !== 'growth' && (
+                <button onClick={() => handlePlanChange('growth')} className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+                  Upgrade to Growth
                 </button>
               )}
             </div>
