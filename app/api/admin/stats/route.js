@@ -153,7 +153,6 @@ export async function GET(request) {
       totalCalls,
       totalMinutes,
       totalRevenue,
-      ratePerMinute: rate,
       invoiceSummary,
       topOrgs: orgUsage,
       growth: {
