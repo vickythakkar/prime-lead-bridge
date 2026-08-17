@@ -3,9 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, email, phone, orgName } = body;
+    const { name, email, phone, orgName, userId } = body;
 
-    if (!name || !email || !orgName) {
+    if (!name || !email || !orgName || !userId) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -29,13 +29,16 @@ export async function POST(request) {
     const { error: agentError } = await supabaseAdmin
       .from('agents')
       .insert([{
+        id: userId,
         organization_id: orgData.id,
         name: name,
-        email: email,
         cell_phone: phone
       }]);
 
-    if (agentError) throw agentError;
+    if (agentError) {
+      console.error('Agent Creation Error:', agentError);
+      throw agentError;
+    }
 
     // 3. Create Admin contact in the new Broker's org (Broker's View)
     const { error: adminContactError } = await supabaseAdmin

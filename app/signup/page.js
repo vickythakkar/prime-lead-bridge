@@ -21,6 +21,9 @@ export default function Signup() {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      }
     });
 
     if (authError) {
@@ -38,7 +41,8 @@ export default function Signup() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          orgName: formData.orgName
+          orgName: formData.orgName,
+          userId: authData.user.id
         })
       });
 
