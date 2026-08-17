@@ -61,28 +61,24 @@ export default function AdminDashboard() {
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">🏢</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Total Organizations</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalOrgs}</p>
-              <div className="mt-4 text-xs text-emerald-400 font-medium">↑ +3 this week</div>
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">📞</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Calls (This Month)</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalCalls?.toLocaleString() || 0}</p>
-              <div className="mt-4 text-xs text-emerald-400 font-medium">↑ 12% vs last month</div>
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">⏱️</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Minutes (This Month)</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalMinutes?.toLocaleString() || 0}</p>
-              <div className="mt-4 text-xs text-slate-400 font-medium">Average 2.8m per call</div>
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-emerald-500/30 border relative overflow-hidden bg-gradient-to-br from-emerald-900/20 to-transparent">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">💰</div>
               <h3 className="text-emerald-400/80 text-sm font-medium mb-1">Revenue (This Month)</h3>
               <p className="text-3xl font-bold text-emerald-400">${Number(stats?.totalRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
-              <div className="mt-4 text-xs text-emerald-400 font-medium">↑ 8% vs last month</div>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ export async function GET(request) {
   }
 
   try {
+    const ADMIN_ORG_ID = '8a564ec4-9544-4b63-ac58-98ec66d69a76';
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
@@ -15,7 +16,8 @@ export async function GET(request) {
     // Total orgs
     const { count: totalOrgs } = await supabaseAdmin
       .from('organizations')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .neq('id', ADMIN_ORG_ID);
 
     // This month's calls
     const { data: monthCalls } = await supabaseAdmin
@@ -72,7 +74,8 @@ export async function GET(request) {
     // Get org names
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name, subscription_plan');
+      .select('id, name, company_name, subscription_plan')
+      .neq('id', ADMIN_ORG_ID);
 
     const orgUsage = (orgs || []).map(org => ({
       id: org.id,
