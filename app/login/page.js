@@ -28,7 +28,7 @@ export default function Login() {
           const data = await res.json();
           if (data.token) {
             localStorage.setItem('admin_token', data.token);
-            window.location.href = '/admin/dashboard';
+            router.push('/admin/dashboard');
             return;
           }
         }
@@ -52,7 +52,7 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else {
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     }
   };
 
@@ -101,7 +101,7 @@ export default function Login() {
         </form>
 
         <p className="mt-6 text-center text-slate-400 text-sm">
-          Don't have an account? <Link href="/signup" className="text-indigo-400 hover:text-indigo-300">Sign up</Link>
+          Don&apos;t have an account? <Link href="/signup" className="text-indigo-400 hover:text-indigo-300">Sign up</Link>
         </p>
       </div>
     </div>

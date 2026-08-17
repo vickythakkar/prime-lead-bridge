@@ -78,7 +78,7 @@ export default function VoicemailsPage() {
               <span className="text-2xl">🎙️</span>
             </div>
             <h3 className="text-lg font-bold text-white mb-2">No Voicemails</h3>
-            <p className="text-slate-400 text-sm">You're all caught up!</p>
+            <p className="text-slate-400 text-sm">You&apos;re all caught up!</p>
           </div>
         ) : (
           <div className="divide-y divide-white/5">

@@ -70,7 +70,7 @@ export default function DashboardOverview() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-white">Dashboard Overview</h1>
-        <p className="text-slate-400 mt-1">Welcome back. Here is what's happening with your properties today.</p>
+        <p className="text-slate-400 mt-1">Welcome back. Here is what&apos;s happening with your properties today.</p>
       </header>
 
       {loading ? (
