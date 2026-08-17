@@ -62,6 +62,7 @@ export default function MyNumbers() {
         fetchNumbers(agentData.organization_id);
       } else {
         setLoading(false);
+      }
     }
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
