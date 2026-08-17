@@ -40,15 +40,31 @@ export default function DashboardOverview() {
 
       // Estimate invoice
       let estimatedInvoice = 0;
-      let planName = 'Basic';
-      if (orgData && adminData) {
-        planName = orgData.subscription_plan === 'pro' ? 'Pro' : 'Basic';
-        const baseCost = planName === 'Pro' ? 99 : 29;
-        const includedMins = planName === 'Pro' ? 1000 : 250;
+      let planName = 'Pay As You Go';
+      let planLimit = 0;
+
+      if (orgData) {
+        const plan = orgData.subscription_plan || 'pay_as_you_go';
+        let baseCost = 5;
+        let includedMins = 0;
+        let overageRate = 0.05;
+
+        if (plan === 'starter') {
+          planName = 'Starter';
+          baseCost = 39;
+          includedMins = 500;
+          overageRate = 0.12;
+        } else if (plan === 'growth') {
+          planName = 'Growth';
+          baseCost = 79;
+          includedMins = 1000;
+          overageRate = 0.10;
+        }
+
+        planLimit = includedMins;
         const overageMins = Math.max(0, totalMinutes - includedMins);
-        const overageCost = overageMins * adminData.broker_per_minute_charge;
-        const numsCost = (numsCount || 0) * adminData.monthly_number_charge;
-        estimatedInvoice = baseCost + overageCost + numsCost;
+        const overageCost = overageMins * overageRate;
+        estimatedInvoice = baseCost + overageCost;
       }
 
       setStats({
@@ -58,7 +74,7 @@ export default function DashboardOverview() {
         potentialInvoice: estimatedInvoice,
         planName,
         minutesUsed: totalMinutes,
-        planLimit: planName === 'Pro' ? 1000 : 250
+        planLimit: planLimit
       });
 
       setLoading(false);
@@ -81,7 +97,7 @@ export default function DashboardOverview() {
             <StatsCard title="Total Leads" value={stats.totalLeads} trend="3 new today" trendUp={true} />
             <StatsCard title="Active Properties" value={stats.activeProperties} />
             <StatsCard title="Active Numbers" value={stats.activeNumbers} />
-            <StatsCard title="Minutes Used" value={`${stats.minutesUsed}/${stats.planLimit}`} />
+            <StatsCard title="Minutes Used" value={stats.planLimit === 0 ? `${stats.minutesUsed}` : `${stats.minutesUsed}/${stats.planLimit}`} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
