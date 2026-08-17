@@ -10,7 +10,7 @@ export async function POST(request) {
     }
 
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://prime-lead-bridge.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prime-lead-bridge-five.vercel.app';
 
     // Purchase the number via Twilio
     const incomingPhoneNumber = await client.incomingPhoneNumbers.create({
