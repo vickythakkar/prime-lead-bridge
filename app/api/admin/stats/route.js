@@ -39,6 +39,36 @@ export async function GET(request) {
     const rate = rateData?.rate_per_minute || 0.025;
     const totalRevenue = (totalMinutes * parseFloat(rate)).toFixed(2);
 
+    // Previous month logic
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
+
+    const { count: prevTotalOrgs } = await supabaseAdmin
+      .from('organizations')
+      .select('*', { count: 'exact', head: true })
+      .lt('created_at', monthStart)
+      .neq('id', ADMIN_ORG_ID);
+
+    const { data: prevMonthCalls } = await supabaseAdmin
+      .from('call_logs')
+      .select('duration')
+      .gte('created_at', prevMonthStart)
+      .lte('created_at', prevMonthEnd);
+
+    const prevTotalCalls = (prevMonthCalls || []).length;
+    const prevTotalMinutes = (prevMonthCalls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
+    const prevTotalRevenue = prevTotalMinutes * parseFloat(rate);
+
+    const calculateGrowth = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const orgsGrowth = calculateGrowth(totalOrgs, prevTotalOrgs || 0);
+    const callsGrowth = calculateGrowth(totalCalls, prevTotalCalls);
+    const minutesGrowth = calculateGrowth(totalMinutes, prevTotalMinutes);
+    const revenueGrowth = calculateGrowth(totalMinutes * parseFloat(rate), prevTotalRevenue);
+
     // Invoices summary
     const { data: invoices } = await supabaseAdmin
       .from('invoices')
@@ -97,6 +127,12 @@ export async function GET(request) {
       ratePerMinute: rate,
       invoiceSummary,
       topOrgs: orgUsage,
+      growth: {
+        orgs: orgsGrowth,
+        calls: callsGrowth,
+        minutes: minutesGrowth,
+        revenue: revenueGrowth
+      }
     });
   } catch (err) {
     console.error('Admin stats error:', err);

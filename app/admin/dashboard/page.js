@@ -61,24 +61,47 @@ export default function AdminDashboard() {
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">🏢</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Total Organizations</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalOrgs}</p>
+              {stats?.growth && (
+                <div className={`mt-4 text-xs font-medium ${stats.growth.orgs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {stats.growth.orgs >= 0 ? '↑' : '↓'} {Math.abs(stats.growth.orgs)}% vs last month
+                </div>
+              )}
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">📞</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Calls (This Month)</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalCalls?.toLocaleString() || 0}</p>
+              {stats?.growth && (
+                <div className={`mt-4 text-xs font-medium ${stats.growth.calls >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {stats.growth.calls >= 0 ? '↑' : '↓'} {Math.abs(stats.growth.calls)}% vs last month
+                </div>
+              )}
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">⏱️</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Minutes (This Month)</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalMinutes?.toLocaleString() || 0}</p>
+              <div className="mt-4 flex justify-between items-center">
+                {stats?.growth ? (
+                  <div className={`text-xs font-medium ${stats.growth.minutes >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {stats.growth.minutes >= 0 ? '↑' : '↓'} {Math.abs(stats.growth.minutes)}% vs last month
+                  </div>
+                ) : <div />}
+                <div className="text-xs text-slate-400 font-medium">Avg {stats?.totalCalls ? (stats.totalMinutes / stats.totalCalls).toFixed(1) : 0}m/call</div>
+              </div>
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-emerald-500/30 border relative overflow-hidden bg-gradient-to-br from-emerald-900/20 to-transparent">
               <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">💰</div>
               <h3 className="text-emerald-400/80 text-sm font-medium mb-1">Revenue (This Month)</h3>
               <p className="text-3xl font-bold text-emerald-400">${Number(stats?.totalRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+              {stats?.growth && (
+                <div className={`mt-4 text-xs font-medium ${stats.growth.revenue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {stats.growth.revenue >= 0 ? '↑' : '↓'} {Math.abs(stats.growth.revenue)}% vs last month
+                </div>
+              )}
             </div>
           </div>
 
