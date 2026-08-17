@@ -77,9 +77,7 @@ export async function PATCH(request, { params }) {
     if (body.notify_email !== undefined) updateData.notify_email = body.notify_email;
     if (body.contact_name !== undefined) updateData.contact_name = body.contact_name;
     if (body.contact_email !== undefined) updateData.contact_email = body.contact_email;
-    if (body.rate_per_minute !== undefined) updateData.rate_per_minute = body.rate_per_minute ? parseFloat(body.rate_per_minute) : null;
-    if (body.overage_multiplier !== undefined) updateData.overage_multiplier = body.overage_multiplier ? parseFloat(body.overage_multiplier) : null;
-    if (body.payment_window_days !== undefined) updateData.payment_window_days = body.payment_window_days ? parseInt(body.payment_window_days) : null;
+    if (body.contact_phone !== undefined) updateData.contact_phone = body.contact_phone;
 
     const { data, error } = await supabaseAdmin
       .from('organizations')

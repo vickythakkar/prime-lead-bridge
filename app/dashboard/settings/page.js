@@ -24,7 +24,11 @@ export default function Settings() {
     enable_listing_lookup: true,
     receive_office_calls: true,
     fallback_when_unavailable: 'voicemail',
-    fallback_phone_number: ''
+    fallback_phone_number: '',
+    contact_email: '',
+    notify_email: '',
+    website: '',
+    contact_phone: ''
   });
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export default function Settings() {
             company_name, play_ivr_greeting, ivr_greeting, 
             enable_listing_lookup, receive_office_calls, 
             fallback_when_unavailable, fallback_phone_number,
-            ivr_flow_config
+            ivr_flow_config, contact_email, notify_email, website, contact_phone
           )
         `)
         .limit(1)
@@ -60,7 +64,11 @@ export default function Settings() {
           receive_office_calls: org?.receive_office_calls !== false,
           fallback_when_unavailable: org?.fallback_when_unavailable || 'voicemail',
           fallback_phone_number: org?.fallback_phone_number || '',
-          ivr_flow_config: org?.ivr_flow_config || {}
+          ivr_flow_config: org?.ivr_flow_config || {},
+          contact_email: org?.contact_email || '',
+          notify_email: org?.notify_email || '',
+          website: org?.website || '',
+          contact_phone: org?.contact_phone || ''
         });
 
         // Load Invoices
@@ -110,7 +118,11 @@ export default function Settings() {
       enable_listing_lookup: formData.enable_listing_lookup,
       receive_office_calls: formData.receive_office_calls,
       fallback_when_unavailable: formData.fallback_when_unavailable,
-      fallback_phone_number: formData.fallback_phone_number
+      fallback_phone_number: formData.fallback_phone_number,
+      contact_email: formData.contact_email,
+      notify_email: formData.notify_email,
+      website: formData.website,
+      contact_phone: formData.contact_phone
     }).eq('id', orgId);
       
     setSaving(false);
@@ -173,12 +185,55 @@ export default function Settings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Your Cell Phone</label>
                     <input 
                       type="tel" required
                       className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
                       value={formData.cell_phone} 
                       onChange={(e) => setFormData({...formData, cell_phone: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10 mt-6 mb-2">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Organization Details</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">General Contact Email</label>
+                    <input 
+                      type="email"
+                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      value={formData.contact_email} 
+                      onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">General Contact Phone</label>
+                    <input 
+                      type="tel"
+                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      value={formData.contact_phone} 
+                      onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Website URL</label>
+                    <input 
+                      type="url" placeholder="https://"
+                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      value={formData.website} 
+                      onChange={(e) => setFormData({...formData, website: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Billing / Notification Email</label>
+                    <input 
+                      type="email"
+                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                      value={formData.notify_email} 
+                      onChange={(e) => setFormData({...formData, notify_email: e.target.value})}
                     />
                   </div>
                 </div>

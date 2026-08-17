@@ -16,6 +16,16 @@ export default function MyNumbers() {
   const [searching, setSearching] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState(null);
 
+  const fetchNumbers = async (oId) => {
+    const { data, error } = await supabase
+      .from('organization_numbers')
+      .select('*')
+      .eq('organization_id', oId)
+      .order('purchased_at', { ascending: false });
+    if (!error && data) setNumbers(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
     async function loadData() {
       // Load Admin Rates
@@ -52,20 +62,10 @@ export default function MyNumbers() {
         fetchNumbers(agentData.organization_id);
       } else {
         setLoading(false);
-      }
     }
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function fetchNumbers(oId) {
-    const { data, error } = await supabase
-      .from('organization_numbers')
-      .select('*')
-      .eq('organization_id', oId)
-      .order('purchased_at', { ascending: false });
-    if (!error && data) setNumbers(data);
-    setLoading(false);
-  }
 
   async function handleSearch(e) {
     e.preventDefault();

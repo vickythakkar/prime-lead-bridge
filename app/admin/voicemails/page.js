@@ -9,8 +9,6 @@ export default function AdminVoicemails() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
-  useEffect(() => { fetchOrgs(); }, []);
-  useEffect(() => { fetchVoicemails(); }, [selectedOrg]);
 
   async function fetchOrgs() {
     const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
@@ -26,6 +24,10 @@ export default function AdminVoicemails() {
     setVoicemails(data.voicemails || []);
     setLoading(false);
   }
+
+  useEffect(() => { fetchOrgs(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchVoicemails(); }, [selectedOrg]);
 
   async function markListened(id) {
     await fetch('/api/admin/voicemails', { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });

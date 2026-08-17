@@ -74,10 +74,10 @@ export async function POST(request) {
       website: website || '',
     };
 
-    // Add billing overrides if provided
-    if (rate_per_minute) insertData.rate_per_minute = parseFloat(rate_per_minute);
-    if (overage_multiplier) insertData.overage_multiplier = parseFloat(overage_multiplier);
-    if (payment_window_days) insertData.payment_window_days = parseInt(payment_window_days);
+    // Add billing overrides if provided - Note: currently omitted as columns don't exist yet
+    // if (rate_per_minute) insertData.rate_per_minute = parseFloat(rate_per_minute);
+    // if (overage_multiplier) insertData.overage_multiplier = parseFloat(overage_multiplier);
+    // if (payment_window_days) insertData.payment_window_days = parseInt(payment_window_days);
 
     const { data: org, error } = await supabaseAdmin
       .from('organizations')
