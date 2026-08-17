@@ -19,25 +19,18 @@ export async function GET(request) {
       .select('*', { count: 'exact', head: true })
       .neq('id', ADMIN_ORG_ID);
 
-    // This month's calls
+    // This month's calls (excluding admin)
     const { data: monthCalls } = await supabaseAdmin
       .from('call_logs')
       .select('duration, organization_id')
       .gte('created_at', monthStart)
-      .lte('created_at', monthEnd);
+      .lte('created_at', monthEnd)
+      .neq('organization_id', ADMIN_ORG_ID);
 
     const totalCalls = (monthCalls || []).length;
     const totalMinutes = (monthCalls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
 
-    // Get billing rate
-    const { data: rateData } = await supabaseAdmin
-      .from('billing_rates')
-      .select('rate_per_minute')
-      .eq('name', 'default')
-      .single();
-
-    const rate = rateData?.rate_per_minute || 0.025;
-    const totalRevenue = (totalMinutes * parseFloat(rate)).toFixed(2);
+    // We will calculate totalRevenue dynamically based on plans below
 
     // Previous month logic
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
@@ -51,23 +44,15 @@ export async function GET(request) {
 
     const { data: prevMonthCalls } = await supabaseAdmin
       .from('call_logs')
-      .select('duration')
+      .select('duration, organization_id')
       .gte('created_at', prevMonthStart)
-      .lte('created_at', prevMonthEnd);
+      .lte('created_at', prevMonthEnd)
+      .neq('organization_id', ADMIN_ORG_ID);
 
     const prevTotalCalls = (prevMonthCalls || []).length;
     const prevTotalMinutes = (prevMonthCalls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
-    const prevTotalRevenue = prevTotalMinutes * parseFloat(rate);
 
-    const calculateGrowth = (current, previous) => {
-      if (previous === 0) return current > 0 ? 100 : 0;
-      return Math.round(((current - previous) / previous) * 100);
-    };
-
-    const orgsGrowth = calculateGrowth(totalOrgs, prevTotalOrgs || 0);
-    const callsGrowth = calculateGrowth(totalCalls, prevTotalCalls);
-    const minutesGrowth = calculateGrowth(totalMinutes, prevTotalMinutes);
-    const revenueGrowth = calculateGrowth(totalMinutes * parseFloat(rate), prevTotalRevenue);
+    // Growth will be calculated after we compute the revenue
 
     // Invoices summary
     const { data: invoices } = await supabaseAdmin
@@ -107,15 +92,59 @@ export async function GET(request) {
       .select('id, name, company_name, subscription_plan')
       .neq('id', ADMIN_ORG_ID);
 
-    const orgUsage = (orgs || []).map(org => ({
-      id: org.id,
-      name: org.company_name || org.name,
-      calls: orgBreakdown[org.id]?.calls || 0,
-      minutes: orgBreakdown[org.id]?.minutes || 0,
-      usage: orgBreakdown[org.id]?.minutes || 0,
-      status: org.subscription_plan || 'basic',
-      estimatedCost: ((orgBreakdown[org.id]?.minutes || 0) * parseFloat(rate)).toFixed(2),
-    }));
+    const prevOrgBreakdown = {};
+    (prevMonthCalls || []).forEach(call => {
+      if (!prevOrgBreakdown[call.organization_id]) prevOrgBreakdown[call.organization_id] = 0;
+      prevOrgBreakdown[call.organization_id] += Math.ceil((call.duration || 0) / 60);
+    });
+
+    let currentRevenueAmount = 0;
+    let prevRevenueAmount = 0;
+
+    const orgUsage = (orgs || []).map(org => {
+      const mins = orgBreakdown[org.id]?.minutes || 0;
+      const prevMins = prevOrgBreakdown[org.id] || 0;
+      let cost = 0;
+      let prevCost = 0;
+      
+      const plan = org.subscription_plan || 'PAY_AS_YOU_GO';
+      
+      if (plan === 'PAY_AS_YOU_GO') {
+        cost = 5.00 + (mins * 0.05);
+        prevCost = 5.00 + (prevMins * 0.05);
+      } else if (plan === 'STARTER') {
+        cost = 39.00 + (mins > 500 ? (mins - 500) * 0.12 : 0);
+        prevCost = 39.00 + (prevMins > 500 ? (prevMins - 500) * 0.12 : 0);
+      } else if (plan === 'GROWTH') {
+        cost = 79.00 + (mins > 1000 ? (mins - 1000) * 0.10 : 0);
+        prevCost = 79.00 + (prevMins > 1000 ? (prevMins - 1000) * 0.10 : 0);
+      }
+      
+      currentRevenueAmount += cost;
+      prevRevenueAmount += prevCost;
+
+      return {
+        id: org.id,
+        name: org.company_name || org.name,
+        calls: orgBreakdown[org.id]?.calls || 0,
+        minutes: mins,
+        usage: mins,
+        status: plan,
+        estimatedCost: cost.toFixed(2),
+      };
+    });
+    
+    const calculateGrowth = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const orgsGrowth = calculateGrowth(totalOrgs, prevTotalOrgs || 0);
+    const callsGrowth = calculateGrowth(totalCalls, prevTotalCalls);
+    const minutesGrowth = calculateGrowth(totalMinutes, prevTotalMinutes);
+    const revenueGrowth = calculateGrowth(currentRevenueAmount, prevRevenueAmount);
+
+    const totalRevenue = currentRevenueAmount.toFixed(2);
     
     orgUsage.sort((a, b) => b.usage - a.usage);
 
