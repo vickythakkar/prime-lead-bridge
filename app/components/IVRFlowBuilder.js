@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 // IVRFlowBuilder component for creating nested call flows
-export default function IVRFlowBuilder({ value, onChange }) {
+export default function IVRFlowBuilder({ value, onChange, teammates = [] }) {
   // Ensure value is an object
   const flow = value || {};
 
@@ -36,6 +36,7 @@ export default function IVRFlowBuilder({ value, onChange }) {
           node={flow[key]} 
           onUpdate={(nodeData) => handleUpdate(key, nodeData)} 
           isRoot={true}
+          teammates={teammates}
         />
       ))}
 
@@ -52,7 +53,7 @@ export default function IVRFlowBuilder({ value, onChange }) {
   );
 }
 
-function IVRNode({ digit, node, onUpdate, isRoot = false }) {
+function IVRNode({ digit, node, onUpdate, isRoot = false, teammates = [] }) {
   const updateField = (field, val) => {
     onUpdate({ ...node, [field]: val });
   };
@@ -61,6 +62,9 @@ function IVRNode({ digit, node, onUpdate, isRoot = false }) {
     const base = { action: actionType };
     if (actionType === 'ring_team') {
       base.teamRole = 'Sales';
+      base.duration = 20;
+    } else if (actionType === 'route_agent') {
+      base.agentId = teammates.length > 0 ? teammates[0].id : '';
       base.duration = 20;
     } else if (actionType === 'forward_call') {
       base.phoneNumber = '';
@@ -114,6 +118,7 @@ function IVRNode({ digit, node, onUpdate, isRoot = false }) {
             className="bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm flex-1"
           >
             <option value="ring_team">Ring Team Role</option>
+            <option value="route_agent">Forward to Team Member</option>
             <option value="forward_call">Forward to Phone Number</option>
             <option value="sub_menu">Sub-Menu (More Options)</option>
             <option value="voicemail">Send to Voicemail</option>
@@ -156,6 +161,31 @@ function IVRNode({ digit, node, onUpdate, isRoot = false }) {
               />
             </>
           )}
+
+          {node.action === 'route_agent' && (
+            <>
+              <select 
+                value={node.agentId || ''} 
+                onChange={(e) => updateField('agentId', e.target.value)}
+                className="bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm flex-1"
+              >
+                <option value="">Select Team Member...</option>
+                {teammates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.phone || 'No phone'})</option>
+                ))}
+              </select>
+              {teammates.length === 0 && (
+                <div className="text-red-400 text-xs mt-1 absolute -bottom-5">No team members available. Please add a contact as a teammate first.</div>
+              )}
+              <input 
+                type="number" 
+                placeholder="Seconds" 
+                value={node.duration || ''} 
+                onChange={(e) => updateField('duration', parseInt(e.target.value))}
+                className="bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm w-24"
+              />
+            </>
+          )}
         </div>
 
         {node.action === 'sub_menu' && (
@@ -177,6 +207,7 @@ function IVRNode({ digit, node, onUpdate, isRoot = false }) {
                   key={subKey} 
                   digit={subKey} 
                   node={node.options[subKey]} 
+                  teammates={teammates}
                   onUpdate={(subNodeData) => {
                     const newOptions = { ...node.options };
                     if (subNodeData === null) delete newOptions[subKey];
@@ -208,7 +239,7 @@ function IVRNode({ digit, node, onUpdate, isRoot = false }) {
           </div>
         )}
 
-        {(node.action === 'ring_team' || node.action === 'forward_call') && (
+        {(node.action === 'ring_team' || node.action === 'route_agent' || node.action === 'forward_call') && (
           <div className="pl-4 border-l-2 border-white/10 mt-4">
             {node.fallback ? (
               <div className="pt-2">
@@ -220,6 +251,7 @@ function IVRNode({ digit, node, onUpdate, isRoot = false }) {
                 <IVRNode 
                   digit="Timeout" 
                   node={node.fallback} 
+                  teammates={teammates}
                   onUpdate={(fallbackData) => {
                     if (fallbackData === null) removeFallback();
                     else updateField('fallback', fallbackData);

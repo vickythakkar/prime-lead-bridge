@@ -12,6 +12,7 @@ export default function IvrBuilder({ orgId, initialConfig, onSaved }) {
     greeting: 'Thank you for calling our office. Please listen to the following menu options.',
     flow: {}
   });
+  const [teammates, setTeammates] = useState([]);
 
   useEffect(() => {
     async function loadData() {
@@ -38,6 +39,15 @@ export default function IvrBuilder({ orgId, initialConfig, onSaved }) {
           });
         }
       }
+
+      const { data: teamData } = await supabase
+        .from('contacts')
+        .select('id, name, phone')
+        .eq('organization_id', orgId)
+        .eq('is_teammate', true)
+        .order('name');
+      if (teamData) setTeammates(teamData);
+
       setLoading(false);
     }
     loadData();
@@ -104,6 +114,7 @@ export default function IvrBuilder({ orgId, initialConfig, onSaved }) {
           <IVRFlowBuilder 
             value={config.flow} 
             onChange={(newFlow) => setConfig({...config, flow: newFlow})}
+            teammates={teammates}
           />
         </div>
 

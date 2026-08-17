@@ -155,9 +155,9 @@ export async function POST(request) {
         .single();
         
       if (agent) { agentPhone = agent.phone; agentName = agent.name; }
-    } else if (action === 'route_agent' && actionData.agentId) { // Legacy
-      const { data: agent } = await supabaseAdmin.from('agents').select('cell_phone, name').eq('id', actionData.agentId).single();
-      if (agent) { agentPhone = agent.cell_phone; agentName = agent.name; }
+    } else if (action === 'route_agent' && actionData.agentId) {
+      const { data: agent } = await supabaseAdmin.from('contacts').select('phone, name').eq('id', actionData.agentId).single();
+      if (agent) { agentPhone = agent.phone; agentName = agent.name; }
     }
 
     if (agentPhone) {

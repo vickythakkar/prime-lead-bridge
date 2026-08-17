@@ -23,6 +23,7 @@ export default function AdminSettings() {
     contact_phone: ''
   });
   const [ivr, setIvr] = useState(DEFAULT_IVR);
+  const [teammates, setTeammates] = useState([]);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
@@ -56,6 +57,13 @@ export default function AdminSettings() {
           setIvr({ greeting: data.ivr_greeting || DEFAULT_IVR.greeting, flow: newFlow });
         }
       }
+      
+      const { data: teamData } = await sb.from('contacts')
+        .select('id, name, phone')
+        .eq('organization_id', ADMIN_ORG_ID)
+        .eq('is_teammate', true)
+        .order('name');
+      if (teamData) setTeammates(teamData);
     }
     load();
   }, []);
@@ -191,7 +199,8 @@ export default function AdminSettings() {
             <h2 className="text-lg font-bold text-white mb-4">Call Routing Flow</h2>
             <IVRFlowBuilder 
               value={ivr.flow} 
-              onChange={(newFlow) => setIvr({...ivr, flow: newFlow})}
+              onChange={f => setIvr({ ...ivr, flow: f })} 
+              teammates={teammates}
             />
           </div>
 
