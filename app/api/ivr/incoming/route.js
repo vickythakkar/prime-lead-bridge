@@ -62,17 +62,21 @@ export async function POST(request) {
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
-  if (flowConfig.keyPress && Object.keys(flowConfig.keyPress).length === 0) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, flowConfig.greeting || 'Welcome, but this menu is not configured.');
-    twiml.hangup();
-    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
-  }
-
   // Use custom greeting or fallback
   const defaultGreeting = `Welcome to ${orgData.company_name || 'our office'}. To connect with the office, press 1.` 
     + (orgData.enable_listing_lookup !== false ? ` If you are a buyer inquiring about a property, press 2.` : ``);
   
   const greetingText = flowConfig.greeting || orgData.ivr_greeting || defaultGreeting;
+
+  const hasFlow = flowConfig.flow && Object.keys(flowConfig.flow).length > 0;
+  const hasLegacyKeyPress = flowConfig.keyPress && Object.keys(flowConfig.keyPress).length > 0;
+
+  if (!hasFlow && !hasLegacyKeyPress) {
+    // No routing options defined! Just play greeting and connect immediately (equivalent to pressing 1)
+    twiml.say({ voice: 'Polly.Matthew-Neural' }, greetingText);
+    twiml.redirect('/api/ivr/handle-menu?Digits=1');
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
 
   const gather = twiml.gather({
     numDigits: 1,
