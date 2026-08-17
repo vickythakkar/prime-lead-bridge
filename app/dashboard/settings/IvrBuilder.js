@@ -42,11 +42,10 @@ export default function IvrBuilder({ orgId, initialConfig, onSaved }) {
 
       const { data: teamData } = await supabase
         .from('contacts')
-        .select('id, name, phone')
+        .select('id, name, phone, custom_fields')
         .eq('organization_id', orgId)
-        .eq('is_teammate', true)
         .order('name');
-      if (teamData) setTeammates(teamData);
+      if (teamData) setTeammates(teamData.filter(t => t.custom_fields && t.custom_fields.role));
 
       setLoading(false);
     }

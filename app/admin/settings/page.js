@@ -59,11 +59,10 @@ export default function AdminSettings() {
       }
       
       const { data: teamData } = await sb.from('contacts')
-        .select('id, name, phone')
+        .select('id, name, phone, custom_fields')
         .eq('organization_id', ADMIN_ORG_ID)
-        .eq('is_teammate', true)
         .order('name');
-      if (teamData) setTeammates(teamData);
+      if (teamData) setTeammates(teamData.filter(t => t.custom_fields && t.custom_fields.role));
     }
     load();
   }, []);
