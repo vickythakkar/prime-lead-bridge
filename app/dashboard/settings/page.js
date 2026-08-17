@@ -252,6 +252,7 @@ export default function Settings() {
               <IvrBuilder 
                 orgId={orgId} 
                 initialConfig={formData.ivr_flow_config} 
+                initialEnabled={formData.play_ivr_greeting !== false}
                 onSaved={(msg) => {
                   setMessage(msg);
                   setTimeout(() => setMessage(''), 3000);
