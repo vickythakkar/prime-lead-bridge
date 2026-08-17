@@ -77,9 +77,9 @@ export async function PATCH(request, { params }) {
     if (body.notify_email !== undefined) updateData.notify_email = body.notify_email;
     if (body.contact_name !== undefined) updateData.contact_name = body.contact_name;
     if (body.contact_email !== undefined) updateData.contact_email = body.contact_email;
-    if (body.rate_per_minute) updateData.rate_per_minute = parseFloat(body.rate_per_minute);
-    if (body.overage_multiplier) updateData.overage_multiplier = parseFloat(body.overage_multiplier);
-    if (body.payment_window_days) updateData.payment_window_days = parseInt(body.payment_window_days);
+    if (body.rate_per_minute !== undefined) updateData.rate_per_minute = body.rate_per_minute ? parseFloat(body.rate_per_minute) : null;
+    if (body.overage_multiplier !== undefined) updateData.overage_multiplier = body.overage_multiplier ? parseFloat(body.overage_multiplier) : null;
+    if (body.payment_window_days !== undefined) updateData.payment_window_days = body.payment_window_days ? parseInt(body.payment_window_days) : null;
 
     const { data, error } = await supabaseAdmin
       .from('organizations')
@@ -95,3 +95,55 @@ export async function PATCH(request, { params }) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  const admin = verifyAdminToken(request);
+  if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    const { id } = await params;
+    
+    // Safety check: Do not allow deleting the Admin org
+    if (id === '8a564ec4-9544-4b63-ac58-98ec66d69a76') {
+      return Response.json({ error: 'Cannot delete the Admin organization' }, { status: 403 });
+    }
+
+    // 1. Get associated Twilio numbers
+    const { data: numbers } = await supabaseAdmin
+      .from('organization_numbers')
+      .select('*')
+      .eq('organization_id', id);
+      
+    // 2. Release from Twilio
+    if (numbers && numbers.length > 0) {
+      const twilio = require('twilio');
+      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      for (const num of numbers) {
+        if (num.twilio_sid) {
+          try {
+            await client.incomingPhoneNumbers(num.twilio_sid).remove();
+          } catch (e) {
+            console.error('Failed to release Twilio number during org deletion:', e);
+          }
+        }
+      }
+    }
+
+    // 3. Delete the organization (Assuming ON DELETE CASCADE or we might need to delete related records first)
+    const { error } = await supabaseAdmin
+      .from('organizations')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase Delete Error:', error);
+      throw error;
+    }
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting org:', err);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+

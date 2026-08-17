@@ -133,7 +133,7 @@ export default function AdminActivityLog() {
                           )}
                         </div>
                         {call.audio_link ? (
-                          <audio controls src={call.audio_link} className="h-9 w-full min-w-[260px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white" />
+                          <audio controls src={call.audio_link} className="h-9 w-full min-w-[260px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" />
                         ) : (
                           <div className="h-9 w-full bg-white/5 rounded-full flex items-center justify-center border border-white/5">
                             <span className="text-xs text-slate-500">No recording</span>

@@ -20,7 +20,7 @@ export default function AllClientsPage() {
   async function fetchOrgs() {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`/api/admin/organizations?t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setOrgs(data.organizations || []);
@@ -79,11 +79,31 @@ export default function AllClientsPage() {
   }
 
   const filtered = orgs.filter(org => {
+    // Hide the master admin organization from the tenants list
+    if (org.id === '8a564ec4-9544-4b63-ac58-98ec66d69a76') return false;
+    
     const name = (org.company_name || org.name || '').toLowerCase();
     const matchesSearch = name.includes(searchQuery.toLowerCase()) || (org.notify_email || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPlan = planFilter === 'all' || (org.subscription_plan || 'basic') === planFilter;
     return matchesSearch && matchesPlan;
   });
+
+  async function handleDelete(org) {
+    if (!confirm(`Are you sure you want to permanently delete "${org.company_name || org.name}"? This will release their numbers and delete all data.`)) return;
+    
+    try {
+      const res = await fetch(`/api/admin/organizations/${org.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      
+      setOrgs(orgs.filter(o => o.id !== org.id));
+    } catch (err) {
+      alert('Error deleting organization: ' + err.message);
+    }
+  }
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -171,6 +191,9 @@ export default function AllClientsPage() {
                       <div className="flex items-center justify-end gap-3">
                         <a href={`/admin/brokers/${org.id}`} className="text-indigo-400 hover:text-indigo-300 text-sm font-medium">View</a>
                         <button onClick={() => openEdit(org)} className="text-slate-400 hover:text-white text-sm font-medium">Edit</button>
+                        <button onClick={() => handleDelete(org)} className="text-red-400 hover:text-red-300 transition-colors ml-2" title="Delete Organization">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                        </button>
                       </div>
                     </td>
                   </tr>

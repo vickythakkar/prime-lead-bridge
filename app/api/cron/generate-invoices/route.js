@@ -25,7 +25,7 @@ export async function GET(request) {
     // Get all organizations
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name');
+      .select('id, name, company_name, rate_per_minute, overage_multiplier, payment_window_days');
 
     if (orgs) {
       for (const org of orgs) {
@@ -39,6 +39,9 @@ export async function GET(request) {
 
         if (existing) continue; // Skip if already generated
 
+        const orgRate = org.rate_per_minute !== null && org.rate_per_minute !== undefined ? parseFloat(org.rate_per_minute) : rate;
+        const orgPaymentWindow = org.payment_window_days !== null && org.payment_window_days !== undefined ? parseInt(org.payment_window_days) : paymentWindowDays;
+
         // Calculate total minutes and calls for the previous month
         const { data: calls } = await supabaseAdmin
           .from('call_logs')
@@ -50,11 +53,11 @@ export async function GET(request) {
         const totalCalls = (calls || []).length;
         // Round each call up to the nearest minute individually (Twilio billing style)
         const totalMinutes = (calls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
-        const subtotal = parseFloat((totalMinutes * rate).toFixed(2));
+        const subtotal = parseFloat((totalMinutes * orgRate).toFixed(2));
 
-        // Due date: 7 days from generation
+        // Due date: org specific window from generation
         const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + paymentWindowDays);
+        dueDate.setDate(dueDate.getDate() + orgPaymentWindow);
 
         await supabaseAdmin.from('invoices').insert({
           organization_id: org.id,
@@ -62,7 +65,7 @@ export async function GET(request) {
           billing_period_end: billingPeriodEnd,
           total_minutes: totalMinutes,
           total_calls: totalCalls,
-          rate_per_minute: rate,
+          rate_per_minute: orgRate,
           subtotal: subtotal,
           overage_amount: 0,
           total_amount: subtotal,
@@ -89,7 +92,7 @@ export async function GET(request) {
     // Overage = 2x cost per minute per week overdue
     const { data: overdueInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('*')
+      .select('*, organizations(overage_multiplier)')
       .eq('status', 'overdue');
 
     if (overdueInvoices) {
@@ -101,7 +104,10 @@ export async function GET(request) {
         // Overage: (rate * multiplier * total_minutes) * weeks_past_due
         // This means: for every week overdue, the broker pays an additional
         // amount equal to (2x per-minute rate * their total minutes)
-        const weeklyOverage = parseFloat(inv.rate_per_minute) * overageMultiplier * inv.total_minutes;
+        const orgOverageMult = inv.organizations?.overage_multiplier !== null && inv.organizations?.overage_multiplier !== undefined
+          ? parseFloat(inv.organizations.overage_multiplier)
+          : overageMultiplier;
+        const weeklyOverage = parseFloat(inv.rate_per_minute) * orgOverageMult * inv.total_minutes;
         const totalOverage = parseFloat((weeklyOverage * weeksPastDue).toFixed(2));
         const totalAmount = parseFloat((parseFloat(inv.subtotal) + totalOverage).toFixed(2));
 

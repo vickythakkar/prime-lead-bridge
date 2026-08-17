@@ -11,7 +11,7 @@ export default function LeadsDirectory() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const { data: agentData } = await supabase.from('agents').select('organization_id').limit(1).single();
+      const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
       if (agentData) {
         const { data, error } = await supabase
           .from('leads')

@@ -153,7 +153,11 @@ export async function POST(request) {
     const twiml = new VoiceResponse();
 
     const fallback = searchParams.get('fallback');
-    if (fallback === 'voicemail' && dialCallStatus && ['no-answer', 'busy', 'failed', 'canceled'].includes(dialCallStatus)) {
+    const fallbackPath = searchParams.get('fallbackPath');
+    
+    if (fallbackPath && dialCallStatus && ['no-answer', 'busy', 'failed', 'canceled'].includes(dialCallStatus)) {
+      twiml.redirect(`/api/ivr/handle-menu?path=${fallbackPath}&To=${encodeURIComponent(finalTo)}`);
+    } else if (fallback === 'voicemail' && dialCallStatus && ['no-answer', 'busy', 'failed', 'canceled'].includes(dialCallStatus)) {
       // The dial failed or timed out, redirect to voicemail node
       twiml.say({ voice: 'Polly.Matthew-Neural' }, 'The agent is currently unavailable. Please leave a message after the beep.');
       twiml.record({

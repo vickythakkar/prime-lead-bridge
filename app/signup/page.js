@@ -29,31 +29,28 @@ export default function Signup() {
       return;
     }
 
-    // 2. Create Organization
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .insert([{ name: formData.orgName }])
-      .select()
-      .single();
+    // 2. Provision Account securely via API
+    try {
+      const res = await fetch('/api/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          orgName: formData.orgName
+        })
+      });
 
-    if (orgError) {
-      console.error(orgError);
-      setError("Account created, but failed to setup organization. Please contact support.");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to complete account setup');
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
       setLoading(false);
       return;
-    }
-
-    // 3. Create Agent Profile
-    const { error: agentError } = await supabase
-      .from('agents')
-      .insert([{
-        organization_id: orgData.id,
-        name: formData.name,
-        cell_phone: formData.phone
-      }]);
-
-    if (agentError) {
-      console.error(agentError);
     }
 
     router.push('/dashboard');

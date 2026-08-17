@@ -42,9 +42,9 @@ export default function RatesPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          rate_per_minute: rate.rate_per_minute,
-          overage_multiplier: rate.overage_multiplier,
-          payment_window_days: rate.payment_window_days
+          rate_per_minute: parseFloat(rate.rate_per_minute),
+          overage_multiplier: parseFloat(rate.overage_multiplier),
+          payment_window_days: parseInt(rate.payment_window_days)
         })
       });
 
@@ -84,8 +84,8 @@ export default function RatesPage() {
                 type="number" 
                 step="0.001"
                 required
-                value={rate?.rate_per_minute || ''}
-                onChange={(e) => setRate({...rate, rate_per_minute: parseFloat(e.target.value)})}
+                value={rate?.rate_per_minute ?? ''}
+                onChange={(e) => setRate({...rate, rate_per_minute: e.target.value})}
                 className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
               />
               <p className="text-xs text-slate-500">The amount charged to organizations for every minute of a call or voicemail.</p>
@@ -96,8 +96,8 @@ export default function RatesPage() {
               <input 
                 type="number" 
                 required
-                value={rate?.payment_window_days || ''}
-                onChange={(e) => setRate({...rate, payment_window_days: parseInt(e.target.value)})}
+                value={rate?.payment_window_days ?? ''}
+                onChange={(e) => setRate({...rate, payment_window_days: e.target.value})}
                 className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
               />
               <p className="text-xs text-slate-500">Number of days before an invoice becomes overdue.</p>
@@ -110,8 +110,8 @@ export default function RatesPage() {
               type="number" 
               step="0.1"
               required
-              value={rate?.overage_multiplier || ''}
-              onChange={(e) => setRate({...rate, overage_multiplier: parseFloat(e.target.value)})}
+              value={rate?.overage_multiplier ?? ''}
+              onChange={(e) => setRate({...rate, overage_multiplier: e.target.value})}
               className="w-full md:w-1/2 bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
             />
             <p className="text-xs text-slate-500">

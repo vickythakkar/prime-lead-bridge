@@ -22,7 +22,7 @@ export default function ContactsPage() {
       const { data: agentData } = await supabase
         .from('agents')
         .select('organization_id')
-        .limit(1)
+        .eq('id', session.user.id)
         .single();
         
       if (agentData) {

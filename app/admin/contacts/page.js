@@ -21,7 +21,7 @@ export default function AdminContacts() {
     setLoading(true);
     // Use supabase client-side — admin contacts are scoped to the admin org
     const token = localStorage.getItem('admin_token');
-    const res = await fetch(`/api/admin/contacts?org_id=${ADMIN_ORG_ID}`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/admin/contacts', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       setContacts(data.contacts || []);
@@ -117,6 +117,7 @@ export default function AdminContacts() {
             <thead className="bg-slate-900/40 border-b border-white/10">
               <tr>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Name</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">Organization</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Tag</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Phone</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Email</th>
@@ -140,6 +141,11 @@ export default function AdminContacts() {
                       {role ? (
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${roleColors[role] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>{role}</span>
                       ) : <span className="text-slate-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-medium text-slate-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                        {c.organization_name || 'Admin Platform'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-slate-300 font-mono text-sm">{c.phone || '—'}</td>
                     <td className="px-6 py-4 text-slate-400 text-sm">{c.email || '—'}</td>

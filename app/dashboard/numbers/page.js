@@ -40,7 +40,7 @@ export default function MyNumbers() {
       if (agentError) {
         console.error("Error fetching agent:", agentError);
         // Try fallback to just get the first agent if RLS isn't strict yet
-        const { data: fallback } = await supabase.from('agents').select('organization_id').limit(1).single();
+        const { data: fallback } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
         if (fallback) {
           setOrgId(fallback.organization_id);
           fetchNumbers(fallback.organization_id);
@@ -118,8 +118,17 @@ export default function MyNumbers() {
 
   async function handleRelease(id) {
     if (confirm("Are you sure you want to release this number? Any properties using it will be deactivated.")) {
-      await supabase.from('organization_numbers').delete().eq('id', id);
-      setNumbers(numbers.filter(n => n.id !== id));
+      try {
+        const res = await fetch(`/api/twilio/release-number?id=${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setNumbers(numbers.filter(n => n.id !== id));
+        } else {
+          alert('Failed to release number.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error releasing number.');
+      }
     }
   }
 
@@ -212,7 +221,9 @@ export default function MyNumbers() {
                 >
                   <div>
                     <span className="font-bold text-lg">{res.phoneNumber || res}</span>
-                    {res.locality && <span className="text-xs text-slate-500 ml-2">{res.locality}, {res.region}</span>}
+                    <span className="text-xs text-slate-500 ml-2">
+                      {res.locality ? `${res.locality}, ${res.region}` : 'United States'}
+                    </span>
                   </div>
                   {selectedNumber === (res.phoneNumber || res) && <span className="text-indigo-400 font-bold">✓ Selected</span>}
                 </div>

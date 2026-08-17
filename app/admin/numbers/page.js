@@ -67,10 +67,16 @@ export default function AdminNumbers() {
 
   async function handleRelease(id) {
     if (!confirm('Release this number? It will be returned to Twilio.')) return;
-    const { createClient } = await import('@supabase/supabase-js');
-    const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-    await sb.from('organization_numbers').delete().eq('id', id);
-    setNumbers(numbers.filter(n => n.id !== id));
+    try {
+      const res = await fetch(`/api/twilio/release-number?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        setNumbers(numbers.filter(n => n.id !== id));
+      } else {
+        alert('Failed to release number.');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   }
 
   return (

@@ -1,215 +1,35 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
-
-// We import the Device dynamically to prevent SSR issues with browser APIs
-let Device = null;
-if (typeof window !== 'undefined') {
-  const Twilio = require('@twilio/voice-sdk');
-  Device = Twilio.Device;
-}
+import { useState, useEffect } from 'react';
+import { useBrokerDialer } from '../components/BrokerDialerContext';
 
 export default function WebDialer() {
-  const [phoneNumber, setPhoneNumber] = useState(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('phone') || '' : '');
-  const [loading, setLoading] = useState(true);
-  const [device, setDevice] = useState(null);
-  const [status, setStatus] = useState('Initializing...');
-  const [activeCall, setActiveCall] = useState(null);
-  const [callerId, setCallerId] = useState(''); // The Twilio number the agent is dialing from
-  const [orgId, setOrgId] = useState(''); // The agent's organization ID
-  const [isMuted, setIsMuted] = useState(false);
-
-  const [callDuration, setCallDuration] = useState(0);
-  const timerRef = useRef(null);
+  const {
+    device, status, activeCall, callerId, isMuted, callDuration,
+    handleDial, handleHangup, toggleMute, handleKeypad, formatDuration
+  } = useBrokerDialer();
+  
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const phoneParam = new URLSearchParams(window.location.search).get('phone');
       if (phoneParam) {
-        // Just in case it's double encoded or needs cleanup
         setPhoneNumber(decodeURIComponent(phoneParam));
       }
     }
   }, []);
 
-  function toggleMute() {
-    if (activeCall) {
-      const newMuted = !isMuted;
-      activeCall.mute(newMuted);
-      setIsMuted(newMuted);
-    }
-  }
-
-  useEffect(() => {
-    async function setupDevice() {
-      // Fetch caller ID (Twilio Number)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: agentData } = await supabase.from('agents').select('organization_id').limit(1).single();
-        if (agentData) {
-          setOrgId(agentData.organization_id);
-          const { data: numData } = await supabase
-            .from('organization_numbers')
-            .select('phone_number')
-            .eq('organization_id', agentData.organization_id)
-            .limit(1)
-            .single();
-          if (numData) {
-            setCallerId(numData.phone_number);
-          }
-        }
-      }
-
-      // Fetch Token
-      try {
-        const response = await fetch('/api/twilio/token', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch token');
-        }
-
-        const data = await response.json();
-        const newDevice = new Device(data.token, {
-          codecPreferences: ['opus', 'pcmu'],
-          fakeLocalDTMF: true,
-          enableRingingState: true
-        });
-
-        // Immediately set ready since we just want outbound for now,
-        // and register() might fail or hang on mic permissions.
-        setStatus('Ready to Call');
-
-        newDevice.on('ready', () => {
-          setStatus('Ready to Call');
-        });
-
-        newDevice.on('error', (error) => {
-          console.error('Twilio.Device Error:', error);
-          if (error.message.includes('permission')) {
-            setStatus('Microphone Permission Denied');
-          } else {
-            setStatus('Error: ' + error.message);
-          }
-        });
-
-        newDevice.on('connect', (conn) => {
-          setStatus('Connected');
-          setActiveCall(conn);
-          startTimer();
-        });
-
-        newDevice.on('disconnect', () => {
-          setStatus('Ready to Call');
-          setActiveCall(null);
-          stopTimer();
-        });
-
-        // Do not await register() because it might block on browser microphone permissions
-        // We just let it run in the background. Outbound calls will still work.
-        newDevice.register().catch(e => {
-          console.warn('Registration failed (might need mic permission):', e);
-          if (e.message && e.message.includes('permission')) {
-            setStatus('Mic Permission Required for Inbound');
-          }
-        });
-        
-        setDevice(newDevice);
-      } catch (err) {
-        setStatus('Configuration Error. Ensure TWILIO_API_KEY is set.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    if (Device) {
-      setupDevice();
-    }
-  }, []);
-
-  function startTimer() {
-    setCallDuration(0);
-    timerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-  }
-
-  function stopTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
-  }
-
-  function formatDuration(sec) {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  }
-
-  async function handleDial() {
-    if (!device) return;
+  function localHandleDial() {
     if (!phoneNumber) {
       alert("Please enter a phone number.");
       return;
     }
-    
-    setStatus('Dialing...');
-    try {
-      // Create the outbound call
-      const call = await device.connect({ 
-        params: { 
-          targetNumber: phoneNumber,
-          callerId: callerId || '',
-          orgId: orgId || ''
-        } 
-      });
-      
-      setActiveCall(call);
-
-      // Attach event listeners to the specific Call object
-      call.on('accept', () => {
-        setStatus('Connected');
-        startTimer();
-      });
-
-      call.on('disconnect', () => {
-        setStatus('Ready to Call');
-        setActiveCall(null);
-        stopTimer();
-      });
-
-      call.on('error', (err) => {
-        setStatus('Call Failed');
-        console.error('Call error:', err);
-        setActiveCall(null);
-        stopTimer();
-      });
-      
-      // Some versions of Twilio SDK use 'reject' if the call is rejected before answer
-      call.on('reject', () => {
-        setStatus('Call Rejected');
-        setActiveCall(null);
-        stopTimer();
-      });
-
-    } catch (err) {
-      setStatus('Call Failed');
-      console.error(err);
-    }
+    handleDial(phoneNumber);
   }
 
-  function handleHangup() {
-    if (device) {
-      device.disconnectAll();
-    }
-  }
-
-  function handleKeypad(digit) {
+  function localHandleKeypad(digit) {
     if (activeCall) {
-      activeCall.sendDigits(digit);
+      handleKeypad(digit);
     } else {
       setPhoneNumber(prev => prev + digit);
     }
@@ -223,7 +43,6 @@ export default function WebDialer() {
       </div>
 
       <div className="glass-card rounded-3xl w-full max-w-sm overflow-hidden border border-white/10 shadow-2xl relative">
-        {/* Glow effect */}
         <div className={`absolute top-0 inset-x-0 h-1 blur-xl transition-all ${activeCall ? 'bg-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.8)]' : 'bg-indigo-500 shadow-[0_0_30px_rgba(79,70,229,0.5)]'}`} />
         
         <div className="p-8 pb-4 flex flex-col items-center">
@@ -231,7 +50,6 @@ export default function WebDialer() {
             {callerId ? `Calling From: ${callerId}` : 'Calling From: Unknown'}
           </div>
           
-          {/* Status Display */}
           <div className={`text-sm font-medium mb-6 px-4 py-1.5 rounded-full border ${
             status === 'Connected' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
             status === 'Ready to Call' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
@@ -243,7 +61,6 @@ export default function WebDialer() {
             </span>
           </div>
 
-          {/* Number Display */}
           <div className="h-16 w-full flex items-center justify-center mb-6">
             <input 
               type="text" 
@@ -254,19 +71,17 @@ export default function WebDialer() {
             />
           </div>
 
-          {/* Call Timer */}
           {activeCall && (
             <div className="text-2xl font-mono text-emerald-400 mb-6 font-light">
               {formatDuration(callDuration)}
             </div>
           )}
 
-          {/* Keypad */}
           <div className="grid grid-cols-3 gap-4 w-full mb-8">
             {['1','2','3','4','5','6','7','8','9','*','0','#'].map((key) => (
               <button
                 key={key}
-                onClick={() => handleKeypad(key)}
+                onClick={() => localHandleKeypad(key)}
                 className="h-16 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/20 text-2xl font-light text-white flex items-center justify-center transition-colors border border-white/5"
               >
                 {key}
@@ -274,7 +89,6 @@ export default function WebDialer() {
             ))}
           </div>
 
-          {/* Call Controls */}
           <div className="flex justify-center items-center gap-6 w-full">
             {activeCall && (
               <button
@@ -301,8 +115,8 @@ export default function WebDialer() {
               </button>
             ) : (
               <button
-                onClick={handleDial}
-                disabled={!device || loading}
+                onClick={localHandleDial}
+                disabled={!device || status === 'Initializing...'}
                 className="h-16 w-16 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center justify-center transition-all text-white disabled:opacity-50 disabled:hover:scale-100 transform hover:scale-105 active:scale-95"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
@@ -321,7 +135,6 @@ export default function WebDialer() {
         </div>
       </div>
       
-      {/* Instructions / Credentials Needed Notice */}
       <div className="mt-8 text-center text-sm text-slate-500 max-w-md">
         Note: The Outbound Dialer requires Twilio API Key and Twilio TwiML App configurations in the environment variables to function properly.
       </div>

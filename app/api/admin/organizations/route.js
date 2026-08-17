@@ -1,6 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyAdminToken } from '@/lib/admin-auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   const admin = verifyAdminToken(request);
   if (!admin) {
@@ -37,10 +39,12 @@ export async function GET(request) {
       orgStats[call.organization_id].totalMinutes += Math.ceil((call.duration || 0) / 60);
     });
 
-    const enrichedOrgs = (orgs || []).map(org => ({
-      ...org,
-      currentMonth: orgStats[org.id] || { totalCalls: 0, totalMinutes: 0 },
-    }));
+    const enrichedOrgs = (orgs || [])
+      .filter(org => org.id !== '8a564ec4-9544-4b63-ac58-98ec66d69a76')
+      .map(org => ({
+        ...org,
+        currentMonth: orgStats[org.id] || { totalCalls: 0, totalMinutes: 0 },
+      }));
 
     return Response.json({ organizations: enrichedOrgs });
   } catch (err) {
@@ -55,7 +59,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { company_name, subscription_plan, notify_email, contact_name, contact_email, contact_phone, rate_per_minute, overage_multiplier, payment_window_days } = body;
+    const { company_name, subscription_plan, notify_email, contact_name, contact_email, contact_phone, website, rate_per_minute, overage_multiplier, payment_window_days } = body;
 
     if (!company_name) return Response.json({ error: 'Company name is required' }, { status: 400 });
 
@@ -65,6 +69,9 @@ export async function POST(request) {
       subscription_plan: subscription_plan || 'basic',
       notify_email: notify_email || contact_email || '',
       contact_name: contact_name || '',
+      contact_email: contact_email || '',
+      contact_phone: contact_phone || '',
+      website: website || '',
     };
 
     // Add billing overrides if provided

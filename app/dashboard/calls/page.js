@@ -11,7 +11,7 @@ export default function CallLogs() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const { data: agentData } = await supabase.from('agents').select('organization_id').limit(1).single();
+      const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
       if (agentData) {
         const { data, error } = await supabase
           .from('call_logs')
@@ -174,7 +174,7 @@ export default function CallLogs() {
                             <audio 
                               controls 
                               src={call.audio_link}
-                              className="h-10 w-full min-w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-800 [&::-webkit-media-controls-current-time-display]:text-white [&::-webkit-media-controls-time-remaining-display]:text-white"
+                              className="h-10 w-full min-w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
                             />
                           </div>
                         ) : (

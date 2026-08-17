@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from './components/AdminSidebar';
+import { AdminDialerProvider } from './components/AdminDialerContext';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -35,14 +36,16 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen bg-[#0a0a0e] text-slate-200 selection:bg-indigo-500/30 font-sans">
       <AdminSidebar />
-      <main className="flex-1 overflow-y-auto relative">
-        {/* Subtle background glow for admin area */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="p-8 max-w-7xl mx-auto relative z-10">
-          {children}
-        </div>
-      </main>
+      <AdminDialerProvider>
+        <main className="flex-1 overflow-y-auto relative">
+          {/* Subtle background glow for admin area */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
+          
+          <div className="p-8 max-w-7xl mx-auto relative z-10">
+            {children}
+          </div>
+        </main>
+      </AdminDialerProvider>
     </div>
   );
 }

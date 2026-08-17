@@ -1,167 +1,26 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-
-// We import the Device dynamically to prevent SSR issues with browser APIs
-let Device = null;
-if (typeof window !== 'undefined') {
-  const Twilio = require('@twilio/voice-sdk');
-  Device = Twilio.Device;
-}
+import { useState, useEffect } from 'react';
+import { useDialer } from '../components/AdminDialerContext';
 
 export default function AdminDialer() {
-  const [loading, setLoading] = useState(true);
-  const [device, setDevice] = useState(null);
-  const [status, setStatus] = useState('Initializing...');
+  const {
+    device, status, activeCall, callerId, isMuted, callDuration,
+    handleDial, handleHangup, toggleMute, handleKeypad, formatDuration
+  } = useDialer();
+  
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [activeCall, setActiveCall] = useState(null);
-  const [callerId, setCallerId] = useState('Admin (System Default)');
 
-  const [callDuration, setCallDuration] = useState(0);
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    async function setupDevice() {
-      try {
-        const token = localStorage.getItem('admin_token');
-        if (!token) {
-          window.location.href = '/admin';
-          return;
-        }
-
-        const response = await fetch('/api/twilio/token', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch token');
-        }
-
-        const data = await response.json();
-        const newDevice = new Device(data.token, {
-          codecPreferences: ['opus', 'pcmu'],
-          fakeLocalDTMF: true,
-          enableRingingState: true
-        });
-
-        newDevice.on('ready', () => {
-          setStatus('Ready to Call');
-        });
-
-        newDevice.on('error', (error) => {
-          console.error('Twilio.Device Error:', error);
-          setStatus('Error: ' + error.message);
-        });
-
-        newDevice.on('connect', (conn) => {
-          setStatus('Connected');
-          setActiveCall(conn);
-          startTimer();
-        });
-
-        newDevice.on('disconnect', () => {
-          setStatus('Ready to Call');
-          setActiveCall(null);
-          stopTimer();
-        });
-
-        // Immediately set ready since we just want outbound for now
-        setStatus('Ready to Call');
-        // Do not await register() because it might block on browser microphone permissions
-        // We just let it run in the background. Outbound calls will still work.
-        newDevice.register().catch(e => console.warn('Registration failed (might need mic permission):', e));
-        
-        setDevice(newDevice);
-      } catch (err) {
-        setStatus('Configuration Error. Ensure TWILIO_API_KEY is set.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    if (Device) {
-      setupDevice();
-    }
-  }, []);
-
-  function startTimer() {
-    setCallDuration(0);
-    timerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-    }, 1000);
-  }
-
-  function stopTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
-  }
-
-  function formatDuration(sec) {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  }
-
-  async function handleDial() {
-    if (!device) return;
+  function localHandleDial() {
     if (!phoneNumber) {
       alert("Please enter a phone number.");
       return;
     }
-    
-    setStatus('Dialing...');
-    try {
-      // Create the outbound call
-      const call = await device.connect({ 
-        params: { 
-          targetNumber: phoneNumber
-          // The backend will fallback to process.env.TWILIO_PHONE_NUMBER if callerId is empty
-        } 
-      });
-      
-      setActiveCall(call);
-
-      call.on('accept', () => {
-        setStatus('Connected');
-        startTimer();
-      });
-
-      call.on('disconnect', () => {
-        setStatus('Ready to Call');
-        setActiveCall(null);
-        stopTimer();
-      });
-
-      call.on('error', (err) => {
-        setStatus('Call Failed');
-        console.error('Call error:', err);
-        setActiveCall(null);
-        stopTimer();
-      });
-      
-      call.on('reject', () => {
-        setStatus('Call Rejected');
-        setActiveCall(null);
-        stopTimer();
-      });
-
-    } catch (err) {
-      setStatus('Call Failed');
-      console.error(err);
-    }
+    handleDial(phoneNumber);
   }
 
-  function handleHangup() {
-    if (device) {
-      device.disconnectAll();
-    }
-  }
-
-  function handleKeypad(digit) {
+  function localHandleKeypad(digit) {
     if (activeCall) {
-      activeCall.sendDigits(digit);
+      handleKeypad(digit);
     } else {
       setPhoneNumber(prev => prev + digit);
     }
@@ -213,7 +72,7 @@ export default function AdminDialer() {
             {['1','2','3','4','5','6','7','8','9','*','0','#'].map((key) => (
               <button
                 key={key}
-                onClick={() => handleKeypad(key)}
+                onClick={() => localHandleKeypad(key)}
                 className="h-16 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/20 text-2xl font-light text-white flex items-center justify-center transition-colors border border-white/5"
               >
                 {key}
@@ -221,7 +80,21 @@ export default function AdminDialer() {
             ))}
           </div>
 
-          <div className="flex justify-center w-full">
+          <div className="flex justify-center items-center gap-6 w-full">
+            {activeCall && (
+              <button
+                onClick={toggleMute}
+                className={`h-12 w-12 rounded-full flex items-center justify-center transition-all shadow-lg ${isMuted ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06zM8.5 4a.5.5 0 0 0 0 1c1.5 0 2.5 1.5 2.5 3s-1 3-2.5 3a.5.5 0 0 0 0 1c2 0 3.5-2 3.5-4s-1.5-4-3.5-4z"/><path d="M11.5 4a.5.5 0 0 0 0 1c2.5 0 4.5 2.5 4.5 5s-2 5-4.5 5a.5.5 0 0 0 0 1c3 0 5.5-3 5.5-6s-2.5-6-5.5-6z"/></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a2.81 2.81 0 0 1-1.28-1.503 6.474 6.474 0 0 1-2.21 4.522l.999.991zm-1.096-1.085-1.002-.992A5.474 5.474 0 0 1 7.5 13.5v-1a4.474 4.474 0 0 0 1.528-1.042l1.412 1.467zm-2.022-2.005-1.002-.992a3.475 3.475 0 0 1-.916-1.092l.988 1.018a4.475 4.475 0 0 0 .93 1.066zm-1.042-1.03-1.003-.992a2.475 2.475 0 0 1-.371-.568l.968.997a3.475 3.475 0 0 0 .406.563zm-.985-.975L5.418 7.94a1.474 1.474 0 0 1-.168-.23l.913.939c.068.083.143.16.228.232zM3.825 10.5 6.188 8.61l-.999-.99L3.825 8.5H1.5V6h2.325l.89-.713-1.048-1.04-1.343 1.074A.5.5 0 0 0 2 6v4a.5.5 0 0 0 .5.5h1.325zm2.363-1.89-1.01-1A.5.5 0 0 0 5 7.5h1.188zM7 4a.5.5 0 0 0-.283-.45l.98-.98A1.5 1.5 0 0 1 8 4v2.586l-1-1V4zM2.854.146a.5.5 0 1 0-.708.708l12 12a.5.5 0 0 0 .708-.708l-12-12z"/></svg>
+                )}
+              </button>
+            )}
+
             {activeCall ? (
               <button
                 onClick={handleHangup}
@@ -233,8 +106,8 @@ export default function AdminDialer() {
               </button>
             ) : (
               <button
-                onClick={handleDial}
-                disabled={!device || loading}
+                onClick={localHandleDial}
+                disabled={!device || status === 'Initializing...'}
                 className="h-16 w-16 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.4)] flex items-center justify-center transition-all text-white disabled:opacity-50 disabled:hover:scale-100 transform hover:scale-105 active:scale-95"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
