@@ -6,9 +6,9 @@ const VoiceResponse = twilio.twiml.VoiceResponse;
 
 export async function POST(request) {
   const formData = await request.formData();
-  const digits = formData.get('Digits');
-  const to = formData.get('To');
   const { searchParams } = new URL(request.url);
+  const digits = formData.get('Digits') || searchParams.get('Digits');
+  const to = formData.get('To');
   const path = searchParams.get('path');
   
   let orgData = null;

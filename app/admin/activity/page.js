@@ -5,7 +5,7 @@ export default function AdminActivityLog() {
   const [calls, setCalls] = useState([]);
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrg, setSelectedOrg] = useState('');
+  const [selectedOrg, setSelectedOrg] = useState('8a564ec4-9544-4b63-ac58-98ec66d69a76');
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
