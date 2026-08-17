@@ -72,7 +72,7 @@ export async function POST(request) {
   if (!actionData) {
     if (flowConfig.keyPress && flowConfig.keyPress[digits]) {
       actionData = flowConfig.keyPress[digits];
-    } else if (!flowConfig.flow && (!flowConfig.keyPress || Object.keys(flowConfig.keyPress).length === 0)) {
+    } else if ((!flowConfig.flow || Object.keys(flowConfig.flow).length === 0) && (!flowConfig.keyPress || Object.keys(flowConfig.keyPress).length === 0)) {
       if (digits === '1') {
         actionData = { 
           action: orgData.receive_office_calls ? 'route_browser' : (orgData.fallback_when_unavailable === 'fallback_number' ? 'forward_call' : 'voicemail'),
@@ -122,9 +122,18 @@ export async function POST(request) {
     dial.client(`org_${orgData.id}`);
   } 
   
-  else if (action === 'forward_call' || action === 'route_number') {
+  // Helper to normalize phone numbers for comparison
+  const normalizePhone = (p) => p ? p.replace(/\D/g, '').slice(-10) : '';
+  const normalizedTo = normalizePhone(to);
+
+  if (action === 'forward_call' || action === 'route_number') {
     const numberToDial = actionData.phoneNumber || actionData.number || orgData.fallback_phone_number;
-    if (numberToDial) {
+    
+    if (numberToDial && normalizePhone(numberToDial) === normalizedTo) {
+      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'System configuration error: circular forwarding detected.');
+      if (actionData.fallback) twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.fallback&To=${encodeURIComponent(to)}`);
+      else twiml.redirect('/api/ivr/incoming');
+    } else if (numberToDial) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you now.');
       const dial = twiml.dial({ 
         record: 'record-from-answer', 
@@ -160,7 +169,11 @@ export async function POST(request) {
       if (agent) { agentPhone = agent.phone; agentName = agent.name; }
     }
 
-    if (agentPhone) {
+    if (agentPhone && normalizePhone(agentPhone) === normalizedTo) {
+      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'System configuration error: circular forwarding detected.');
+      if (actionData.fallback) twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.fallback&To=${encodeURIComponent(to)}`);
+      else twiml.redirect('/api/ivr/incoming');
+    } else if (agentPhone) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${agentName || 'our team'}.`);
       const dial = twiml.dial({ 
         record: 'record-from-answer', 
