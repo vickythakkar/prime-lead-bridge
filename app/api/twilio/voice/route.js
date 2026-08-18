@@ -65,7 +65,7 @@ export async function POST(request) {
     
     const actionUrl = `/api/calls/status?org_id=${orgId}&real_direction=outbound&real_to=${encodeURIComponent(to)}&real_from=${encodeURIComponent(callerId)}`;
     const dialAttributes = { 
-      record: 'record-from-answer',
+      record: 'record-from-ringing',
       action: actionUrl,
       recordingStatusCallback: actionUrl,
       recordingStatusCallbackEvent: 'in-progress completed absent'
