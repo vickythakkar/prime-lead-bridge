@@ -67,6 +67,7 @@ export default function AdminActivityLog() {
             className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
           >
             <option value="">All Organizations</option>
+            <option value="8a564ec4-9544-4b63-ac58-98ec66d69a76">Prime Real Ops (Admin)</option>
             {orgs.map(o => <option key={o.id} value={o.id}>{o.company_name || o.name}</option>)}
           </select>
           <button onClick={exportCSV} disabled={calls.length === 0} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
