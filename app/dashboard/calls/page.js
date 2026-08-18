@@ -101,7 +101,7 @@ export default function CallLogs() {
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Recording & Actions</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -131,8 +131,8 @@ export default function CallLogs() {
                     <td className="px-6 py-4 text-slate-300 text-sm">
                       {call.duration ? `${call.duration}s` : '0s'}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-2 w-full max-w-[400px]">
+                    <td className="px-6 py-4 min-w-[350px]">
+                      <div className="flex flex-col gap-2 w-full">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           <div className="flex items-center gap-2">

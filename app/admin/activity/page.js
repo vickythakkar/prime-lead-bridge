@@ -95,7 +95,7 @@ export default function AdminActivityLog() {
                   <th className="px-5 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
                   <th className="px-5 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-5 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300">Recording & Actions</th>
+                  <th className="px-5 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -119,8 +119,8 @@ export default function AdminActivityLog() {
                     </td>
                     <td className="px-5 py-4 text-slate-400 text-sm">{new Date(call.created_at).toLocaleString()}</td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{call.duration ? `${call.duration}s` : '0s'}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col gap-2 max-w-xs">
+                    <td className="px-5 py-4 min-w-[350px]">
+                      <div className="flex flex-col gap-2 w-full">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           {call.audio_link && (
