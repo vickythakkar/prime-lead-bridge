@@ -64,11 +64,11 @@ export async function POST(request) {
     if (dialNumber) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${personName} now.`);
       
-      // We pass record="record-from-answer" and provide a recordingStatusCallback 
+      // We pass record="record-from-ringing" and provide a recordingStatusCallback 
       // so Twilio will ping our server when the recording is ready.
       // We also provide an action URL to log the total call duration after the call ends.
       twiml.dial({
-        record: 'record-from-answer',
+        record: 'record-from-ringing',
         recordingStatusCallback: `/api/twilio/recording?call_sid=${callSid}&org_id=${property.organization_id}`,
         recordingStatusCallbackEvent: 'completed',
         action: `/api/twilio/call-ended?call_sid=${callSid}`,

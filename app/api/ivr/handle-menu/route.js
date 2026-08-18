@@ -115,7 +115,7 @@ export async function POST(request) {
   else if (action === 'route_browser') { // Legacy office dialer
     twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you to the office.');
     const dial = twiml.dial({ 
-      record: 'record-from-answer', 
+      record: 'record-from-ringing',
       action: `/api/calls/status?org_id=${orgData.id}${fallbackQuery}`,
       timeout: actionData.duration || actionData.timeout || 20
     });
@@ -136,7 +136,7 @@ export async function POST(request) {
     } else if (numberToDial) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you now.');
       const dial = twiml.dial({ 
-        record: 'record-from-answer', 
+        record: 'record-from-ringing',
         action: `/api/calls/status?org_id=${orgData.id}${fallbackQuery}`,
         timeout: actionData.duration || actionData.timeout || 20
       });
@@ -176,7 +176,7 @@ export async function POST(request) {
     } else if (agentPhone) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${agentName || 'our team'}.`);
       const dial = twiml.dial({ 
-        record: 'record-from-answer', 
+        record: 'record-from-ringing',
         action: `/api/calls/status?org_id=${orgData.id}${fallbackQuery}`,
         timeout: actionData.duration || actionData.timeout || 20 
       });

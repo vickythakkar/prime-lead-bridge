@@ -77,7 +77,7 @@ export async function POST(request) {
     if (dialNumber) {
       twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${personName} for ${property.address}.`);
       twiml.dial({
-        record: 'record-from-answer',
+        record: 'record-from-ringing',
         recordingStatusCallback: `/api/twilio/recording?call_sid=${callSid}&org_id=${property.organization_id}`,
         recordingStatusCallbackEvent: 'completed',
         action: `/api/twilio/call-ended?call_sid=${callSid}`,
