@@ -119,8 +119,8 @@ export default function AdminActivityLog() {
                     </td>
                     <td className="px-5 py-4 text-slate-400 text-sm">{new Date(call.created_at).toLocaleString()}</td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{call.duration ? `${call.duration}s` : '0s'}</td>
-                    <td className="px-5 py-4 min-w-[350px]">
-                      <div className="flex flex-col gap-2 w-full">
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-2 w-[320px] shrink-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           {call.audio_link && (
@@ -134,7 +134,7 @@ export default function AdminActivityLog() {
                           )}
                         </div>
                         {call.audio_link ? (
-                          <audio controls src={call.audio_link} className="h-9 w-full min-w-[260px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" />
+                          <audio controls src={call.audio_link} className="h-9 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" />
                         ) : (
                           <div className="h-9 w-full bg-white/5 rounded-full flex items-center justify-center border border-white/5">
                             <span className="text-xs text-slate-500">No recording</span>

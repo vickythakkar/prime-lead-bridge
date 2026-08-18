@@ -32,21 +32,20 @@ export async function GET(request) {
       return new NextResponse('Failed to fetch recording from Twilio', { status: response.status });
     }
 
+    // Read the audio into a buffer instead of streaming it directly.
+    // Streaming response.body causes Next.js to use chunked transfer encoding,
+    // which strips the Content-Length header and breaks browser audio duration/seeking.
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     const responseHeaders = new Headers({
       'Content-Type': 'audio/mpeg',
       'Content-Disposition': 'inline',
-      'Accept-Ranges': 'bytes'
+      'Content-Length': buffer.length.toString(),
+      'Accept-Ranges': 'none'
     });
 
-    // Forward Content-Length and Content-Range from Twilio to fix the broken timer/progress bar
-    const contentLength = response.headers.get('content-length');
-    if (contentLength) responseHeaders.set('Content-Length', contentLength);
-
-    const contentRange = response.headers.get('content-range');
-    if (contentRange) responseHeaders.set('Content-Range', contentRange);
-
-    // Stream the audio directly to the client with the proper status code (206 if Partial Content)
-    return new NextResponse(response.body, {
+    return new NextResponse(buffer, {
       status: response.status,
       headers: responseHeaders
     });

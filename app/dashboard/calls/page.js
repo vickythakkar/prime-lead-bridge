@@ -131,8 +131,8 @@ export default function CallLogs() {
                     <td className="px-6 py-4 text-slate-300 text-sm">
                       {call.duration ? `${call.duration}s` : '0s'}
                     </td>
-                    <td className="px-6 py-4 min-w-[350px]">
-                      <div className="flex flex-col gap-2 w-full">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-2 w-[320px] shrink-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export default function CallLogs() {
                             <audio 
                               controls 
                               src={call.audio_link}
-                              className="h-10 w-full min-w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
+                              className="h-10 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
                             />
                           </div>
                         ) : (
