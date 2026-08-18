@@ -63,44 +63,9 @@ export async function POST(request) {
 
     let finalRecordingUrl = recordingUrl;
 
-    if (recordingUrl && recordingSid && recordingUrl.includes('api.twilio.com')) {
-      try {
-        const fetchUrl = recordingUrl.endsWith('.mp3') ? recordingUrl : `${recordingUrl}.mp3`;
-        const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
-        
-        const response = await fetch(fetchUrl, {
-          headers: { 'Authorization': `Basic ${auth}` }
-        });
-
-        if (response.ok) {
-          const arrayBuffer = await response.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          
-          const filePath = `${orgId}/${recordingSid}.mp3`;
-          
-          const { error: uploadError } = await supabaseAdmin.storage
-            .from('call_recordings')
-            .upload(filePath, buffer, {
-              contentType: 'audio/mpeg',
-              upsert: true
-            });
-            
-          if (!uploadError) {
-            finalRecordingUrl = filePath;
-            
-            // Delete from Twilio
-            const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-            try {
-              await client.recordings(recordingSid).remove();
-            } catch (delErr) {
-              console.error("Error deleting from Twilio:", delErr);
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Error migrating recording to Supabase:", e);
-      }
-    }
+    // The frontend proxies Twilio recordings through /api/twilio/recording
+    // so we just leave finalRecordingUrl as the original Twilio URL 
+    // and rely on Twilio's native storage.
 
     const logData = {
       organization_id: orgId,
