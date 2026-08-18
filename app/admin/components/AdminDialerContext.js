@@ -162,6 +162,20 @@ export function AdminDialerProvider({ children }) {
   function acceptIncoming() {
     if (incomingCall) {
       incomingCall.accept();
+      
+      incomingCall.on('disconnect', () => {
+        setStatus('Ready to Call');
+        setActiveCall(null);
+        setIsMuted(false);
+        stopTimer();
+      });
+
+      incomingCall.on('error', (err) => {
+        setStatus('Call Error');
+        setActiveCall(null);
+        stopTimer();
+      });
+
       setActiveCall(incomingCall);
       setIncomingCall(null);
       setStatus('Connected');
