@@ -28,7 +28,8 @@ export async function GET(request) {
       .neq('organization_id', ADMIN_ORG_ID);
 
     const totalCalls = (monthCalls || []).length;
-    const totalMinutes = (monthCalls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
+    const totalSeconds = (monthCalls || []).reduce((sum, c) => sum + (c.duration || 0), 0);
+    const totalMinutes = Math.ceil(totalSeconds / 60);
 
     // We will calculate totalRevenue dynamically based on plans below
 
@@ -50,7 +51,8 @@ export async function GET(request) {
       .neq('organization_id', ADMIN_ORG_ID);
 
     const prevTotalCalls = (prevMonthCalls || []).length;
-    const prevTotalMinutes = (prevMonthCalls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
+    const prevTotalSeconds = (prevMonthCalls || []).reduce((sum, c) => sum + (c.duration || 0), 0);
+    const prevTotalMinutes = Math.ceil(prevTotalSeconds / 60);
 
     // Growth will be calculated after we compute the revenue
 
@@ -80,10 +82,10 @@ export async function GET(request) {
     const orgBreakdown = {};
     (monthCalls || []).forEach(call => {
       if (!orgBreakdown[call.organization_id]) {
-        orgBreakdown[call.organization_id] = { calls: 0, minutes: 0 };
+        orgBreakdown[call.organization_id] = { calls: 0, seconds: 0 };
       }
       orgBreakdown[call.organization_id].calls++;
-      orgBreakdown[call.organization_id].minutes += Math.ceil((call.duration || 0) / 60);
+      orgBreakdown[call.organization_id].seconds += (call.duration || 0);
     });
 
     // Get org names
@@ -95,19 +97,22 @@ export async function GET(request) {
     const prevOrgBreakdown = {};
     (prevMonthCalls || []).forEach(call => {
       if (!prevOrgBreakdown[call.organization_id]) prevOrgBreakdown[call.organization_id] = 0;
-      prevOrgBreakdown[call.organization_id] += Math.ceil((call.duration || 0) / 60);
+      prevOrgBreakdown[call.organization_id] += (call.duration || 0);
     });
 
     let currentRevenueAmount = 0;
     let prevRevenueAmount = 0;
 
     const orgUsage = (orgs || []).map(org => {
-      const mins = orgBreakdown[org.id]?.minutes || 0;
-      const prevMins = prevOrgBreakdown[org.id] || 0;
+      const secs = orgBreakdown[org.id]?.seconds || 0;
+      const prevSecs = prevOrgBreakdown[org.id] || 0;
+      const mins = Math.ceil(secs / 60);
+      const prevMins = Math.ceil(prevSecs / 60);
+      
       let cost = 0;
       let prevCost = 0;
       
-      const plan = org.subscription_plan || 'PAY_AS_YOU_GO';
+      const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toUpperCase();
       
       if (plan === 'PAY_AS_YOU_GO') {
         cost = 5.00 + (mins * 0.05);
