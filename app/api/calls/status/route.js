@@ -59,7 +59,9 @@ export async function POST(request) {
 
     const callDuration = formData.get('CallDuration');
 
-    const durationVal = dialCallDuration ? parseInt(dialCallDuration, 10) : (callDuration ? parseInt(callDuration, 10) : 0);
+    // We prioritize the parent callDuration because it includes the entire session (including ringing and IVR).
+    // dialCallDuration only includes the time the child call was actively answered.
+    const durationVal = callDuration ? parseInt(callDuration, 10) : (dialCallDuration ? parseInt(dialCallDuration, 10) : 0);
 
     let finalRecordingUrl = recordingUrl;
 
