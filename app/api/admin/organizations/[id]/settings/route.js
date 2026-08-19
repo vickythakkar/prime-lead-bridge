@@ -20,9 +20,7 @@ export async function POST(request, { params }) {
       'fallback_when_unavailable',
       'fallback_phone_number',
       'enable_listing_lookup',
-      'notify_email',
-      'service_active',
-      'rate_per_minute'
+      'notify_email'
     ];
 
     const safeUpdates = {};
@@ -30,6 +28,21 @@ export async function POST(request, { params }) {
       if (updates[key] !== undefined) {
         safeUpdates[key] = updates[key];
       }
+    }
+
+    // Handle missing columns by stuffing them into ivr_flow_config JSONB
+    if (updates.service_active !== undefined || updates.rate_per_minute !== undefined) {
+      const { data: existingOrg } = await supabaseAdmin
+        .from('organizations')
+        .select('ivr_flow_config')
+        .eq('id', id)
+        .single();
+      
+      const newConfig = existingOrg?.ivr_flow_config || {};
+      if (updates.service_active !== undefined) newConfig.service_active = updates.service_active;
+      if (updates.rate_per_minute !== undefined) newConfig.rate_per_minute = updates.rate_per_minute;
+      
+      safeUpdates.ivr_flow_config = newConfig;
     }
 
     const { error } = await supabaseAdmin

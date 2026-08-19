@@ -4,8 +4,8 @@ import { BrokerDialerProvider } from './components/BrokerDialerContext';
 export default function DashboardLayout({ children }) {
   return (
     <div className="flex min-h-screen bg-slate-900 text-slate-200">
-      <Sidebar />
       <BrokerDialerProvider>
+        <Sidebar />
         <main className="flex-1 overflow-y-auto relative z-10">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
           
