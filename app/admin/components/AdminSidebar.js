@@ -30,7 +30,7 @@ export default function AdminSidebar() {
   return (
     <aside className="w-64 border-r border-white/5 glass h-screen sticky top-0 flex flex-col p-4 shrink-0">
       <div className="flex items-center gap-3 px-2 py-4 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center shadow-lg overflow-hidden border border-white/10 shrink-0">
+        <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center">
           <img 
             src="https://alvfyayrabxzxthcjphx.supabase.co/storage/v1/object/public/public-assets/Favicon.gif" 
             alt="Logo" 
