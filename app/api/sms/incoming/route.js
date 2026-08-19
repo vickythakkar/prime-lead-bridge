@@ -16,45 +16,57 @@ export async function POST(request) {
     }
 
     // Get the org by phone number
-    const { data: numData } = await supabaseAdmin
+    const { data: numData, error: numErr } = await supabaseAdmin
       .from('organization_numbers')
       .select('organization_id')
       .eq('phone_number', to)
-      .eq('status', 'active')
-      .single();
+      .maybeSingle();
+
+    if (numErr) console.error('Org number fetch error:', numErr);
 
     if (numData) {
       const orgId = numData.organization_id;
 
       // Find or create conversation
-      let { data: conversation } = await supabaseAdmin
+      let { data: conversation, error: convErr } = await supabaseAdmin
         .from('conversations')
         .select('id')
         .eq('organization_id', orgId)
         .eq('contact_phone', from)
-        .single();
+        .maybeSingle();
+
+      if (convErr) console.error('Conversation fetch error:', convErr);
 
       if (!conversation) {
         let contactId = null;
-        const { data: contact } = await supabaseAdmin
+        const { data: contact, error: contactErr } = await supabaseAdmin
           .from('contacts')
           .select('id')
           .eq('organization_id', orgId)
           .eq('phone', from)
-          .single();
+          .maybeSingle();
+          
+        if (contactErr) console.error('Contact fetch error:', contactErr);
           
         if (contact) {
           contactId = contact.id;
         } else {
-          const { data: newContact } = await supabaseAdmin
+          const { data: newContact, error: insertErr } = await supabaseAdmin
             .from('contacts')
-            .insert({ organization_id: orgId, phone: from, name: 'Unknown Contact' })
+            .insert({ 
+              organization_id: orgId, 
+              phone: from, 
+              name: 'Unknown Contact',
+              avatar_color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+            })
             .select('id')
-            .single();
+            .maybeSingle();
+            
+          if (insertErr) console.error('Contact insert error:', insertErr);
           if (newContact) contactId = newContact.id;
         }
 
-        const { data: newConv } = await supabaseAdmin
+        const { data: newConv, error: newConvErr } = await supabaseAdmin
           .from('conversations')
           .insert({
             organization_id: orgId,
@@ -64,8 +76,9 @@ export async function POST(request) {
             last_message_body: body
           })
           .select('id')
-          .single();
+          .maybeSingle();
           
+        if (newConvErr) console.error('Conversation insert error:', newConvErr);
         conversation = newConv;
       } else {
         await supabaseAdmin
