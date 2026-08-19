@@ -21,6 +21,40 @@ export function BrokerDialerProvider({ children }) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [incomingCall, setIncomingCall] = useState(null);
+
+  // Request Notification permissions
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
+  // Handle desktop notifications for incoming calls
+  useEffect(() => {
+    if (incomingCall && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      const from = incomingCall.parameters?.From || 'Unknown Caller';
+      const notification = new Notification('Incoming Call', {
+        body: `Incoming call from ${from}`,
+        requireInteraction: true
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      const closeNotification = () => notification.close();
+      
+      incomingCall.on('accept', closeNotification);
+      incomingCall.on('reject', closeNotification);
+      incomingCall.on('disconnect', closeNotification);
+      incomingCall.on('cancel', closeNotification);
+
+      return closeNotification;
+    }
+  }, [incomingCall]);
   
   const timerRef = useRef(null);
   const pathname = usePathname();
