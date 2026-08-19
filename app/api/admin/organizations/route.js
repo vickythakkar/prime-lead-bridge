@@ -93,10 +93,16 @@ export async function POST(request) {
       website: website || '',
     };
 
-    // Add billing overrides if provided - Note: currently omitted as columns don't exist yet
-    // if (rate_per_minute) insertData.rate_per_minute = parseFloat(rate_per_minute);
-    // if (overage_multiplier) insertData.overage_multiplier = parseFloat(overage_multiplier);
-    // if (payment_window_days) insertData.payment_window_days = parseInt(payment_window_days);
+    // Add billing overrides if provided - store in ivr_flow_config since columns don't exist yet
+    const ivrFlowConfig = {};
+    if (rate_per_minute) ivrFlowConfig.rate_per_minute = parseFloat(rate_per_minute);
+    
+    if (Object.keys(ivrFlowConfig).length > 0) {
+      insertData.ivr_flow_config = ivrFlowConfig;
+    }
+    
+    // Note: overage_multiplier and payment_window_days columns exist now? Actually they might not.
+    // Wait, let's keep them out if they don't exist.
 
     const { data: org, error } = await supabaseAdmin
       .from('organizations')

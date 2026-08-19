@@ -46,8 +46,8 @@ export default function OrganizationDetailsPage() {
           receive_office_calls: json.organization.receive_office_calls !== false,
           enable_listing_lookup: json.organization.enable_listing_lookup !== false,
           notify_email: json.organization.notify_email || '',
-          service_active: json.organization.service_active !== false,
-          rate_per_minute: json.organization.rate_per_minute || ''
+          service_active: json.organization.ivr_flow_config?.service_active !== false,
+          rate_per_minute: json.organization.ivr_flow_config?.rate_per_minute || ''
         });
       } else {
         alert('Failed to load organization');

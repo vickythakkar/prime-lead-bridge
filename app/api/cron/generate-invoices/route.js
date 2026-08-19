@@ -25,7 +25,7 @@ export async function GET(request) {
     // Get all organizations
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name, contact_name, notify_email, contact_email, subscription_plan, rate_per_minute, overage_multiplier, payment_window_days');
+      .select('id, name, company_name, contact_name, notify_email, contact_email, subscription_plan, ivr_flow_config');
 
     let invoicesGenerated = 0;
     let totalRevenueGenerated = 0;
@@ -52,8 +52,8 @@ export async function GET(request) {
 
         if (existing) continue; // Skip if already generated
 
-        const orgRate = org.rate_per_minute !== null && org.rate_per_minute !== undefined ? parseFloat(org.rate_per_minute) : rate;
-        const orgPaymentWindow = org.payment_window_days !== null && org.payment_window_days !== undefined ? parseInt(org.payment_window_days) : paymentWindowDays;
+        const orgRate = org.ivr_flow_config?.rate_per_minute !== null && org.ivr_flow_config?.rate_per_minute !== undefined ? parseFloat(org.ivr_flow_config.rate_per_minute) : rate;
+        const orgPaymentWindow = org.ivr_flow_config?.payment_window_days !== null && org.ivr_flow_config?.payment_window_days !== undefined ? parseInt(org.ivr_flow_config.payment_window_days) : paymentWindowDays;
 
         // Calculate total minutes and calls for the previous month
         const { data: calls } = await supabaseAdmin
@@ -158,7 +158,7 @@ export async function GET(request) {
     // Overage = 2x cost per minute per week overdue
     const { data: overdueInvoices } = await supabaseAdmin
       .from('invoices')
-      .select('*, organizations(overage_multiplier)')
+      .select('*, organizations(ivr_flow_config)')
       .eq('status', 'overdue');
 
     if (overdueInvoices) {
@@ -170,8 +170,8 @@ export async function GET(request) {
         // Overage: (rate * multiplier * total_minutes) * weeks_past_due
         // This means: for every week overdue, the broker pays an additional
         // amount equal to (2x per-minute rate * their total minutes)
-        const orgOverageMult = inv.organizations?.overage_multiplier !== null && inv.organizations?.overage_multiplier !== undefined
-          ? parseFloat(inv.organizations.overage_multiplier)
+        const orgOverageMult = inv.organizations?.ivr_flow_config?.overage_multiplier !== null && inv.organizations?.ivr_flow_config?.overage_multiplier !== undefined
+          ? parseFloat(inv.organizations.ivr_flow_config.overage_multiplier)
           : overageMultiplier;
         const weeklyOverage = parseFloat(inv.rate_per_minute) * orgOverageMult * inv.total_minutes;
         const totalOverage = parseFloat((weeklyOverage * weeksPastDue).toFixed(2));

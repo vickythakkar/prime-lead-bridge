@@ -47,7 +47,7 @@ export default function AllClientsPage() {
       contact_phone: org.organization_numbers?.[0]?.phone_number || '',
       subscription_plan: org.subscription_plan || 'basic',
       notify_email: org.notify_email || '',
-      rate_per_minute: org.rate_per_minute || '',
+      rate_per_minute: org.ivr_flow_config?.rate_per_minute || '',
       overage_multiplier: org.overage_multiplier || '',
       payment_window_days: org.payment_window_days || ''
     });
