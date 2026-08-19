@@ -51,11 +51,15 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 border-r border-white/5 glass h-screen sticky top-0 flex flex-col p-4">
-      <div className="flex items-center gap-2 px-2 py-4 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
-          P
+      <div className="flex items-center gap-3 px-2 py-4 mb-6">
+        <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center shadow-lg overflow-hidden border border-white/10 shrink-0">
+          <img 
+            src="https://alvfyayrabxzxthcjphx.supabase.co/storage/v1/object/public/public-assets/Favicon.gif" 
+            alt="Logo" 
+            className="w-full h-full object-cover"
+          />
         </div>
-        <span className="font-bold text-lg text-white tracking-tight">Prime Lead Bridge</span>
+        <span className="font-bold text-lg text-white tracking-tight leading-tight">Prime Lead Bridge</span>
       </div>
 
       <nav className="flex-1 space-y-2">
