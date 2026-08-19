@@ -1,9 +1,29 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useBrokerDialer } from './BrokerDialerContext';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { status: dialerStatus } = useBrokerDialer();
+  const [realtyStatus, setRealtyStatus] = useState('onboarded');
+
+  useEffect(() => {
+    async function fetchRealtyStatus() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
+      if (agentData) {
+        const { data: orgData } = await supabase.from('organizations').select('service_active').eq('id', agentData.organization_id).single();
+        if (orgData) {
+          setRealtyStatus(orgData.service_active !== false ? 'onboarded' : 'offboarded');
+        }
+      }
+    }
+    fetchRealtyStatus();
+  }, []);
 
   const links = [
     { href: '/dashboard', label: 'Overview', icon: '📊' },
@@ -58,7 +78,29 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-white/5">
+      <div className="mt-auto pt-4 border-t border-white/5 space-y-3">
+        <div className="px-3 py-2 bg-slate-900/50 rounded-xl border border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-slate-400 font-medium">Dialer Status</span>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${dialerStatus === 'Ready to Call' || dialerStatus === 'Connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]'}`}></div>
+              <span className="text-xs font-bold text-white">
+                {dialerStatus === 'Ready to Call' || dialerStatus === 'Connected' ? 'Active' : dialerStatus === 'Initializing...' ? 'Connecting' : 'Error'}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400 font-medium">Realty Status</span>
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${realtyStatus === 'offboarded' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]'}`}></div>
+              <span className={`text-xs font-bold ${realtyStatus === 'offboarded' ? 'text-red-400' : 'text-emerald-400'}`}>
+                {realtyStatus === 'offboarded' ? 'Offboarded' : 'Onboarded'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <button 
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all text-left"
