@@ -55,10 +55,10 @@ export async function GET(request) {
         const orgRate = org.ivr_flow_config?.rate_per_minute !== null && org.ivr_flow_config?.rate_per_minute !== undefined ? parseFloat(org.ivr_flow_config.rate_per_minute) : rate;
         const orgPaymentWindow = org.ivr_flow_config?.payment_window_days !== null && org.ivr_flow_config?.payment_window_days !== undefined ? parseInt(org.ivr_flow_config.payment_window_days) : paymentWindowDays;
 
-        // Calculate total minutes and calls for the previous month
+        // Calculate total minutes, calls, and exact prorated cost for the previous month
         const { data: calls } = await supabaseAdmin
           .from('call_logs')
-          .select('duration')
+          .select('duration, cost_broker')
           .eq('organization_id', org.id)
           .gte('created_at', prevMonthStart.toISOString())
           .lt('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
@@ -67,28 +67,26 @@ export async function GET(request) {
         const totalSeconds = (calls || []).reduce((sum, c) => sum + (c.duration || 0), 0);
         const totalMinutes = Math.ceil(totalSeconds / 60);
         
+        // Sum up the pre-calculated, prorated cost of all calls
+        const usageCost = (calls || []).reduce((sum, c) => sum + (parseFloat(c.cost_broker) || 0), 0);
+        
         let baseFee = 0;
-        let includedMins = 0;
         let perMinRate = orgRate;
         const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toLowerCase();
 
         if (plan === 'starter') {
           baseFee = 39.00;
-          includedMins = 500;
           perMinRate = 0.12;
         } else if (plan === 'growth') {
           baseFee = 79.00;
-          includedMins = 1000;
           perMinRate = 0.10;
         } else {
           // Pay As You Go or default
           baseFee = 5.00;
-          includedMins = 0;
           perMinRate = orgRate; // Defaults to 0.05 if not overridden
         }
 
-        const billableMinutes = Math.max(0, totalMinutes - includedMins);
-        const subtotal = parseFloat((baseFee + (billableMinutes * perMinRate)).toFixed(2));
+        const subtotal = parseFloat((baseFee + usageCost).toFixed(2));
 
         // Due date: org specific window from generation
         const dueDate = new Date();
