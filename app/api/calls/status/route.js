@@ -117,6 +117,29 @@ export async function POST(request) {
         recording_url: finalRecordingUrl,
         duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0
       });
+      
+      try {
+        const { data: orgInfo } = await supabaseAdmin
+          .from('organizations')
+          .select('notify_email, contact_email')
+          .eq('id', orgId)
+          .single();
+          
+        const recipientEmail = orgInfo?.notify_email || orgInfo?.contact_email;
+        if (recipientEmail) {
+          // Dynamic import to avoid breaking edge runtime issues if any
+          const { sendEmail } = await import('@/lib/email');
+          const { getVoicemailEmailHtml } = await import('@/lib/email-templates');
+          
+          await sendEmail({
+            to: recipientEmail,
+            subject: 'New Voicemail Received - Prime Lead Bridge',
+            html: getVoicemailEmailHtml(finalFrom, durationVal, finalRecordingUrl)
+          });
+        }
+      } catch (emailErr) {
+        console.error('Failed to send voicemail email:', emailErr);
+      }
     }
 
     // Return valid TwiML

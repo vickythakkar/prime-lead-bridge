@@ -25,7 +25,20 @@ export async function GET(request) {
     // Get all organizations
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name, subscription_plan, rate_per_minute, overage_multiplier, payment_window_days');
+      .select('id, name, company_name, contact_name, notify_email, contact_email, subscription_plan, rate_per_minute, overage_multiplier, payment_window_days');
+
+    let invoicesGenerated = 0;
+    let totalRevenueGenerated = 0;
+    let sendEmail, getInvoiceEmailHtml;
+
+    try {
+      const emailModule = await import('@/lib/email');
+      const templatesModule = await import('@/lib/email-templates');
+      sendEmail = emailModule.sendEmail;
+      getInvoiceEmailHtml = templatesModule.getInvoiceEmailHtml;
+    } catch (e) {
+      console.error('Email modules failed to load:', e);
+    }
 
     if (orgs) {
       for (const org of orgs) {
@@ -51,8 +64,8 @@ export async function GET(request) {
           .lt('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
 
         const totalCalls = (calls || []).length;
-        // Round each call up to the nearest minute individually (Twilio billing style)
-        const totalMinutes = (calls || []).reduce((sum, c) => sum + Math.ceil((c.duration || 0) / 60), 0);
+        const totalSeconds = (calls || []).reduce((sum, c) => sum + (c.duration || 0), 0);
+        const totalMinutes = Math.ceil(totalSeconds / 60);
         
         let baseFee = 0;
         let includedMins = 0;
@@ -80,6 +93,7 @@ export async function GET(request) {
         // Due date: org specific window from generation
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + orgPaymentWindow);
+        const dueDateStr = dueDate.toISOString().split('T')[0];
 
         await supabaseAdmin.from('invoices').insert({
           organization_id: org.id,
@@ -92,8 +106,38 @@ export async function GET(request) {
           overage_amount: 0,
           total_amount: subtotal,
           status: subtotal === 0 ? 'paid' : 'due', // Auto-mark $0 invoices as paid
-          due_date: dueDate.toISOString().split('T')[0],
+          due_date: dueDateStr,
         });
+
+        invoicesGenerated++;
+        totalRevenueGenerated += subtotal;
+
+        // Send Invoice Email to Broker
+        if (sendEmail && getInvoiceEmailHtml && subtotal > 0) {
+          const brokerEmail = org.notify_email || org.contact_email;
+          if (brokerEmail) {
+            const monthStr = prevMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
+            await sendEmail({
+              to: brokerEmail,
+              subject: `Your Prime Lead Bridge Invoice - ${monthStr}`,
+              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, subtotal, 0, subtotal, dueDateStr)
+            });
+          }
+        }
+      }
+    }
+
+    // Send summary to Admin
+    if (invoicesGenerated > 0 && sendEmail) {
+      try {
+        const { getAdminInvoiceSummaryHtml } = await import('@/lib/email-templates');
+        await sendEmail({
+          to: process.env.ADMIN_NOTIFY_EMAIL || 'vicky@primerealops.com',
+          subject: 'Monthly Billing Cycle Completed - Prime Lead Bridge',
+          html: getAdminInvoiceSummaryHtml(invoicesGenerated, totalRevenueGenerated)
+        });
+      } catch (e) {
+        console.error('Failed to send admin summary email:', e);
       }
     }
 

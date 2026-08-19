@@ -105,6 +105,29 @@ export async function POST(request) {
       .single();
 
     if (error) throw error;
+
+    try {
+      const { sendEmail } = await import('@/lib/email');
+      const { getWelcomeEmailHtml, getAdminNewBrokerHtml } = await import('@/lib/email-templates');
+
+      const brokerEmail = org.notify_email || org.contact_email;
+      if (brokerEmail) {
+        await sendEmail({
+          to: brokerEmail,
+          subject: 'Welcome to Prime Lead Bridge',
+          html: getWelcomeEmailHtml(org.contact_name)
+        });
+      }
+
+      await sendEmail({
+        to: process.env.ADMIN_NOTIFY_EMAIL || 'vicky@primerealops.com',
+        subject: 'New Broker Created - Prime Lead Bridge',
+        html: getAdminNewBrokerHtml(org, { name: org.contact_name, cell_phone: org.contact_phone })
+      });
+    } catch (emailErr) {
+      console.error('Failed to send admin-created broker emails:', emailErr);
+    }
+
     return Response.json({ organization: org });
   } catch (err) {
     console.error('Admin org create error:', err);

@@ -70,6 +70,29 @@ export async function POST(request) {
 
     if (brokerContactError) throw brokerContactError;
 
+    try {
+      const { sendEmail } = await import('@/lib/email');
+      const { getWelcomeEmailHtml, getAdminNewBrokerHtml } = await import('@/lib/email-templates');
+
+      // Send to broker
+      if (email) {
+        await sendEmail({
+          to: email,
+          subject: 'Welcome to Prime Lead Bridge',
+          html: getWelcomeEmailHtml(name)
+        });
+      }
+
+      // Send to Admin
+      await sendEmail({
+        to: process.env.ADMIN_NOTIFY_EMAIL || 'vicky@primerealops.com',
+        subject: 'New Broker Signup - Prime Lead Bridge',
+        html: getAdminNewBrokerHtml(orgData, { name, cell_phone: phone })
+      });
+    } catch (emailErr) {
+      console.error('Failed to send onboarding emails:', emailErr);
+    }
+
     return Response.json({ success: true, organization: orgData });
   } catch (err) {
     console.error('Setup API Error:', err);
