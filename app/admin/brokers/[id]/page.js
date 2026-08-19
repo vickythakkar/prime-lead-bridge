@@ -22,19 +22,10 @@ export default function OrganizationDetailsPage() {
   const [buyingNumber, setBuyingNumber] = useState(null);
 
   // Dialer State
-  const [device, setDevice] = useState(null);
-  const [deviceStatus, setDeviceStatus] = useState('Offline');
-  const [activeCall, setActiveCall] = useState(null);
+  const { handleDial } = useDialer();
 
   useEffect(() => {
     fetchOrgDetails();
-    initTwilioDevice();
-    
-    return () => {
-      if (device) {
-        device.destroy();
-      }
-    };
   }, [id]);
 
   async function fetchOrgDetails() {
@@ -68,11 +59,7 @@ export default function OrganizationDetailsPage() {
     setLoading(false);
   }
 
-  const { handleDial, handleHangup, deviceStatus: globalDeviceStatus, activeCall } = useDialer();
 
-  useEffect(() => {
-    fetchOrgDetails();
-  }, [id]);
 
   async function saveSettings(e) {
     e.preventDefault();
