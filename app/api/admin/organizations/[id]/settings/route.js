@@ -20,7 +20,9 @@ export async function POST(request, { params }) {
       'fallback_when_unavailable',
       'fallback_phone_number',
       'enable_listing_lookup',
-      'notify_email'
+      'notify_email',
+      'service_active',
+      'custom_rate'
     ];
 
     const safeUpdates = {};

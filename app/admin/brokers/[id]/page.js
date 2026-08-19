@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useDialer } from '@/app/admin/components/AdminDialerContext';
 
 export default function OrganizationDetailsPage() {
   const params = useParams();
@@ -48,12 +49,14 @@ export default function OrganizationDetailsPage() {
         setData(json);
         setSettings({
           company_name: json.organization.company_name || '',
-          subscription_plan: json.organization.subscription_plan || 'basic',
+          subscription_plan: json.organization.subscription_plan || 'PAY_AS_YOU_GO',
           ivr_greeting: json.organization.ivr_greeting || '',
           play_ivr_greeting: json.organization.play_ivr_greeting !== false,
           receive_office_calls: json.organization.receive_office_calls !== false,
           enable_listing_lookup: json.organization.enable_listing_lookup !== false,
-          notify_email: json.organization.notify_email || ''
+          notify_email: json.organization.notify_email || '',
+          service_active: json.organization.service_active !== false,
+          custom_rate: json.organization.custom_rate || ''
         });
       } else {
         alert('Failed to load organization');
@@ -65,41 +68,11 @@ export default function OrganizationDetailsPage() {
     setLoading(false);
   }
 
-  async function initTwilioDevice() {
-    try {
-      const token = localStorage.getItem('admin_token');
-      const res = await fetch('/api/twilio/token', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const { token: twilioToken } = await res.json();
-        const { Device } = await import('@twilio/voice-sdk');
-        const newDevice = new Device(twilioToken, {
-          codecPreferences: ['opus', 'pcmu'],
-          fakeLocalDTMF: true,
-          enableRingingState: true
-        });
+  const { handleDial, handleHangup, deviceStatus: globalDeviceStatus, activeCall } = useDialer();
 
-        newDevice.on('ready', () => setDeviceStatus('Ready'));
-        newDevice.on('error', (err) => setDeviceStatus(`Error: ${err.message}`));
-        newDevice.on('connect', (call) => {
-          setDeviceStatus('On Call');
-          setActiveCall(call);
-          call.on('disconnect', () => {
-            setDeviceStatus('Ready');
-            setActiveCall(null);
-          });
-        });
-
-        newDevice.register().catch(e => console.warn(e));
-        setDevice(newDevice);
-      }
-    } catch (err) {
-      console.error('Twilio init failed:', err);
-      setDeviceStatus('Failed to init');
-    }
-  }
+  useEffect(() => {
+    fetchOrgDetails();
+  }, [id]);
 
   async function saveSettings(e) {
     e.preventDefault();
@@ -177,23 +150,6 @@ export default function OrganizationDetailsPage() {
     setBuyingNumber(null);
   }
 
-  async function handleDial(number) {
-    if (!device) return alert('Dialer not ready');
-    try {
-      await device.connect({ params: { targetNumber: number } });
-    } catch (err) {
-      alert('Failed to place call');
-    }
-  }
-
-  function handleHangup() {
-    if (activeCall) {
-      activeCall.disconnect();
-    } else if (device) {
-      device.disconnectAll();
-    }
-  }
-
   if (loading || !data) {
     return <div className="p-8 text-white">Loading organization details...</div>;
   }
@@ -208,19 +164,36 @@ export default function OrganizationDetailsPage() {
           <h1 className="text-3xl font-bold text-white tracking-tight">{data.organization.company_name || data.organization.name}</h1>
           <p className="text-slate-400 mt-1">ID: {data.organization.id}</p>
         </div>
-        <div className="bg-slate-900 border border-white/10 rounded-xl px-4 py-3 flex items-center space-x-4">
+        <div className="bg-slate-900 border border-white/10 rounded-xl px-4 py-3 flex items-center space-x-6">
           <div className="flex flex-col">
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Dialer Status</span>
-            <span className="text-sm font-medium text-emerald-400 flex items-center">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
-              {deviceStatus}
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Realty Status</span>
+            <span className={`text-sm font-medium flex items-center ${settings.service_active ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className={`w-2 h-2 rounded-full mr-2 ${settings.service_active ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></span>
+              {settings.service_active ? 'Onboarded / Active' : 'Offboarded / Suspended'}
             </span>
           </div>
-          {activeCall && (
-            <button onClick={handleHangup} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
-              End Call
+          <div className="flex flex-col border-l border-white/10 pl-6">
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">Services Toggle</span>
+            <button 
+              onClick={async () => {
+                const newState = !settings.service_active;
+                if(!confirm(`Are you sure you want to ${newState ? 'resume' : 'stop'} all services for this organization?`)) return;
+                setSettings({...settings, service_active: newState});
+                // Optimistically save just this field
+                try {
+                  const token = localStorage.getItem('admin_token');
+                  await fetch(`/api/admin/organizations/${id}/settings`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service_active: newState })
+                  });
+                } catch(e) {}
+              }}
+              className={`px-3 py-1 text-xs font-bold rounded uppercase tracking-wider border ${settings.service_active ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+            >
+              {settings.service_active ? 'Stop Services' : 'Resume Services'}
             </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -308,15 +281,22 @@ export default function OrganizationDetailsPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Subscription Plan</label>
                   <select className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.subscription_plan} onChange={e => setSettings({...settings, subscription_plan: e.target.value})}>
-                    <option value="basic">Basic ($59/mo)</option>
-                    <option value="pro">Pro ($99/mo)</option>
+                    <option value="PAY_AS_YOU_GO">Pay As You Go ($5/mo)</option>
+                    <option value="STARTER">Starter ($39/mo)</option>
+                    <option value="GROWTH">Growth ($79/mo)</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Notification Email</label>
-                <input type="email" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.notify_email} onChange={e => setSettings({...settings, notify_email: e.target.value})} placeholder="Alerts sent here" />
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Notification Email</label>
+                  <input type="email" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.notify_email} onChange={e => setSettings({...settings, notify_email: e.target.value})} placeholder="Alerts sent here" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Custom Per-Minute Rate ($)</label>
+                  <input type="number" step="0.001" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.custom_rate} onChange={e => setSettings({...settings, custom_rate: e.target.value})} placeholder="Leave blank for global default" />
+                </div>
               </div>
 
               <div className="pt-4 border-t border-white/10">
@@ -368,8 +348,8 @@ export default function OrganizationDetailsPage() {
               {data.agents.map(agent => (
                 <div key={agent.id} className="p-4 hover:bg-white/[0.02] transition-colors flex justify-between items-center">
                   <div>
-                    <div className="text-white font-medium">{agent.full_name || 'Unnamed Agent'}</div>
-                    <div className="text-xs text-slate-400">{agent.email}</div>
+                    <div className="text-white font-medium">{agent.name || 'Unnamed Agent'}</div>
+                    <div className="text-xs text-slate-400">{agent.cell_phone || 'No phone'}</div>
                   </div>
                   {agent.cell_phone && (
                     <button onClick={() => handleDial(agent.cell_phone)} className="text-indigo-400 hover:text-indigo-300">Call</button>

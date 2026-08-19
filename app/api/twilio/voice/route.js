@@ -37,6 +37,7 @@ export async function POST(request) {
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY
       );
+      
       const { data } = await supabaseAdmin
         .from('organization_numbers')
         .select('phone_number')

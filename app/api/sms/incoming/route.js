@@ -27,6 +27,12 @@ export async function POST(request) {
     if (numData) {
       const orgId = numData.organization_id;
 
+      // ENFORCE SERVICE SUSPENSION
+      const { data: orgData } = await supabaseAdmin.from('organizations').select('service_active').eq('id', orgId).maybeSingle();
+      if (orgData && orgData.service_active === false) {
+        return new Response('<Response></Response>', { status: 200, headers: { 'Content-Type': 'text/xml' } });
+      }
+
       // Find or create conversation
       let { data: conversation, error: convErr } = await supabaseAdmin
         .from('conversations')

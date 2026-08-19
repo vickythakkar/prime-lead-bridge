@@ -16,20 +16,36 @@ export async function POST(request) {
       .select('organization_id')
       .eq('phone_number', to)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
     if (numData) {
       const { data } = await supabaseAdmin
         .from('organizations')
         .select('*')
         .eq('id', numData.organization_id)
-        .single();
+        .maybeSingle();
       orgData = data;
     }
   }
   
   const from = formData.get('From');
-  if (orgData && process.env.RESEND_API_KEY) {
+  
+  const twiml = new VoiceResponse();
+
+  if (!orgData) {
+    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'This number is not configured correctly. Goodbye.');
+    twiml.hangup();
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
+
+  // ENFORCE SERVICE SUSPENSION
+  if (orgData.service_active === false) {
+    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'The services for this number have been temporarily suspended. Please contact support. Goodbye.');
+    twiml.hangup();
+    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
+  }
+
+  if (process.env.RESEND_API_KEY) {
     const notifyEmail = orgData.notify_email || process.env.NOTIFY_EMAIL;
     if (notifyEmail) {
       try {
@@ -44,14 +60,6 @@ export async function POST(request) {
         console.error('Failed to send incoming call email:', err);
       }
     }
-  }
-
-  const twiml = new VoiceResponse();
-
-  if (!orgData) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'This number is not configured correctly. Goodbye.');
-    twiml.hangup();
-    return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
   const flowConfig = orgData.ivr_flow_config || {};
