@@ -4,12 +4,10 @@ import { verifyAdminToken } from '@/lib/admin-auth';
 
 export async function POST(request, { params }) {
   try {
-    const authPayload = verifyAdminToken(request);
-    if (!authPayload) {
-      return new Response('Unauthorized', { status: 401 });
-    }
+    const admin = verifyAdminToken(request);
+    if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id: orgId } = params;
+    const { id: orgId } = await params;
     const { phoneNumber } = await request.json();
 
     if (!phoneNumber) {

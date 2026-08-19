@@ -8,7 +8,7 @@ export async function POST(request, { params }) {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const updates = await request.json();
 
     const allowedFields = [
