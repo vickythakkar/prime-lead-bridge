@@ -58,7 +58,7 @@ export default function AdminDashboard() {
           {/* Top Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">🏢</div>
+              <div className="absolute top-0 right-0 p-4 opacity-100 text-4xl drop-shadow-md">🏢</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Total Organizations</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalOrgs}</p>
               {stats?.growth && (
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">📞</div>
+              <div className="absolute top-0 right-0 p-4 opacity-100 text-4xl drop-shadow-md">📞</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Calls (This Month)</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalCalls?.toLocaleString() || 0}</p>
               {stats?.growth && (
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-indigo-500/20 border relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">⏱️</div>
+              <div className="absolute top-0 right-0 p-4 opacity-100 text-4xl drop-shadow-md">⏱️</div>
               <h3 className="text-slate-400 text-sm font-medium mb-1">Minutes (This Month)</h3>
               <p className="text-3xl font-bold text-white">{stats?.totalMinutes?.toLocaleString() || 0}</p>
               <div className="mt-4 flex justify-between items-center">
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="glass-card p-6 rounded-2xl border-emerald-500/30 border relative overflow-hidden bg-gradient-to-br from-emerald-900/20 to-transparent">
-              <div className="absolute top-0 right-0 p-4 opacity-20 text-4xl">💰</div>
+              <div className="absolute top-0 right-0 p-4 opacity-100 text-4xl drop-shadow-md">💰</div>
               <h3 className="text-emerald-400/80 text-sm font-medium mb-1">Revenue (This Month)</h3>
               <p className="text-3xl font-bold text-emerald-400">${Number(stats?.totalRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
               {stats?.growth && (
@@ -116,18 +116,20 @@ export default function AdminDashboard() {
                       <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Organization</th>
                       <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Plan</th>
                       <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Minutes Used</th>
+                      <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">M.T.D Revenue</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {stats?.topOrgs?.map(org => (
-                      <tr key={org.id} className="hover:bg-white/5 transition-colors">
+                      <tr key={org.id} onClick={() => window.location.href = `/admin/brokers/${org.id}`} className="hover:bg-white/5 transition-colors cursor-pointer">
                         <td className="px-4 py-4 font-medium text-white">{org.name}</td>
                         <td className="px-4 py-4">
-                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${org.status === 'pro' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${org.status === 'pro' || org.status === 'STARTER' || org.status === 'GROWTH' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
                             {org.status}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right text-slate-300 font-mono">{org.usage?.toLocaleString() || 0}</td>
+                        <td className="px-4 py-4 text-right text-emerald-400 font-mono">${org.estimatedCost || '0.00'}</td>
                       </tr>
                     ))}
                   </tbody>

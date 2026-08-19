@@ -22,7 +22,7 @@ export async function POST(request, { params }) {
       'enable_listing_lookup',
       'notify_email',
       'service_active',
-      'custom_rate'
+      'rate_per_minute'
     ];
 
     const safeUpdates = {};

@@ -57,7 +57,7 @@ export async function GET(request) {
         let baseFee = 0;
         let includedMins = 0;
         let perMinRate = orgRate;
-        const plan = org.subscription_plan || 'pay_as_you_go';
+        const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toLowerCase();
 
         if (plan === 'starter') {
           baseFee = 39.00;

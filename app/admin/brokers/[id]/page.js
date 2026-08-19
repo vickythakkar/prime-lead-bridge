@@ -47,7 +47,7 @@ export default function OrganizationDetailsPage() {
           enable_listing_lookup: json.organization.enable_listing_lookup !== false,
           notify_email: json.organization.notify_email || '',
           service_active: json.organization.service_active !== false,
-          custom_rate: json.organization.custom_rate || ''
+          rate_per_minute: json.organization.rate_per_minute || ''
         });
       } else {
         alert('Failed to load organization');
@@ -282,7 +282,7 @@ export default function OrganizationDetailsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Custom Per-Minute Rate ($)</label>
-                  <input type="number" step="0.001" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.custom_rate} onChange={e => setSettings({...settings, custom_rate: e.target.value})} placeholder="Leave blank for global default" />
+                  <input type="number" step="0.001" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.rate_per_minute} onChange={e => setSettings({...settings, rate_per_minute: e.target.value === '' ? null : e.target.value})} placeholder="Leave blank for global default" />
                 </div>
               </div>
 

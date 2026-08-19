@@ -25,7 +25,7 @@ export default function AdminLayout({ children }) {
   }, [pathname, router]);
 
   if (!authorized) {
-    return <div className="min-h-screen bg-[#0a0a0e] flex items-center justify-center text-white">Loading secure environment...</div>;
+    return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading secure environment...</div>;
   }
 
   // If on login page, don't show layout
@@ -34,7 +34,7 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0e] text-slate-200 selection:bg-indigo-500/30 font-sans">
+    <div className="flex min-h-screen bg-slate-900 text-slate-200 selection:bg-indigo-500/30 font-sans">
       <AdminSidebar />
       <AdminDialerProvider>
         <main className="flex-1 overflow-y-auto relative">
