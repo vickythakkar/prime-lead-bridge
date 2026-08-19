@@ -1,10 +1,18 @@
-export const getSignatureHtml = () => `
+const getBaseUrl = () => {
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return process.env.NEXT_PUBLIC_APP_URL || 'https://prime-lead-bridge.vercel.app';
+};
+
+export const getSignatureHtml = () => {
+  const logoUrl = `${getBaseUrl()}/favicon.ico`;
+  return `
 <div style="margin-top: 40px; font-family: Arial, sans-serif; color: #333;">
   <p style="margin-bottom: 20px;">Best Regards,</p>
   <table cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
     <tr>
       <td style="padding-right: 20px; text-align: center; vertical-align: top;">
-        <img src="https://primeleadbridge.com/favicon.ico" alt="PrimeRealOps" width="80" height="80" style="border-radius: 50%; display: block; margin: 0 auto 10px auto; object-fit: cover; background-color: #f3f4f6;" />
+        <img src="${logoUrl}" alt="PrimeRealOps" width="80" height="80" style="border-radius: 50%; display: block; margin: 0 auto 10px auto; object-fit: cover; background-color: #f3f4f6;" />
         <a href="https://calendly.com/primerealops/primerealops-discovery-call" style="color: #4f46e5; font-weight: bold; text-decoration: none; font-size: 14px;">Book A Call</a>
       </td>
       <td style="border-left: 3px solid #4f46e5; padding-left: 20px; vertical-align: top;">
@@ -26,6 +34,7 @@ export const getSignatureHtml = () => `
   </table>
 </div>
 `;
+};
 
 export const getWelcomeEmailHtml = (name) => `
 <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px;">
