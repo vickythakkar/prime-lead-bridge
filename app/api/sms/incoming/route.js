@@ -94,6 +94,16 @@ export async function POST(request) {
           body: body,
           message_sid: messageSid
         });
+
+        // Broadcast notification to active dashboards
+        await supabaseAdmin.channel(`org_${orgId}_notifications`).send({
+          type: 'broadcast',
+          event: 'new_sms',
+          payload: {
+            from: from,
+            body: body
+          }
+        });
       }
     }
 

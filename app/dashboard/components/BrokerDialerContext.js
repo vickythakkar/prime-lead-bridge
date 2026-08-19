@@ -55,7 +55,38 @@ export function BrokerDialerProvider({ children }) {
       return closeNotification;
     }
   }, [incomingCall]);
-  
+  // Handle SMS Notifications
+  useEffect(() => {
+    if (!orgId) return;
+
+    const channel = supabase.channel(`org_${orgId}_notifications`)
+      .on(
+        'broadcast',
+        { event: 'new_sms' },
+        (payload) => {
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            const from = payload.payload?.from || 'Unknown Caller';
+            const body = payload.payload?.body || 'New message';
+            
+            const notification = new Notification(`New SMS from ${from}`, {
+              body: body,
+              requireInteraction: false
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orgId]);
+
   const timerRef = useRef(null);
   const pathname = usePathname();
 
