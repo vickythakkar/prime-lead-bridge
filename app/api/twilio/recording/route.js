@@ -14,41 +14,54 @@ export async function GET(request) {
     // Ensure the URL ends with .mp3 for native playback
     const fetchUrl = url.endsWith('.mp3') ? url : `${url}.mp3`;
 
-    const fetchHeaders = {
-      'Authorization': `Basic ${auth}`
-    };
-
-    // Forward the Range header if the browser sends one (essential for seeking/duration)
-    const rangeHeader = request.headers.get('range');
-    if (rangeHeader) {
-      fetchHeaders['Range'] = rangeHeader;
-    }
-
+    // Fetch the ENTIRE file from Twilio
     const response = await fetch(fetchUrl, {
-      headers: fetchHeaders
+      headers: { 'Authorization': `Basic ${auth}` }
     });
 
     if (!response.ok) {
       return new NextResponse('Failed to fetch recording from Twilio', { status: response.status });
     }
 
-    // Read the audio into a buffer instead of streaming it directly.
-    // Streaming response.body causes Next.js to use chunked transfer encoding,
-    // which strips the Content-Length header and breaks browser audio duration/seeking.
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const totalSize = buffer.length;
 
-    const responseHeaders = new Headers({
-      'Content-Type': 'audio/mpeg',
-      'Content-Disposition': 'inline',
-      'Content-Length': buffer.length.toString(),
-      'Accept-Ranges': 'none'
-    });
+    const rangeHeader = request.headers.get('range');
 
+    if (rangeHeader) {
+      // Parse Range header (e.g., "bytes=0-1000")
+      const parts = rangeHeader.replace(/bytes=/, "").split("-");
+      const partialstart = parts[0];
+      const partialend = parts[1];
+
+      const start = parseInt(partialstart, 10);
+      const end = partialend ? parseInt(partialend, 10) : totalSize - 1;
+      const chunksize = (end - start) + 1;
+
+      const chunk = buffer.subarray(start, end + 1);
+
+      return new NextResponse(chunk, {
+        status: 206,
+        headers: {
+          'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize.toString(),
+          'Content-Type': 'audio/mpeg',
+        },
+      });
+    }
+
+    // No range requested, send full file
     return new NextResponse(buffer, {
-      status: response.status,
-      headers: responseHeaders
+      status: 200,
+      headers: {
+        'Accept-Ranges': 'bytes',
+        'Content-Length': totalSize.toString(),
+        'Content-Type': 'audio/mpeg',
+      },
     });
+
   } catch (error) {
     console.error('Recording Proxy Error:', error);
     return new NextResponse('Error fetching recording', { status: 500 });
