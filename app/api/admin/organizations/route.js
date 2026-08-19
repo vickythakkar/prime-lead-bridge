@@ -29,22 +29,41 @@ export async function GET(request) {
       .gte('created_at', monthStart)
       .lte('created_at', monthEnd);
 
-    // Aggregate stats per org
     const orgStats = {};
     (callStats || []).forEach(call => {
       if (!orgStats[call.organization_id]) {
-        orgStats[call.organization_id] = { totalCalls: 0, totalMinutes: 0 };
+        orgStats[call.organization_id] = { totalCalls: 0, totalSeconds: 0 };
       }
       orgStats[call.organization_id].totalCalls++;
-      orgStats[call.organization_id].totalMinutes += Math.ceil((call.duration || 0) / 60);
+      orgStats[call.organization_id].totalSeconds += (call.duration || 0);
     });
 
     const enrichedOrgs = (orgs || [])
       .filter(org => org.id !== '8a564ec4-9544-4b63-ac58-98ec66d69a76')
-      .map(org => ({
-        ...org,
-        currentMonth: orgStats[org.id] || { totalCalls: 0, totalMinutes: 0 },
-      }));
+      .map(org => {
+        const stats = orgStats[org.id] || { totalCalls: 0, totalSeconds: 0 };
+        const totalMinutes = Math.ceil(stats.totalSeconds / 60);
+        
+        let cost = 0;
+        const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toUpperCase();
+        
+        if (plan === 'PAY_AS_YOU_GO') {
+          cost = 5.00 + (totalMinutes * 0.05);
+        } else if (plan === 'STARTER') {
+          cost = 39.00 + (totalMinutes > 500 ? (totalMinutes - 500) * 0.12 : 0);
+        } else if (plan === 'GROWTH') {
+          cost = 79.00 + (totalMinutes > 1000 ? (totalMinutes - 1000) * 0.10 : 0);
+        }
+
+        return {
+          ...org,
+          currentMonth: {
+            totalCalls: stats.totalCalls,
+            totalMinutes: totalMinutes,
+            estimatedCost: cost.toFixed(2)
+          }
+        };
+      });
 
     return Response.json({ organizations: enrichedOrgs });
   } catch (err) {

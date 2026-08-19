@@ -159,6 +159,7 @@ export default function AllClientsPage() {
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Plan</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Calls (MTD)</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Mins (MTD)</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Rev (MTD)</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -182,6 +183,7 @@ export default function AllClientsPage() {
                     </td>
                     <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{org.currentMonth?.totalCalls?.toLocaleString() || 0}</td>
                     <td className="px-6 py-4 text-right text-slate-300 font-mono text-sm">{org.currentMonth?.totalMinutes?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 text-right text-emerald-400 font-mono text-sm">${org.currentMonth?.estimatedCost || '0.00'}</td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 text-emerald-400 text-sm font-medium">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
