@@ -37,6 +37,7 @@ export default function Sidebar() {
     { href: '/dashboard/dialer', label: 'Web Dialer', icon: '☎️' },
     { href: '/dashboard/billing', label: 'Billing', icon: '💳' },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
+    { href: '/dashboard/trash', label: 'Trash', icon: '🗑️' },
   ];
 
   const handleLogout = async () => {
