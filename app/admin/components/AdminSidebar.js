@@ -44,7 +44,7 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto pr-2 custom-scrollbar">
+      <nav className="flex-1 min-h-0 space-y-0.5 overflow-y-auto pr-2 custom-scrollbar">
         {links.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
           return (
