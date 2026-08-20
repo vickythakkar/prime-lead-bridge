@@ -367,7 +367,7 @@ export default function PropertiesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-white">{prop.address}</div>
-                      <div className="text-xs text-slate-500 mt-1">Match: {prop.street_number} / {prop.zip_code}</div>
+                      <div className="text-sm text-slate-400 mt-1">Match: {prop.street_number} / {prop.zip_code}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-mono text-sm text-indigo-300">
@@ -378,12 +378,12 @@ export default function PropertiesPage() {
                       {prop.route_to === 'seller' ? (
                         <div>
                           <div className="text-emerald-400 text-sm font-medium">Seller: {prop.seller_name}</div>
-                          <div className="text-xs text-slate-500">{prop.seller_phone}</div>
+                          <div className="text-sm text-slate-400">{prop.seller_phone}</div>
                         </div>
                       ) : (
                         <div>
                           <div className="text-indigo-400 text-sm font-medium">Agent: {prop.agents?.name || 'Unknown'}</div>
-                          <div className="text-xs text-slate-500">{prop.agents?.cell_phone || 'No phone'}</div>
+                          <div className="text-sm text-slate-400">{prop.agents?.cell_phone || 'No phone'}</div>
                         </div>
                       )}
                     </td>
