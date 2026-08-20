@@ -63,7 +63,7 @@ export default function Sidebar() {
         <span className="font-bold text-xl text-white tracking-tight leading-tight">Prime Lead Bridge</span>
       </div>
 
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
         {links.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
           return (
