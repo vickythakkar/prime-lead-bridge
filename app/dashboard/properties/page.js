@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import Papa from 'papaparse';
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState([]);
@@ -172,6 +173,76 @@ export default function PropertiesPage() {
     }
   };
 
+  const fileInputRef = useRef(null);
+  const [uploadingCSV, setUploadingCSV] = useState(false);
+  
+  const downloadTemplate = () => {
+    const csvContent = "address,street_number,zip_code,seller_name,seller_phone,route_to\n123 Main St,123,62701,John Doe,+1234567890,seller\n456 Oak Ave,456,62702,Jane Smith,+1987654321,agent";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'properties_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingCSV(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data;
+        let addedCount = 0;
+        
+        for (const row of rows) {
+          if (!row.address || !row.street_number) continue;
+          
+          try {
+            const payload = {
+              organization_id: orgId,
+              address: row.address,
+              street_number: row.street_number,
+              zip_code: row.zip_code || '',
+              seller_name: row.seller_name || '',
+              seller_phone: row.seller_phone || '',
+              route_to: row.route_to === 'agent' ? 'agent' : 'seller',
+              agent_id: null,
+              organization_number_id: null
+            };
+            
+            const { data, error } = await supabase
+              .from('properties')
+              .insert(payload)
+              .select('*, agents(name, cell_phone), organization_numbers(phone_number)')
+              .single();
+              
+            if (!error && data) {
+              addedCount++;
+              setProperties(prev => [data, ...prev]);
+            }
+          } catch(err) {
+            console.error('Error adding row:', row, err);
+          }
+        }
+        
+        setUploadingCSV(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        alert(`Successfully imported ${addedCount} properties!`);
+      },
+      error: (error) => {
+        console.error('CSV Parsing Error:', error);
+        setUploadingCSV(false);
+        alert('Failed to parse CSV file.');
+      }
+    });
+  };
+
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
       <header className="mb-8 flex justify-between items-center">
@@ -179,12 +250,34 @@ export default function PropertiesPage() {
           <h1 className="text-3xl font-bold text-white">Active Listings</h1>
           <p className="text-slate-400 mt-1">Manage your properties and call routing.</p>
         </div>
-        <button 
-          onClick={() => { setEditingId(null); setFormData(initialForm); setShowModal(true); }}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-lg"
-        >
-          + Add Property
-        </button>
+        <div className="flex gap-3 items-center">
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            className="hidden" 
+          />
+          <button 
+            onClick={downloadTemplate}
+            className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mr-2"
+          >
+            Download CSV Template
+          </button>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingCSV}
+            className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors border border-white/10 disabled:opacity-50"
+          >
+            {uploadingCSV ? 'Uploading...' : 'Bulk Upload CSV'}
+          </button>
+          <button 
+            onClick={() => { setEditingId(null); setFormData(initialForm); setShowModal(true); }}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-medium transition-colors shadow-lg"
+          >
+            + Add Property
+          </button>
+        </div>
       </header>
 
       <div className="glass-card rounded-2xl overflow-hidden shadow-2xl">
