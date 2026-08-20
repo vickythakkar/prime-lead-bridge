@@ -177,7 +177,7 @@ export default function PropertiesPage() {
   const [uploadingCSV, setUploadingCSV] = useState(false);
   
   const downloadTemplate = () => {
-    const csvContent = "address,street_number,zip_code,seller_name,seller_phone,route_to\n123 Main St,123,62701,John Doe,+1234567890,seller\n456 Oak Ave,456,62702,Jane Smith,+1987654321,seller";
+    const csvContent = "twilio_number,address,street_number,zip_code,seller_name,seller_phone,route_to,agent_name\n+18592096868,123 Main St,123,62701,John Doe,+1234567890,seller,\n,456 Oak Ave,456,62702,Jane Smith,+1987654321,agent,Vicky";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -203,6 +203,30 @@ export default function PropertiesPage() {
         for (const row of rows) {
           if (!row.address || !row.street_number) continue;
           
+          let matchedAgentId = null;
+          let matchedNumberId = null;
+          let matchedAgent = null;
+
+          // Fuzzy match twilio_number
+          if (row.twilio_number) {
+            const cleanInput = row.twilio_number.replace(/\D/g, '');
+            if (cleanInput) {
+              const match = orgNumbers.find(n => (n.phone_number || '').replace(/\D/g, '').includes(cleanInput));
+              if (match) matchedNumberId = match.id;
+            }
+          }
+
+          // Fuzzy match agent_name
+          if (row.agent_name) {
+            const cleanInput = row.agent_name.toLowerCase().trim();
+            if (cleanInput) {
+              matchedAgent = agents.find(a => (a.name || '').toLowerCase().includes(cleanInput));
+              if (matchedAgent) matchedAgentId = matchedAgent.id;
+            }
+          }
+
+          const routeTo = (row.route_to?.toLowerCase() === 'agent' || matchedAgentId) ? 'agent' : 'seller';
+
           try {
             const payload = {
               organization_id: orgId,
@@ -211,9 +235,9 @@ export default function PropertiesPage() {
               zip_code: row.zip_code || '',
               seller_name: row.seller_name || '',
               seller_phone: row.seller_phone || '',
-              route_to: row.route_to === 'agent' ? 'agent' : 'seller',
-              agent_id: null,
-              organization_number_id: null
+              route_to: routeTo,
+              agent_id: matchedAgentId,
+              organization_number_id: matchedNumberId
             };
             
             const { data, error } = await supabase
@@ -236,6 +260,18 @@ export default function PropertiesPage() {
                     await supabase.from('contacts').insert({ organization_id: orgId, phone: row.seller_phone, name: row.seller_name, custom_fields: { role: 'Seller' } });
                   }
                 } catch(e) { console.error('Seller sync error', e); }
+              }
+
+              // Auto-save mapped Agent to Contacts
+              if (matchedAgent && matchedAgent.cell_phone) {
+                try {
+                  const { data: existingAgent } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', matchedAgent.cell_phone).maybeSingle();
+                  if (existingAgent) {
+                    await supabase.from('contacts').update({ name: matchedAgent.name, updated_at: new Date().toISOString(), custom_fields: { role: 'Agent' } }).eq('id', existingAgent.id);
+                  } else {
+                    await supabase.from('contacts').insert({ organization_id: orgId, phone: matchedAgent.cell_phone, name: matchedAgent.name, custom_fields: { role: 'Agent' } });
+                  }
+                } catch(e) { console.error('Agent sync error', e); }
               }
             }
           } catch(err) {
