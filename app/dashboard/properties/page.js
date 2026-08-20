@@ -177,7 +177,7 @@ export default function PropertiesPage() {
   const [uploadingCSV, setUploadingCSV] = useState(false);
   
   const downloadTemplate = () => {
-    const csvContent = "address,street_number,zip_code,seller_name,seller_phone,route_to\n123 Main St,123,62701,John Doe,+1234567890,seller\n456 Oak Ave,456,62702,Jane Smith,+1987654321,agent";
+    const csvContent = "address,street_number,zip_code,seller_name,seller_phone,route_to\n123 Main St,123,62701,John Doe,+1234567890,seller\n456 Oak Ave,456,62702,Jane Smith,+1987654321,seller";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -225,6 +225,18 @@ export default function PropertiesPage() {
             if (!error && data) {
               addedCount++;
               setProperties(prev => [data, ...prev]);
+
+              // Auto-save Seller to Contacts
+              if (row.seller_phone) {
+                try {
+                  const { data: existingSeller } = await supabase.from('contacts').select('id').eq('organization_id', orgId).eq('phone', row.seller_phone).maybeSingle();
+                  if (existingSeller) {
+                    await supabase.from('contacts').update({ name: row.seller_name, updated_at: new Date().toISOString(), custom_fields: { role: 'Seller' } }).eq('id', existingSeller.id);
+                  } else {
+                    await supabase.from('contacts').insert({ organization_id: orgId, phone: row.seller_phone, name: row.seller_name, custom_fields: { role: 'Seller' } });
+                  }
+                } catch(e) { console.error('Seller sync error', e); }
+              }
             }
           } catch(err) {
             console.error('Error adding row:', row, err);
