@@ -205,8 +205,8 @@ export async function POST(request) {
     }
     twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Our office is currently unavailable. Please leave a message after the beep.');
     twiml.record({
-      action: `/api/calls/status?org_id=${orgData.id}`,
-      recordingStatusCallback: `/api/calls/status?org_id=${orgData.id}`,
+      action: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,
+      recordingStatusCallback: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,
       recordingStatusCallbackEvent: 'completed',
     });
   } 
