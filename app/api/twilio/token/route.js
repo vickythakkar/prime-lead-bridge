@@ -15,7 +15,17 @@ export async function POST(request) {
     let isAuthorized = false;
 
     if (adminPayload) {
-      identity = 'admin';
+      const { data: adminOrg } = await supabaseAdmin
+        .from('organizations')
+        .select('id')
+        .eq('contact_email', adminPayload.email)
+        .maybeSingle();
+
+      if (adminOrg) {
+        identity = `org_${adminOrg.id}`;
+      } else {
+        identity = 'admin';
+      }
       isAuthorized = true;
     } else {
       // Check if it's a Supabase Agent token

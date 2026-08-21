@@ -1,10 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useDialer } from './AdminDialerContext';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { status } = useDialer();
 
   const links = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: '📈' },
@@ -64,7 +66,27 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-white/5 shrink-0">
+      <div className="mt-auto pt-4 border-t border-white/5 shrink-0 space-y-2">
+        <div className="px-3 py-2 flex items-center justify-between bg-black/20 rounded-xl border border-white/5">
+          <div className="flex items-center gap-2">
+            <span className="text-base">☎️</span>
+            <span className="text-xs font-medium text-slate-300">Dialer</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className={`h-2 w-2 rounded-full shadow-[0_0_8px_currentColor] ${
+              status === 'Ready to Call' || status === 'Connected' ? 'bg-emerald-400 text-emerald-400' : 
+              status.includes('Error') ? 'bg-red-400 text-red-400' : 
+              status.includes('Incoming') ? 'bg-indigo-400 text-indigo-400 animate-pulse' :
+              'bg-amber-400 text-amber-400'
+            }`}></div>
+            <span className={`text-[10px] uppercase font-bold tracking-wider ${
+              status === 'Ready to Call' || status === 'Connected' ? 'text-emerald-400' : 
+              status.includes('Error') ? 'text-red-400' : 
+              status.includes('Incoming') ? 'text-indigo-400' :
+              'text-amber-400'
+            }`}>{status === 'Ready to Call' ? 'Ready' : (status.includes('Error') ? 'Error' : status)}</span>
+          </div>
+        </div>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all text-left text-sm"
