@@ -71,12 +71,12 @@ export default function BillingDashboard() {
   if (plan === 'starter') {
     planName = 'Starter Plan';
     includedMinutes = 500;
-    baseMonthlyCost = 39;
+    baseMonthlyCost = 49;
     overageRate = 0.12;
   } else if (plan === 'growth') {
     planName = 'Growth Plan';
     includedMinutes = 1000;
-    baseMonthlyCost = 79;
+    baseMonthlyCost = 89;
     overageRate = 0.10;
   }
   
@@ -282,7 +282,7 @@ export default function BillingDashboard() {
                 <h3 className="font-bold text-white">Starter</h3>
                 {plan === 'starter' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
               </div>
-              <div className="text-2xl font-bold text-white mb-3">$39<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <div className="text-2xl font-bold text-white mb-3">$49<span className="text-sm font-normal text-slate-400">/mo</span></div>
               <ul className="space-y-2 text-xs text-slate-300 mb-4">
                 <li className="flex items-center gap-2"><span>✓</span> 500 Included Minutes</li>
                 <li className="flex items-center gap-2"><span>✓</span> $0.12 / extra minute</li>
@@ -301,7 +301,7 @@ export default function BillingDashboard() {
                 <h3 className="font-bold text-white">Growth</h3>
                 {plan === 'growth' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
               </div>
-              <div className="text-2xl font-bold text-white mb-3">$79<span className="text-sm font-normal text-slate-400">/mo</span></div>
+              <div className="text-2xl font-bold text-white mb-3">$89<span className="text-sm font-normal text-slate-400">/mo</span></div>
               <ul className="space-y-2 text-xs text-slate-300 mb-4">
                 <li className="flex items-center gap-2 text-indigo-300 font-medium"><span>✓</span> 1000 Included Minutes</li>
                 <li className="flex items-center gap-2"><span>✓</span> $0.10 / extra minute</li>

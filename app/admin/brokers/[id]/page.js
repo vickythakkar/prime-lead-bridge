@@ -269,8 +269,8 @@ export default function OrganizationDetailsPage() {
                   <label className="block text-sm font-medium text-slate-300 mb-2">Subscription Plan</label>
                   <select className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.subscription_plan} onChange={e => setSettings({...settings, subscription_plan: e.target.value})}>
                     <option value="PAY_AS_YOU_GO">Pay As You Go ($5/mo)</option>
-                    <option value="STARTER">Starter ($39/mo)</option>
-                    <option value="GROWTH">Growth ($79/mo)</option>
+                    <option value="STARTER">Starter ($49/mo)</option>
+                    <option value="GROWTH">Growth ($89/mo)</option>
                   </select>
                 </div>
               </div>

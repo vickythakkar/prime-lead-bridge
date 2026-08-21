@@ -50,9 +50,9 @@ export async function GET(request) {
         if (plan === 'PAY_AS_YOU_GO') {
           cost = 5.00 + (totalMinutes * 0.05);
         } else if (plan === 'STARTER') {
-          cost = 39.00 + (totalMinutes > 500 ? (totalMinutes - 500) * 0.12 : 0);
+          cost = 49.00 + (totalMinutes > 500 ? (totalMinutes - 500) * 0.12 : 0);
         } else if (plan === 'GROWTH') {
-          cost = 79.00 + (totalMinutes > 1000 ? (totalMinutes - 1000) * 0.10 : 0);
+          cost = 89.00 + (totalMinutes > 1000 ? (totalMinutes - 1000) * 0.10 : 0);
         }
 
         return {

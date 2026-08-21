@@ -286,7 +286,7 @@ export default function Settings() {
                   <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-xl p-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">ACTIVE</div>
                     <h3 className="text-xl font-bold text-white mb-2">Starter Plan</h3>
-                    <div className="text-3xl font-bold text-emerald-400 mb-4">$59.00<span className="text-lg text-slate-400 font-normal">/mo</span></div>
+                    <div className="text-3xl font-bold text-emerald-400 mb-4">$49.00<span className="text-lg text-slate-400 font-normal">/mo</span></div>
                     <ul className="text-slate-300 space-y-2 mb-6 text-sm">
                       <li>✓ 500 included minutes</li>
                       <li>✓ $0.12 / extra minute</li>
@@ -296,7 +296,7 @@ export default function Settings() {
                   </div>
                   <div className="border border-white/10 bg-white/5 rounded-xl p-6">
                     <h3 className="text-xl font-bold text-white mb-2">Growth Plan</h3>
-                    <div className="text-3xl font-bold text-white mb-4">$99.00<span className="text-lg text-slate-400 font-normal">/mo</span></div>
+                    <div className="text-3xl font-bold text-white mb-4">$89.00<span className="text-lg text-slate-400 font-normal">/mo</span></div>
                     <ul className="text-slate-300 space-y-2 mb-6 text-sm">
                       <li>✓ 1000 included minutes</li>
                       <li>✓ $0.10 / extra minute</li>

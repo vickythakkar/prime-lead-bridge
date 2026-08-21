@@ -118,11 +118,11 @@ export async function GET(request) {
         cost = 5.00 + (mins * 0.05);
         prevCost = 5.00 + (prevMins * 0.05);
       } else if (plan === 'STARTER') {
-        cost = 39.00 + (mins > 500 ? (mins - 500) * 0.12 : 0);
-        prevCost = 39.00 + (prevMins > 500 ? (prevMins - 500) * 0.12 : 0);
+        cost = 49.00 + (mins > 500 ? (mins - 500) * 0.12 : 0);
+        prevCost = 49.00 + (prevMins > 500 ? (prevMins - 500) * 0.12 : 0);
       } else if (plan === 'GROWTH') {
-        cost = 79.00 + (mins > 1000 ? (mins - 1000) * 0.10 : 0);
-        prevCost = 79.00 + (prevMins > 1000 ? (prevMins - 1000) * 0.10 : 0);
+        cost = 89.00 + (mins > 1000 ? (mins - 1000) * 0.10 : 0);
+        prevCost = 89.00 + (prevMins > 1000 ? (prevMins - 1000) * 0.10 : 0);
       }
       
       currentRevenueAmount += cost;

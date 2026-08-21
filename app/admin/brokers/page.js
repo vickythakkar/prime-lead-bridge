@@ -241,8 +241,8 @@ export default function AllClientsPage() {
                   <label className="block text-sm font-medium text-slate-300 mb-1">Subscription Plan *</label>
                   <select required className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.subscription_plan} onChange={e => setForm({ ...form, subscription_plan: e.target.value })}>
                     <option value="pay_as_you_go">Pay As You Go ($5/mo — $0.05/min)</option>
-                    <option value="starter">Starter ($39/mo — 500 min)</option>
-                    <option value="growth">Growth ($79/mo — 1000 min)</option>
+                    <option value="starter">Starter ($49/mo — 500 min)</option>
+                    <option value="growth">Growth ($89/mo — 1000 min)</option>
                   </select>
                 </div>
               </div>

@@ -75,10 +75,10 @@ export async function GET(request) {
         const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toLowerCase();
 
         if (plan === 'starter') {
-          baseFee = 39.00;
+          baseFee = 49.00;
           perMinRate = 0.12;
         } else if (plan === 'growth') {
-          baseFee = 79.00;
+          baseFee = 89.00;
           perMinRate = 0.10;
         } else {
           // Pay As You Go or default
