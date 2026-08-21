@@ -25,9 +25,28 @@ export async function POST(request) {
       return new Response('Missing org_id', { status: 400 });
     }
 
-    const direction = realDirection || (from.includes('client:') ? 'outbound' : 'inbound');
-    const finalFrom = realFrom || from;
-    const finalTo = realTo || to;
+    // We must safely handle missing From/To because Twilio's recordingStatusCallback omits them.
+    let finalFrom = realFrom || from;
+    let finalTo = realTo || to;
+    let direction = realDirection;
+    
+    // Fetch existing log early to inherit data if this is a recordingStatusCallback
+    const { data: existingLog } = await supabaseAdmin
+      .from('call_logs')
+      .select('*')
+      .eq('twilio_call_sid', callSid)
+      .maybeSingle();
+
+    if (existingLog) {
+      finalFrom = finalFrom || existingLog.from_number;
+      finalTo = finalTo || existingLog.to_number;
+      direction = direction || existingLog.call_type;
+    }
+
+    // Default if completely new and missing info
+    direction = direction || (finalFrom && finalFrom.includes('client:') ? 'outbound' : 'inbound');
+    finalFrom = finalFrom || 'Unknown';
+    finalTo = finalTo || 'Unknown';
     
     // The actual external number involved
     const contactNumber = direction === 'inbound' ? finalFrom : finalTo;
@@ -88,11 +107,6 @@ export async function POST(request) {
     };
 
     // Upsert
-    const { data: existingLog, error: fetchErr } = await supabaseAdmin
-      .from('call_logs')
-      .select('id, duration, recording_url')
-      .eq('twilio_call_sid', callSid)
-      .maybeSingle();
 
     if (existingLog) {
       if (durationVal === 0 && existingLog.duration > 0) {
