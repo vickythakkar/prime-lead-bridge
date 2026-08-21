@@ -141,7 +141,7 @@ export async function POST(request) {
           await sendEmail({
             to: recipientEmail,
             subject: 'New Voicemail Received - Prime Lead Bridge',
-            html: getVoicemailEmailHtml(finalFrom, durationVal, finalRecordingUrl)
+            html: getVoicemailEmailHtml(finalFrom, dialCallDuration ? parseInt(dialCallDuration, 10) : 0, finalRecordingUrl)
           });
         }
       } catch (emailErr) {

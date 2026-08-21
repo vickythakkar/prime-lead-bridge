@@ -34,6 +34,7 @@ export default function Sidebar() {
     { href: '/dashboard/messages', label: 'Messages', icon: '💬' },
     { href: '/dashboard/contacts', label: 'Contacts', icon: '👥' },
     { href: '/dashboard/calls', label: 'Activity Log', icon: '📞' },
+    { href: '/dashboard/voicemails', label: 'Voicemails', icon: '📼' },
     { href: '/dashboard/dialer', label: 'Web Dialer', icon: '☎️' },
     { href: '/dashboard/billing', label: 'Billing', icon: '💳' },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
