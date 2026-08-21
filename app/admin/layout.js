@@ -35,8 +35,8 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-slate-900 text-slate-200 selection:bg-indigo-500/30 font-sans">
-      <AdminSidebar />
       <AdminDialerProvider>
+        <AdminSidebar />
         <main className="flex-1 overflow-y-auto relative">
           {/* Subtle background glow for admin area */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
