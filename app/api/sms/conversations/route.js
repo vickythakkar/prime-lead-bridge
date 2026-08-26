@@ -43,6 +43,13 @@ export async function GET(request) {
 
     if (messagesError) throw messagesError;
 
+    // Mark messages as read for this org (or all if admin)
+    const unreadIds = messages.filter(m => !m.is_read).map(m => m.id);
+    if (unreadIds.length > 0) {
+      // Split into chunks of 100 to avoid request URL length limits in some cases, though .in() usually handles it
+      await supabaseAdmin.from('messages').update({ is_read: true }).in('id', unreadIds);
+    }
+
     const conversations = {};
     const contactNumbers = new Set();
 

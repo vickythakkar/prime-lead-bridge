@@ -35,6 +35,12 @@ export default function CallLogs() {
             return call;
           });
           setCalls(callsWithUrls);
+
+          // Mark as seen
+          const unseenIds = data.filter(c => !c.seen).map(c => c.id);
+          if (unseenIds.length > 0) {
+            await supabase.from('call_logs').update({ seen: true }).in('id', unseenIds);
+          }
         }
       }
       setLoading(false);

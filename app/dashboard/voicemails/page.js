@@ -58,8 +58,8 @@ export default function VoicemailsPage() {
   };
 
   const markListened = async (id) => {
-    await supabase.from('voicemails').update({ status: 'listened' }).eq('id', id);
-    setVoicemails(voicemails.map(v => v.id === id ? { ...v, status: 'listened' } : v));
+    await supabase.from('voicemails').update({ listened: true }).eq('id', id);
+    setVoicemails(voicemails.map(v => v.id === id ? { ...v, listened: true } : v));
   };
 
   return (
@@ -100,9 +100,9 @@ export default function VoicemailsPage() {
                   }
                   
                   return (
-                    <tr key={vm.id} className={`transition-colors ${vm.status === 'new' ? 'bg-indigo-500/5' : 'hover:bg-white/5'}`}>
+                    <tr key={vm.id} className={`transition-colors ${!vm.listened ? 'bg-indigo-500/5' : 'hover:bg-white/5'}`}>
                       <td className="px-5 py-4 text-center">
-                        {vm.status === 'new' ? (
+                        {!vm.listened ? (
                           <div className="inline-block bg-indigo-500 rounded-full h-3 w-3 shadow-[0_0_8px_rgba(99,102,241,0.8)]" title="New"></div>
                         ) : (
                           <div className="inline-block h-3 w-3 rounded-full bg-slate-700" title="Listened"></div>
@@ -129,7 +129,7 @@ export default function VoicemailsPage() {
                             <audio 
                               controls 
                               src={audioLink} 
-                              onPlay={() => { if (vm.status === 'new') markListened(vm.id); }}
+                              onPlay={() => { if (!vm.listened) markListened(vm.id); }}
                               className="h-9 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" 
                             />
                           ) : (

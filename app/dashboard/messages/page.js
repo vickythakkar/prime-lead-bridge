@@ -128,6 +128,12 @@ export default function MessagesPage() {
         sender: m.direction === 'outbound' ? 'me' : 'them',
         timestamp: m.created_at
       })));
+
+      // Mark unread messages as read
+      const unreadIds = data.filter(m => !m.is_read).map(m => m.id);
+      if (unreadIds.length > 0) {
+        await supabase.from('messages').update({ is_read: true }).in('id', unreadIds);
+      }
     }
   }
 

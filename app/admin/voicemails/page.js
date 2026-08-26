@@ -40,7 +40,7 @@ export default function AdminVoicemails() {
     if (res.ok) setVoicemails(voicemails.filter(v => v.id !== id));
   }
 
-  const unreadCount = voicemails.filter(v => v.status === 'new').length;
+  const unreadCount = voicemails.filter(v => !v.listened).length;
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -87,9 +87,9 @@ export default function AdminVoicemails() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {voicemails.map(vm => (
-                  <tr key={vm.id} className={`transition-colors ${vm.status === 'new' ? 'bg-indigo-500/5' : 'hover:bg-white/5'}`}>
+                  <tr key={vm.id} className={`transition-colors ${!vm.listened ? 'bg-indigo-500/5' : 'hover:bg-white/5'}`}>
                     <td className="px-5 py-4 text-center">
-                      {vm.status === 'new' ? (
+                      {!vm.listened ? (
                         <div className="inline-block bg-indigo-500 rounded-full h-3 w-3 shadow-[0_0_8px_rgba(99,102,241,0.8)]" title="New"></div>
                       ) : (
                         <div className="inline-block h-3 w-3 rounded-full bg-slate-700" title="Listened"></div>
@@ -119,7 +119,7 @@ export default function AdminVoicemails() {
                           <audio 
                             controls 
                             src={vm.audio_link} 
-                            onPlay={() => { if (vm.status === 'new') markListened(vm.id); }}
+                            onPlay={() => { if (!vm.listened) markListened(vm.id); }}
                             className="h-9 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" 
                           />
                         ) : (
