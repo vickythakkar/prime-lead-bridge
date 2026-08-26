@@ -121,6 +121,7 @@ function IVRNode({ digit, node, onUpdate, isRoot = false, teammates = [] }) {
             <option value="route_agent">Forward to Team Member</option>
             <option value="forward_call">Forward to Phone Number</option>
             <option value="sub_menu">Sub-Menu (More Options)</option>
+            <option value="property_lookup">Property Lookup / Selection</option>
             <option value="voicemail">Send to Voicemail</option>
           </select>
 
