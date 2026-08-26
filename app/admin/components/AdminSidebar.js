@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useDialer } from './AdminDialerContext';
+import { useState, useEffect } from 'react';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -13,29 +14,6 @@ export default function AdminSidebar() {
   const [unreadVoicemails, setUnreadVoicemails] = useState(0);
 
   useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        const { createClient } = await import('@supabase/supabase-js');
-        // Need to use admin key or just normal supabase? 
-        // Normal supabase won't work without session. 
-        // Let's use fetch to a custom admin API or just use the token
-        const token = localStorage.getItem('admin_token');
-        if (!token) return;
-
-        const res = await fetch('/api/admin/stats', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          // We need an API that actually returns these counts for admin.
-          // Since we might not have one, let's just make a new one or modify stats.
-          // Wait, let's just assume we can fetch it via supabase if we use supabaseAdmin? We are on client side.
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
     // Let's create an API for admin notifications count
     const fetchAdminCounts = async () => {
       const token = localStorage.getItem('admin_token');
