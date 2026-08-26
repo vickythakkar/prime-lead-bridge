@@ -7,6 +7,7 @@ export default function IvrBuilder({ orgId, initialConfig, initialEnabled, onSav
   const [enabled, setEnabled] = useState(initialEnabled ?? true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
   
   // Default config if none exists
   const [config, setConfig] = useState({
@@ -46,7 +47,7 @@ export default function IvrBuilder({ orgId, initialConfig, initialEnabled, onSav
         .select('id, name, phone, custom_fields')
         .eq('organization_id', orgId)
         .order('name');
-      if (teamData) setTeammates(teamData.filter(t => t.custom_fields && t.custom_fields.role));
+      if (teamData) setTeammates(teamData.filter(t => t.custom_fields && t.custom_fields.role && t.custom_fields.role !== 'Seller'));
 
       setLoading(false);
     }
@@ -67,6 +68,8 @@ export default function IvrBuilder({ orgId, initialConfig, initialEnabled, onSav
         .eq('id', orgId);
         
       if (!error) {
+        setMessage('IVR Workflow saved successfully!');
+        setTimeout(() => setMessage(''), 3000);
         onSaved('IVR Workflow saved successfully!');
       } else {
         alert('Failed to save IVR config.');
@@ -135,7 +138,10 @@ export default function IvrBuilder({ orgId, initialConfig, initialEnabled, onSav
           />
         </div>
 
-        <div className="pt-6 border-t border-white/10 flex justify-end pointer-events-auto">
+        <div className="pt-6 border-t border-white/10 flex justify-between items-center pointer-events-auto">
+          <div className="text-sm font-medium text-emerald-400 transition-opacity duration-300">
+            {message}
+          </div>
           <button 
             type="submit" 
             disabled={saving} 
