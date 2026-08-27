@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useDialer } from './AdminDialerContext';
 import { useState, useEffect } from 'react';
+import PushNotificationManager from '@/components/PushNotificationManager';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -62,6 +63,7 @@ export default function AdminSidebar() {
 
   return (
     <aside className="w-64 border-r border-white/5 glass h-screen sticky top-0 flex flex-col p-4 shrink-0">
+      <PushNotificationManager userType="admin" />
       <div className="flex items-center gap-3 px-2 py-4 mb-4">
         <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center">
           <img 

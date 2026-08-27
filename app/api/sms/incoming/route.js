@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import twilio from 'twilio';
+import { sendPushToOrg, sendPushToAdmin } from '@/lib/push-notifications';
 
 const MessagingResponse = twilio.twiml.MessagingResponse;
 
@@ -125,6 +126,17 @@ export async function POST(request) {
           }
         });
       }
+
+      // Send push notifications for incoming SMS
+      const truncatedBody = body.length > 80 ? body.substring(0, 80) + '...' : body;
+      const smsPush = {
+        title: '💬 New Message',
+        body: `${from}: ${truncatedBody}`,
+        tag: 'incoming-sms',
+        url: '/dashboard/messages'
+      };
+      sendPushToOrg(orgId, smsPush).catch(() => {});
+      sendPushToAdmin({ ...smsPush, url: '/admin/messages' }).catch(() => {});
     }
 
     const twiml = new MessagingResponse();

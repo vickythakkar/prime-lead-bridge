@@ -1,6 +1,7 @@
 import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
+import { sendPushToOrg, sendPushToAdmin } from '@/lib/push-notifications';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
@@ -61,6 +62,16 @@ export async function POST(request) {
       }
     }
   }
+
+  // Send push notifications for incoming call
+  const pushPayload = {
+    title: '📞 Incoming Call',
+    body: `Incoming call from ${from}`,
+    tag: 'incoming-call',
+    url: '/dashboard/calls'
+  };
+  sendPushToOrg(orgData.id, pushPayload).catch(() => {});
+  sendPushToAdmin({ ...pushPayload, url: '/admin/activity' }).catch(() => {});
 
   const flowConfig = orgData.ivr_flow_config || {};
 

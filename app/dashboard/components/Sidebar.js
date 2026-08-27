@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useBrokerDialer } from './BrokerDialerContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import PushNotificationManager from '@/components/PushNotificationManager';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -78,6 +79,7 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 border-r border-white/5 glass h-screen sticky top-0 flex flex-col p-4">
+      <PushNotificationManager userType="broker" />
       <div className="flex items-center gap-3 px-2 py-4 mb-6">
         <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 flex items-center justify-center">
           <img 

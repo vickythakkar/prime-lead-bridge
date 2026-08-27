@@ -2,6 +2,7 @@ import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { getVoicemailEmailHtml } from '@/lib/email-templates';
+import { sendPushToOrg, sendPushToAdmin } from '@/lib/push-notifications';
 
 export async function POST(request) {
   try {
@@ -178,6 +179,16 @@ export async function POST(request) {
       } catch (emailErr) {
         console.error('Failed to send voicemail email:', emailErr);
       }
+
+      // Push notification for voicemail
+      const vmPush = {
+        title: '🎙️ New Voicemail',
+        body: `New voicemail from ${finalFrom}`,
+        tag: 'new-voicemail',
+        url: '/dashboard/voicemails'
+      };
+      sendPushToOrg(orgId, vmPush).catch(() => {});
+      sendPushToAdmin({ ...vmPush, url: '/admin/voicemails' }).catch(() => {});
     }
     }
     // Return valid TwiML
