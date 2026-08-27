@@ -46,23 +46,6 @@ export async function POST(request) {
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
-  if (process.env.RESEND_API_KEY) {
-    const notifyEmail = orgData.notify_email || process.env.NOTIFY_EMAIL;
-    if (notifyEmail) {
-      try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: 'info@primerealops.com',
-          to: notifyEmail,
-          subject: `Incoming call from ${from}`,
-          html: `<p>You are receiving an incoming call from <strong>${from}</strong>.</p>`
-        });
-      } catch (err) {
-        console.error('Failed to send incoming call email:', err);
-      }
-    }
-  }
-
   // Send push notifications for incoming call
   const pushPayload = {
     title: '📞 Incoming Call',

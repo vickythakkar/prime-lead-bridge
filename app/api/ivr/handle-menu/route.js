@@ -189,20 +189,7 @@ export async function POST(request) {
   
   else if (action === 'voicemail') {
     const fromNumber = formData.get('From');
-    if (process.env.RESEND_API_KEY) {
-      const notifyEmail = orgData.notify_email || process.env.NOTIFY_EMAIL;
-      if (notifyEmail) {
-        try {
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          resend.emails.send({
-            from: 'info@primerealops.com',
-            to: notifyEmail,
-            subject: `Missed call from ${fromNumber}`,
-            html: `<p>You missed a call from <strong>${fromNumber}</strong>. They were routed to voicemail.</p>`
-          });
-        } catch (err) {}
-      }
-    }
+
     twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Our office is currently unavailable. Please leave a message after the beep.');
     twiml.record({
       action: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,
