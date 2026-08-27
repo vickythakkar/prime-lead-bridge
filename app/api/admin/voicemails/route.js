@@ -47,7 +47,7 @@ export async function PATCH(request) {
 
   try {
     const { id } = await request.json();
-    await supabaseAdmin.from('voicemails').update({ status: 'listened' }).eq('id', id);
+    await supabaseAdmin.from('voicemails').update({ listened: true }).eq('id', id);
     return Response.json({ success: true });
   } catch (err) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });

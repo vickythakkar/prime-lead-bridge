@@ -56,7 +56,7 @@ export async function PATCH(request) {
 
     const { error } = await supabaseAdmin
       .from('voicemails')
-      .update({ is_listened })
+      .update({ listened: is_listened })
       .eq('id', id)
       .eq('organization_id', orgId);
 
