@@ -11,6 +11,7 @@ export async function GET(request) {
     let query = supabaseAdmin
       .from('contacts')
       .select('*, organizations(company_name, name)')
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false });
       
     if (orgId) {
@@ -62,7 +63,7 @@ export async function DELETE(request) {
   if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { id } = await request.json();
-    const { error } = await supabaseAdmin.from('contacts').delete().eq('id', id);
+    const { error } = await supabaseAdmin.from('contacts').update({ is_deleted: true }).eq('id', id);
     if (error) throw error;
     return Response.json({ success: true });
   } catch (err) {
