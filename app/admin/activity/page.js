@@ -103,9 +103,21 @@ export default function AdminActivityLog() {
                   <tr key={call.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-5 py-4">
                       {call.call_type === 'outbound' ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Outbound</span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Outbound</span>
+                          {call.status && call.status !== 'completed' && call.status !== 'in-progress' && (
+                            <span className="text-[10px] uppercase tracking-wider text-slate-400">{call.status.replace('-', ' ')}</span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inbound</span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inbound</span>
+                          {call.status === 'voicemail' ? (
+                            <span className="text-[10px] uppercase tracking-wider text-purple-400 font-medium">Voicemail</span>
+                          ) : call.status && call.status !== 'completed' && call.status !== 'in-progress' ? (
+                            <span className="text-[10px] uppercase tracking-wider text-rose-400 font-medium">{call.status.replace('-', ' ')}</span>
+                          ) : null}
+                        </div>
                       )}
                     </td>
                     <td className="px-5 py-4">
