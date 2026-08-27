@@ -195,6 +195,25 @@ export async function POST(request) {
       sendPushToAdmin({ ...vmPush, url: '/admin/voicemails' }).catch(() => {});
     }
     }
+    } else if ((mappedStatus === 'missed' || isVoicemail) && callStatus === 'completed' && !finalRecordingUrl && !recordingStatus) {
+      try {
+        const { data: orgInfo } = await supabaseAdmin
+          .from('organizations')
+          .select('notify_email, contact_email')
+          .eq('id', orgId)
+          .single();
+          
+        const recipientEmail = orgInfo?.notify_email || orgInfo?.contact_email;
+        if (recipientEmail) {
+          await sendEmail({
+            to: recipientEmail,
+            subject: `Missed call from ${finalFrom}`,
+            html: `<p>You missed a call from <strong>${finalFrom}</strong> and no voicemail was left.</p>`
+          });
+        }
+      } catch (emailErr) {
+        console.error('Failed to send missed call email:', emailErr);
+      }
     }
     // Return valid TwiML
     const VoiceResponse = twilio.twiml.VoiceResponse;
