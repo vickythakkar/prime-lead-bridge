@@ -5,9 +5,11 @@ const ADMIN_ORG_ID = '8a564ec4-9544-4b63-ac58-98ec66d69a76';
 
 export default function AdminContacts() {
   const [contacts, setContacts] = useState([]);
+  const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('');
+  const [selectedOrg, setSelectedOrg] = useState(ADMIN_ORG_ID);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -15,13 +17,23 @@ export default function AdminContacts() {
   const initial = { name: '', phone: '', email: '', company: '', notes: '' };
   const [form, setForm] = useState(initial);
 
-  useEffect(() => { fetchContacts(); }, []);
+  useEffect(() => { fetchOrgs(); }, []);
+  useEffect(() => { fetchContacts(); }, [selectedOrg]);
+
+  async function fetchOrgs() {
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      const data = await res.json();
+      setOrgs(data.organizations || []);
+    }
+  }
 
   async function fetchContacts() {
     setLoading(true);
-    // Use supabase client-side — admin contacts are scoped to the admin org
     const token = localStorage.getItem('admin_token');
-    const res = await fetch('/api/admin/contacts', { headers: { Authorization: `Bearer ${token}` } });
+    const url = selectedOrg ? `/api/admin/contacts?org_id=${selectedOrg}` : '/api/admin/contacts';
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       setContacts(data.contacts || []);
@@ -91,15 +103,24 @@ export default function AdminContacts() {
         </button>
       </header>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-6">
         <input type="text" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)}
-          className="flex-1 max-w-xs bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
+          className="flex-1 min-w-[200px] max-w-xs bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
+        <select value={selectedOrg} onChange={e => setSelectedOrg(e.target.value)}
+          className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
+          <option value={ADMIN_ORG_ID}>Admin Contacts</option>
+          {orgs.filter(o => o.id !== ADMIN_ORG_ID).map(o => (
+            <option key={o.id} value={o.id}>{o.company_name || o.name}</option>
+          ))}
+          <option value="">All Organizations</option>
+        </select>
         <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
           className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500">
           <option value="">All Tags</option>
           <option value="Teammate">Teammates</option>
           <option value="Agent">Agents</option>
           <option value="Seller">Sellers</option>
+          <option value="Buyer">Buyers</option>
         </select>
       </div>
 

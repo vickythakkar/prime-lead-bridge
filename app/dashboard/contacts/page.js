@@ -9,7 +9,7 @@ export default function ContactsPage() {
   
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', company: '', notes: '' });
   const [saving, setSaving] = useState(false);
   
   const [orgId, setOrgId] = useState(null);
@@ -52,7 +52,13 @@ export default function ContactsPage() {
 
   const startEditing = (contact) => {
     setEditingId(contact.id);
-    setFormData({ name: contact.name || '', phone: contact.phone || '' });
+    setFormData({ 
+      name: contact.name || '', 
+      phone: contact.phone || '',
+      email: contact.email || '',
+      company: contact.company || '',
+      notes: contact.notes || ''
+    });
     setShowModal(true);
   };
 
@@ -63,7 +69,14 @@ export default function ContactsPage() {
     if (editingId) {
       const { data, error } = await supabase
         .from('contacts')
-        .update({ name: formData.name, phone: formData.phone, updated_at: new Date().toISOString() })
+        .update({ 
+          name: formData.name, 
+          phone: formData.phone,
+          email: formData.email,
+          company: formData.company,
+          notes: formData.notes,
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', editingId)
         .select();
         
@@ -76,7 +89,15 @@ export default function ContactsPage() {
     } else {
       const { data, error } = await supabase
         .from('contacts')
-        .insert([{ organization_id: orgId, name: formData.name, phone: formData.phone }])
+        .insert([{ 
+          organization_id: orgId, 
+          name: formData.name, 
+          phone: formData.phone,
+          email: formData.email,
+          company: formData.company,
+          notes: formData.notes,
+          avatar_color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+        }])
         .select();
         
       if (!error && data) {
@@ -209,11 +230,44 @@ export default function ContactsPage() {
                   value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 />
               </div>
-              <div className="pt-6 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2.5 rounded-lg font-medium text-slate-400 hover:text-white hover:bg-white/5">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                <input 
+                  type="email"
+                  className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Company</label>
+                <input 
+                  type="text"
+                  className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                  value={formData.company} onChange={(e) => setFormData({...formData, company: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+                <textarea 
+                  rows="3"
+                  className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                ></textarea>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white transition-colors font-medium"
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg disabled:opacity-50">
+                <button 
+                  type="submit" 
+                  disabled={saving}
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2 rounded-lg font-medium shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
+                >
                   {saving ? 'Saving...' : 'Save'}
                 </button>
               </div>
