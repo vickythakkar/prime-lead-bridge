@@ -45,28 +45,42 @@ export async function POST(request) {
 
       if (!conversation) {
         let contactId = null;
-        const { data: contact, error: contactErr } = await supabaseAdmin
-          .from('contacts')
-          .select('id')
-          .eq('organization_id', orgId)
-          .eq('phone', from)
-          .maybeSingle();
-          
-        if (contactErr) console.error('Contact fetch error:', contactErr);
+        
+        const digitsOnly = from.replace(/\D/g, '');
+        const last10 = digitsOnly.slice(-10);
+        
+        let contact = null;
+        if (last10.length === 10) {
+          const { data, error } = await supabaseAdmin
+            .from('contacts')
+            .select('id')
+            .eq('organization_id', orgId)
+            .ilike('phone', `%${last10}%`)
+            .maybeSingle();
+          if (data) contact = data;
+        } else {
+          const { data, error } = await supabaseAdmin
+            .from('contacts')
+            .select('id')
+            .eq('organization_id', orgId)
+            .eq('phone', from)
+            .maybeSingle();
+          if (data) contact = data;
+        }
           
         if (contact) {
           contactId = contact.id;
         } else {
           const { data: newContact, error: insertErr } = await supabaseAdmin
             .from('contacts')
-            .insert({ 
-              organization_id: orgId, 
-              phone: from, 
-              name: 'Unknown Contact',
+            .insert([{
+              organization_id: orgId,
+              phone: from,
+              name: 'Unknown ' + from,
               avatar_color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-            })
-            .select('id')
-            .maybeSingle();
+            }])
+            .select()
+            .single();
             
           if (insertErr) console.error('Contact insert error:', insertErr);
           if (newContact) contactId = newContact.id;

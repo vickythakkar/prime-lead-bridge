@@ -67,14 +67,29 @@ export async function POST(request) {
 
     let contactId = null;
     if (contactNumber && !contactNumber.includes('client:')) {
-      const { data: contact } = await supabaseAdmin
-        .from('contacts')
-        .select('id')
-        .eq('organization_id', orgId)
-        .eq('phone', contactNumber)
-        .single();
-      if (contact) {
-        contactId = contact.id;
+      const digitsOnly = contactNumber.replace(/\D/g, '');
+      const last10 = digitsOnly.slice(-10);
+      
+      if (last10.length === 10) {
+        const { data: contact } = await supabaseAdmin
+          .from('contacts')
+          .select('id')
+          .eq('organization_id', orgId)
+          .ilike('phone', `%${last10}%`)
+          .maybeSingle(); // maybeSingle to avoid 406 if multiple matches (though ideally only 1)
+          
+        if (contact) {
+          contactId = contact.id;
+        }
+      } else {
+        // Fallback to exact match if for some reason it's not a 10 digit number
+        const { data: contact } = await supabaseAdmin
+          .from('contacts')
+          .select('id')
+          .eq('organization_id', orgId)
+          .eq('phone', contactNumber)
+          .maybeSingle();
+        if (contact) contactId = contact.id;
       }
     }
 
@@ -141,7 +156,8 @@ export async function POST(request) {
         organization_id: orgId,
         from_number: finalFrom,
         recording_url: finalRecordingUrl,
-        duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0
+        duration: dialCallDuration ? parseInt(dialCallDuration, 10) : 0,
+        contact_id: contactId
       });
       
       try {
