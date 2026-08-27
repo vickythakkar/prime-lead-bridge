@@ -11,7 +11,7 @@ export default function AdminVoicemails() {
 
 
   async function fetchOrgs() {
-    const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/admin/organizations?include_admin=true', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     setOrgs(data.organizations || []);
   }
@@ -31,7 +31,7 @@ export default function AdminVoicemails() {
 
   async function markListened(id) {
     await fetch('/api/admin/voicemails', { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-    setVoicemails(voicemails.map(v => v.id === id ? { ...v, status: 'listened' } : v));
+    setVoicemails(voicemails.map(v => v.id === id ? { ...v, listened: true } : v));
   }
 
   async function deleteVoicemail(id) {

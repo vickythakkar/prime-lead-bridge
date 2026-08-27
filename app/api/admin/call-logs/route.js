@@ -33,14 +33,22 @@ export async function GET(request) {
       return call;
     });
 
-    const unseenIds = (data || []).filter(c => !c.seen).map(c => c.id);
-    if (unseenIds.length > 0) {
-      await supabaseAdmin.from('call_logs').update({ seen: true }).in('id', unseenIds);
-    }
-
     return Response.json({ logs });
   } catch (err) {
     console.error('Admin call-logs error:', err);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(request) {
+  const admin = verifyAdminToken(request);
+  if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    await supabaseAdmin.from('call_logs').update({ seen: true }).eq('seen', false);
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error('Admin call-logs PUT error:', err);
+    return Response.json({ error: 'Internal error' }, { status: 500 });
   }
 }

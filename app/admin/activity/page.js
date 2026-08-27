@@ -13,7 +13,7 @@ export default function AdminActivityLog() {
   useEffect(() => { fetchLogs(); }, [selectedOrg]);
 
   async function fetchOrgs() {
-    const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/admin/organizations?include_admin=true', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     setOrgs(data.organizations || []);
   }
@@ -25,6 +25,7 @@ export default function AdminActivityLog() {
     const data = await res.json();
     setCalls(data.logs || []);
     setLoading(false);
+    fetch('/api/admin/call-logs', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
   }
 
   async function handleDeleteRecording(callId) {

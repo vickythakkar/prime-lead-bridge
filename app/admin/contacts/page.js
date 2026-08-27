@@ -22,7 +22,7 @@ export default function AdminContacts() {
 
   async function fetchOrgs() {
     const token = localStorage.getItem('admin_token');
-    const res = await fetch('/api/admin/organizations', { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/admin/organizations?include_admin=true', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
       const data = await res.json();
       setOrgs(data.organizations || []);

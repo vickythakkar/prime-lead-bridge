@@ -38,8 +38,11 @@ export async function GET(request) {
       orgStats[call.organization_id].totalSeconds += (call.duration || 0);
     });
 
+    const url = new URL(request.url);
+    const includeAdmin = url.searchParams.get('include_admin') === 'true';
+
     const enrichedOrgs = (orgs || [])
-      .filter(org => org.id !== '8a564ec4-9544-4b63-ac58-98ec66d69a76')
+      .filter(org => includeAdmin || org.id !== '8a564ec4-9544-4b63-ac58-98ec66d69a76')
       .map(org => {
         const stats = orgStats[org.id] || { totalCalls: 0, totalSeconds: 0 };
         const totalMinutes = Math.ceil(stats.totalSeconds / 60);
