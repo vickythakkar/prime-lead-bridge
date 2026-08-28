@@ -109,25 +109,51 @@ export function BrokerDialerProvider({ children }) {
           if (numData) setCallerId(numData.phone_number);
         }
 
-        const response = await fetch('/api/twilio/token', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch token');
+        const fetchToken = async () => {
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (!currentSession) return null;
+          const response = await fetch('/api/twilio/token', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+          });
+          if (!response.ok) return null;
+          const data = await response.json();
+          return data.token;
+        };
 
-        const data = await response.json();
-        const newDevice = new Device(data.token, {
+        const initialToken = await fetchToken();
+        if (!initialToken) throw new Error('Failed to fetch token');
+
+        const newDevice = new Device(initialToken, {
           codecPreferences: ['opus', 'pcmu'],
           fakeLocalDTMF: true,
-          enableRingingState: true
+          enableRingingState: true,
+          closeProtection: true
         });
 
+        newDevice.on('tokenWillExpire', async () => {
+          console.log('Twilio token expiring soon. Fetching new token...');
+          const newToken = await fetchToken();
+          if (newToken) {
+            newDevice.updateToken(newToken);
+          }
+        });
+
+        newDevice.on('registered', () => setStatus('Ready to Call'));
+        newDevice.on('unregistered', () => setStatus('Disconnected'));
+        
         newDevice.on('ready', () => setStatus('Ready to Call'));
-        newDevice.on('error', (error) => {
+        newDevice.on('error', async (error) => {
           console.error('Twilio.Device Error:', error);
           if (error.message.includes('permission')) {
             setStatus('Microphone Permission Denied');
+          } else if (error.code === 31205 || error.message.includes('expired')) {
+            // Token expired - attempt to refresh and re-register
+            const newToken = await fetchToken();
+            if (newToken) {
+              newDevice.updateToken(newToken);
+              newDevice.register();
+            }
           } else {
             setStatus('Error: ' + error.message);
           }
@@ -164,6 +190,11 @@ export function BrokerDialerProvider({ children }) {
           setActiveCall(null);
           setIsMuted(false);
           stopTimer();
+        });
+
+        newDevice.on('offline', () => {
+          console.warn('Twilio device went offline');
+          setStatus('Disconnected');
         });
 
         setStatus('Ready to Call');
