@@ -42,6 +42,37 @@ export default function AdminBilling() {
     }
   }
 
+  async function handleRemoveDiscount(invoice) {
+    if (!confirm('Are you sure you want to remove the discount from this invoice?')) return;
+    
+    // Restore total to original subtotal
+    let currentSubtotal = parseFloat(invoice.subtotal || 0);
+    if (currentSubtotal === 0 && invoice.total_amount) {
+       currentSubtotal = parseFloat(invoice.total_amount) + parseFloat(invoice.discount_amount || 0);
+    }
+
+    try {
+      const res = await fetch('/api/admin/invoices', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          invoice_id: invoice.id, 
+          action: 'apply_discount', // We can reuse the action, just set discount to 0
+          discount_amount: 0,
+          total_amount: currentSubtotal
+        })
+      });
+      if (res.ok) {
+        setInvoices(invoices.map(inv => inv.id === invoice.id ? { ...inv, discount_amount: 0, total_amount: currentSubtotal } : inv));
+        alert('Discount removed successfully.');
+      } else {
+        alert('Failed to remove discount.');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
   useEffect(() => { fetchData(); }, [statusFilter]);
@@ -324,18 +355,27 @@ export default function AdminBilling() {
                       <div className="flex items-center justify-end gap-3">
                         {inv.status !== 'paid' ? (
                           <>
-                            <button
-                              onClick={() => {
-                                const amountStr = prompt(`Apply a fixed dollar discount to Invoice ${inv.id.slice(0, 8)}? (e.g. 5.00)\nCurrent subtotal is $${parseFloat(inv.subtotal || 0).toFixed(2)}`);
-                                if (!amountStr) return;
-                                const amount = parseFloat(amountStr);
-                                if (isNaN(amount) || amount <= 0) return alert('Invalid amount');
-                                handleApplyDiscount(inv, amount);
-                              }}
-                              className="text-indigo-400 hover:text-indigo-300 text-xs font-semibold transition-colors"
-                            >
-                              + Discount
-                            </button>
+                            {parseFloat(inv.discount_amount || 0) > 0 ? (
+                              <button
+                                onClick={() => handleRemoveDiscount(inv)}
+                                className="text-red-400 hover:text-red-300 text-xs font-semibold transition-colors"
+                              >
+                                - Remove Discount
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  const amountStr = prompt(`Apply a fixed dollar discount to Invoice ${inv.id.slice(0, 8)}? (e.g. 5.00)\nCurrent subtotal is $${parseFloat(inv.subtotal || 0).toFixed(2)}`);
+                                  if (!amountStr) return;
+                                  const amount = parseFloat(amountStr);
+                                  if (isNaN(amount) || amount <= 0) return alert('Invalid amount');
+                                  handleApplyDiscount(inv, amount);
+                                }}
+                                className="text-indigo-400 hover:text-indigo-300 text-xs font-semibold transition-colors"
+                              >
+                                + Discount
+                              </button>
+                            )}
                             <button
                               onClick={() => handleMarkPaid(inv)}
                               disabled={markingPaid === inv.id}
