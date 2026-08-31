@@ -10,8 +10,8 @@ export async function GET(request) {
   try {
     const ADMIN_ORG_ID = '8a564ec4-9544-4b63-ac58-98ec66d69a76';
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+    const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999)).toISOString();
 
     // Total orgs
     const { count: totalOrgs } = await supabaseAdmin
@@ -34,8 +34,8 @@ export async function GET(request) {
     // We will calculate totalRevenue dynamically based on plans below
 
     // Previous month logic
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
+    const prevMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString();
+    const prevMonthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999)).toISOString();
 
     const { count: prevTotalOrgs } = await supabaseAdmin
       .from('organizations')

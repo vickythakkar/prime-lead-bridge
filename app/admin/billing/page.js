@@ -17,7 +17,7 @@ export default function AdminBilling() {
     if (currentSubtotal === 0 && invoice.total_amount) {
        currentSubtotal = parseFloat(invoice.total_amount) + parseFloat(invoice.discount_amount || 0);
     }
-    const newTotal = Math.max(0, currentSubtotal - discountAmount + parseFloat(invoice.overage_amount || 0));
+    const newTotal = Math.max(0, currentSubtotal - discountAmount);
 
     try {
       const res = await fetch('/api/admin/invoices', {
@@ -99,45 +99,96 @@ export default function AdminBilling() {
   function handleDownload(invoice) {
     const orgName = invoice.organizations?.company_name || invoice.organizations?.name || 'Unknown';
     const period = invoice.month_year || `${invoice.billing_period_start} — ${invoice.billing_period_end}`;
-    const content = `
-INVOICE
-=======================================================
-Prime Real Ops — Platform Invoice
-=======================================================
-Invoice ID:     ${invoice.id}
-Organization:   ${orgName}
-Billing Period: ${period}
-Issue Date:     ${new Date(invoice.created_at).toLocaleDateString()}
-Due Date:       ${invoice.due_date || 'N/A'}
-Status:         ${invoice.status?.toUpperCase()}
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Invoice - ${orgName}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+            .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            .header p { margin: 5px 0 0 0; color: #666; }
+            .details { margin-bottom: 30px; line-height: 1.6; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f8fafc; }
+            .totals { width: 350px; float: right; }
+            .totals table { margin-bottom: 0; }
+            .totals table th { background: none; }
+            .total-row { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; }
+            .footer { clear: both; margin-top: 50px; text-align: center; color: #666; font-size: 0.9em; border-top: 1px solid #ddd; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>INVOICE</h1>
+            <p>Prime Real Ops &mdash; Platform Invoice</p>
+          </div>
+          
+          <div class="details">
+            <strong>Invoice ID:</strong> ${invoice.id}<br>
+            <strong>Organization:</strong> ${orgName}<br>
+            <strong>Billing Period:</strong> ${period}<br>
+            <strong>Issue Date:</strong> ${new Date(invoice.created_at).toLocaleDateString()}<br>
+            <strong>Due Date:</strong> ${invoice.due_date || 'N/A'}<br>
+            <strong>Status:</strong> ${invoice.status?.toUpperCase()}<br>
+            ${invoice.status === 'paid' ? `<strong>Paid On:</strong> ${invoice.paid_date}<br>` : ''}
+          </div>
 
--------------------------------------------------------
-USAGE BREAKDOWN
--------------------------------------------------------
-Total Calls:        ${invoice.total_calls || 0}
-Total Minutes:      ${invoice.total_minutes || 0} min
-Rate Per Minute:    $${parseFloat(invoice.rate_per_minute || 0).toFixed(4)}/min
-Subtotal:           $${parseFloat(invoice.subtotal || 0).toFixed(2)}
-Overage Charges:    $${parseFloat(invoice.overage_amount || 0).toFixed(2)}
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Voice Calls Usage</td>
+                <td>${invoice.total_minutes || 0} min</td>
+                <td>$${parseFloat(invoice.rate_per_minute || 0).toFixed(4)}/min</td>
+                <td>$${parseFloat(invoice.subtotal || 0).toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
 
--------------------------------------------------------
-TOTAL DUE:          $${parseFloat(invoice.total_amount || invoice.amount_due || 0).toFixed(2)}
--------------------------------------------------------
-${invoice.status === 'paid' ? `PAID ON: ${invoice.paid_date || 'N/A'}\nAMOUNT PAID: $${parseFloat(invoice.paid_amount || invoice.total_amount || 0).toFixed(2)}` : ''}
+          <div class="totals">
+            <table>
+              <tr>
+                <td>Subtotal</td>
+                <td style="text-align:right">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td>Discount Applied</td>
+                <td style="text-align:right">-$${parseFloat(invoice.discount_amount || 0).toFixed(2)}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Total Due</td>
+                <td style="text-align:right">$${parseFloat(invoice.total_amount || invoice.amount_due || 0).toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
 
-Thank you for your business!
-Prime Real Ops — info@primerealops.com
-    `.trim();
+          <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>info@primerealops.com</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
 
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Invoice_${orgName.replace(/\s+/g, '_')}_${period.replace(/\s+/g, '_')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.open(url, '_blank');
   }
 
   const filtered = invoices.filter(inv => {

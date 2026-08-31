@@ -51,11 +51,19 @@ export async function GET(request, { params }) {
       return call;
     });
 
+    // Fetch invoices
+    const { data: invoices } = await supabaseAdmin
+      .from('invoices')
+      .select('*')
+      .eq('organization_id', id)
+      .order('created_at', { ascending: false });
+
     return Response.json({
       organization: org,
       numbers: numbers || [],
       agents: agents || [],
-      callLogs: callLogsWithUrls
+      callLogs: callLogsWithUrls,
+      invoices: invoices || []
     });
   } catch (err) {
     console.error('Error fetching org details:', err);

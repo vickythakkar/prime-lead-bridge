@@ -32,9 +32,8 @@ export default function BillingDashboard() {
       // Load Active Numbers
       const { data: numData } = await supabase.from('organization_numbers').select('id').eq('organization_id', oId);
       
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      const now = new Date();
+      const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
       // Load Call Logs for this billing cycle
       const { data: callData } = await supabase.from('call_logs')
@@ -47,11 +46,18 @@ export default function BillingDashboard() {
         totalSeconds = callData.reduce((acc, call) => acc + (call.duration || 0), 0);
       }
 
+      // Load Past Invoices
+      const { data: pastInvoices } = await supabase.from('invoices')
+        .select('*')
+        .eq('organization_id', oId)
+        .order('created_at', { ascending: false });
+
       setStats({
         totalMinutes: Math.ceil(totalSeconds / 60),
         totalCalls: callData?.length || 0,
         activeNumbersCount: numData?.length || 0,
-        activeNumbers: numData || []
+        activeNumbers: numData || [],
+        invoices: pastInvoices || []
       });
 
       setLoading(false);
@@ -186,6 +192,101 @@ export default function BillingDashboard() {
     invoiceWindow.document.close();
   };
 
+  const handleDownloadPastInvoice = (invoice) => {
+    const orgName = org.company_name || org.name || 'Unknown';
+    const period = invoice.month_year || `${invoice.billing_period_start} — ${invoice.billing_period_end}`;
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Invoice - ${orgName}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+            .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #4f46e5; }
+            .header p { margin: 5px 0 0 0; color: #666; }
+            .details { margin-bottom: 30px; line-height: 1.6; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f8fafc; }
+            .totals { width: 350px; float: right; }
+            .totals table { margin-bottom: 0; }
+            .totals table th { background: none; }
+            .total-row { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; }
+            .footer { clear: both; margin-top: 50px; text-align: center; color: #666; font-size: 0.9em; border-top: 1px solid #ddd; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>INVOICE</h1>
+            <p>Prime Real Ops &mdash; Platform Invoice</p>
+          </div>
+          
+          <div class="details">
+            <strong>Invoice ID:</strong> ${invoice.id}<br>
+            <strong>Organization:</strong> ${orgName}<br>
+            <strong>Billing Period:</strong> ${period}<br>
+            <strong>Issue Date:</strong> ${new Date(invoice.created_at).toLocaleDateString()}<br>
+            <strong>Due Date:</strong> ${invoice.due_date || 'N/A'}<br>
+            <strong>Status:</strong> ${invoice.status?.toUpperCase()}<br>
+            ${invoice.status === 'paid' ? `<strong>Paid On:</strong> ${invoice.paid_date}<br>` : ''}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Voice Calls Usage</td>
+                <td>${invoice.total_minutes || 0} min</td>
+                <td>$${parseFloat(invoice.rate_per_minute || 0).toFixed(4)}/min</td>
+                <td>$${parseFloat(invoice.subtotal || 0).toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <table>
+              <tr>
+                <td>Subtotal</td>
+                <td style="text-align:right">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td>Discount Applied</td>
+                <td style="text-align:right">-$${parseFloat(invoice.discount_amount || 0).toFixed(2)}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Total Due</td>
+                <td style="text-align:right">$${parseFloat(invoice.total_amount || invoice.amount_due || 0).toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>info@primerealops.com</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl mx-auto">
       <header className="mb-10">
@@ -201,7 +302,7 @@ export default function BillingDashboard() {
           <div className="flex justify-between items-start mb-6 relative z-10">
             <div>
               <h2 className="text-xl font-bold text-white">{planName}</h2>
-              <p className="text-slate-400 text-sm mt-1">Renews on {new Date(new Date(org.billing_cycle_start).setMonth(new Date().getMonth() + 1)).toLocaleDateString()}</p>
+              <p className="text-slate-400 text-sm mt-1">Renews on {new Date(new Date(org.billing_cycle_start || new Date()).setMonth(new Date().getMonth() + 1)).toLocaleDateString()}</p>
             </div>
             <div className="text-right">
               <span className="text-3xl font-bold text-white">${baseMonthlyCost}</span>
@@ -331,7 +432,7 @@ export default function BillingDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {/* Mock historical invoice row */}
+                {/* Current pending estimate */}
                 <tr className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-slate-300">{new Date().toLocaleDateString()} (Current)</td>
                   <td className="px-4 py-3 text-slate-300">${totalEstimatedBill.toFixed(2)}</td>
@@ -344,6 +445,28 @@ export default function BillingDashboard() {
                     </button>
                   </td>
                 </tr>
+                
+                {/* Past Invoices */}
+                {(stats.invoices || []).map(inv => (
+                  <tr key={inv.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3 text-slate-300">{new Date(inv.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-slate-300">${parseFloat(inv.total_amount).toFixed(2)}</td>
+                    <td className="px-4 py-3">
+                      {inv.status === 'paid' ? (
+                        <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">Paid</span>
+                      ) : inv.status === 'overdue' ? (
+                        <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Overdue</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded-full">Due</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => handleDownloadPastInvoice(inv)} className="text-indigo-400 hover:text-indigo-300 font-medium text-xs">
+                        PDF
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

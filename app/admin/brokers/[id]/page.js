@@ -340,6 +340,52 @@ export default function OrganizationDetailsPage() {
 
         </div>
 
+          {/* Invoice History */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-2xl overflow-hidden mt-8">
+            <div className="px-6 py-5 border-b border-white/10 bg-white/[0.02]">
+              <h2 className="text-lg font-semibold text-white">Invoice History</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left whitespace-nowrap">
+                <thead className="bg-[#0a0a0e]/50 border-b border-white/10">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Invoice</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Period</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Amount</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {(data.invoices || []).map(inv => (
+                    <tr key={inv.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-indigo-300 font-medium">{inv.id.slice(0, 8).toUpperCase()}</td>
+                      <td className="px-6 py-4 text-slate-300 text-sm">{inv.month_year || `${inv.billing_period_start || '—'}`}</td>
+                      <td className="px-6 py-4 text-right text-sm font-medium text-white">
+                        ${parseFloat(inv.total_amount || 0).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-bold rounded uppercase tracking-wider border ${
+                          inv.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          inv.status === 'overdue' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
+                          'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                        }`}>
+                          {inv.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!data.invoices || data.invoices.length === 0) && (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-8 text-center text-slate-400">No invoices found for this organization.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
         {/* RIGHT COLUMN: Agents & Logs */}
         <div className="space-y-8">
           
