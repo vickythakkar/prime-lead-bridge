@@ -47,7 +47,9 @@ export default function OrganizationDetailsPage() {
           enable_listing_lookup: json.organization.enable_listing_lookup !== false,
           notify_email: json.organization.notify_email || '',
           service_active: json.organization.ivr_flow_config?.service_active !== false,
-          rate_per_minute: json.organization.ivr_flow_config?.rate_per_minute || ''
+          rate_per_minute: json.organization.ivr_flow_config?.rate_per_minute || '',
+          pending_discount_type: json.organization.pending_discount_type || 'fixed',
+          pending_discount_amount: json.organization.pending_discount_amount || ''
         });
       } else {
         alert('Failed to load organization');
@@ -283,6 +285,20 @@ export default function OrganizationDetailsPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Custom Per-Minute Rate ($)</label>
                   <input type="number" step="0.001" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.rate_per_minute} onChange={e => setSettings({...settings, rate_per_minute: e.target.value === '' ? null : e.target.value})} placeholder="Leave blank for global default" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Pending Discount Type</label>
+                  <select className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.pending_discount_type} onChange={e => setSettings({...settings, pending_discount_type: e.target.value})}>
+                    <option value="fixed">Fixed Amount ($)</option>
+                    <option value="percentage">Percentage (%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Pending Discount Amount</label>
+                  <input type="number" step="0.01" min="0" className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.pending_discount_amount} onChange={e => setSettings({...settings, pending_discount_amount: e.target.value})} placeholder="0.00" />
                 </div>
               </div>
 

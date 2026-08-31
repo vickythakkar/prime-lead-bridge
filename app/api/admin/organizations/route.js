@@ -81,19 +81,21 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { company_name, subscription_plan, notify_email, contact_name, contact_email, contact_phone, website, rate_per_minute, overage_multiplier, payment_window_days } = body;
+    const { company_name, subscription_plan, notify_email, contact_name, contact_email, contact_phone, website, rate_per_minute, overage_multiplier, payment_window_days, pending_discount_type, pending_discount_amount } = body;
 
     if (!company_name) return Response.json({ error: 'Company name is required' }, { status: 400 });
 
     const insertData = {
       company_name,
       name: company_name,
-      subscription_plan: subscription_plan || 'basic',
+      subscription_plan: subscription_plan || 'pay_as_you_go',
       notify_email: notify_email || contact_email || '',
       contact_name: contact_name || '',
       contact_email: contact_email || '',
       contact_phone: contact_phone || '',
       website: website || '',
+      pending_discount_type: pending_discount_type || 'fixed',
+      pending_discount_amount: pending_discount_amount ? parseFloat(pending_discount_amount) : 0,
     };
 
     // Add billing overrides if provided - store in ivr_flow_config since columns don't exist yet

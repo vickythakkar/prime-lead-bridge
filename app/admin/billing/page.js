@@ -9,6 +9,39 @@ export default function AdminBilling() {
   const [search, setSearch] = useState('');
   const [markingPaid, setMarkingPaid] = useState(null);
 
+  async function handleApplyDiscount(invoice, discountAmount) {
+    if (!confirm(`Are you sure you want to apply a $${discountAmount} discount to this invoice?`)) return;
+    
+    // Calculate new total
+    let currentSubtotal = parseFloat(invoice.subtotal || 0);
+    if (currentSubtotal === 0 && invoice.total_amount) {
+       currentSubtotal = parseFloat(invoice.total_amount) + parseFloat(invoice.discount_amount || 0);
+    }
+    const newTotal = Math.max(0, currentSubtotal - discountAmount + parseFloat(invoice.overage_amount || 0));
+
+    try {
+      const res = await fetch('/api/admin/invoices', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          invoice_id: invoice.id, 
+          action: 'apply_discount',
+          discount_amount: discountAmount,
+          total_amount: newTotal
+        })
+      });
+      if (res.ok) {
+        setInvoices(invoices.map(inv => inv.id === invoice.id ? { ...inv, discount_amount: discountAmount, total_amount: newTotal } : inv));
+        // Note: we don't strictly update summary totals here perfectly, but a page reload fixes it.
+        alert('Discount applied successfully.');
+      } else {
+        alert('Failed to apply discount.');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
   useEffect(() => { fetchData(); }, [statusFilter]);
@@ -125,19 +158,38 @@ Prime Real Ops — info@primerealops.com
         <p className="text-slate-400 mt-1">Track payments, due invoices, and manage overages across all organizations.</p>
       </header>
 
-      {/* Summary Cards — Live Data */}
+      {/* Financial Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="glass-card p-6 rounded-xl border border-emerald-500/20 bg-emerald-900/10">
-          <h3 className="text-emerald-400 text-sm font-bold uppercase tracking-wider mb-1">Collected (All Time)</h3>
+        <div className="glass-card p-6 rounded-xl border border-indigo-500/20 bg-indigo-900/10">
+          <h3 className="text-indigo-400 text-sm font-bold uppercase tracking-wider mb-1">Gross Billed</h3>
+          <p className="text-3xl font-bold text-white">${summary.totalGross?.toFixed(2) || '0.00'}</p>
+          <p className="text-xs text-slate-500 mt-1">Total value of all invoices</p>
+        </div>
+        <div className="glass-card p-6 rounded-xl border border-rose-500/20 bg-rose-900/10">
+          <h3 className="text-rose-400 text-sm font-bold uppercase tracking-wider mb-1">Discounts Given</h3>
+          <p className="text-3xl font-bold text-white">${summary.totalDiscounts?.toFixed(2) || '0.00'}</p>
+          <p className="text-xs text-slate-500 mt-1">Total discounts applied</p>
+        </div>
+        <div className="glass-card p-6 rounded-xl border border-emerald-500/30 bg-emerald-900/20">
+          <h3 className="text-emerald-400 text-sm font-bold uppercase tracking-wider mb-1">Net Bank Revenue</h3>
+          <p className="text-3xl font-bold text-white">${summary.totalNet?.toFixed(2) || '0.00'}</p>
+          <p className="text-xs text-emerald-500/70 mt-1">Actual revenue after discounts</p>
+        </div>
+      </div>
+
+      {/* Invoice Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="glass-card p-6 rounded-xl border border-white/10">
+          <h3 className="text-emerald-400 text-sm font-bold uppercase tracking-wider mb-1">Collected</h3>
           <p className="text-3xl font-bold text-white">${summary.totalPaid?.toFixed(2) || '0.00'}</p>
           <p className="text-xs text-slate-500 mt-1">{summary.paid || 0} paid invoice{summary.paid !== 1 ? 's' : ''}</p>
         </div>
-        <div className="glass-card p-6 rounded-xl border border-yellow-500/20 bg-yellow-900/10">
+        <div className="glass-card p-6 rounded-xl border border-white/10">
           <h3 className="text-yellow-400 text-sm font-bold uppercase tracking-wider mb-1">Pending / Due</h3>
           <p className="text-3xl font-bold text-white">${summary.totalDue?.toFixed(2) || '0.00'}</p>
           <p className="text-xs text-slate-500 mt-1">{summary.due || 0} invoice{summary.due !== 1 ? 's' : ''} outstanding</p>
         </div>
-        <div className="glass-card p-6 rounded-xl border border-red-500/20 bg-red-900/10">
+        <div className="glass-card p-6 rounded-xl border border-white/10">
           <h3 className="text-red-400 text-sm font-bold uppercase tracking-wider mb-1">Overdue</h3>
           <p className="text-3xl font-bold text-white">${summary.totalOverdue?.toFixed(2) || '0.00'}</p>
           <p className="text-xs text-slate-500 mt-1">{summary.overdue || 0} invoice{summary.overdue !== 1 ? 's' : ''} past due</p>
@@ -220,13 +272,27 @@ Prime Real Ops — info@primerealops.com
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
                         {inv.status !== 'paid' ? (
-                          <button
-                            onClick={() => handleMarkPaid(inv)}
-                            disabled={markingPaid === inv.id}
-                            className="text-emerald-400 hover:text-emerald-300 text-xs font-semibold disabled:opacity-50 transition-colors"
-                          >
-                            {markingPaid === inv.id ? '...' : 'Mark Paid'}
-                          </button>
+                          <>
+                            <button
+                              onClick={() => {
+                                const amountStr = prompt(`Apply a fixed dollar discount to Invoice ${inv.id.slice(0, 8)}? (e.g. 5.00)\nCurrent subtotal is $${parseFloat(inv.subtotal || 0).toFixed(2)}`);
+                                if (!amountStr) return;
+                                const amount = parseFloat(amountStr);
+                                if (isNaN(amount) || amount <= 0) return alert('Invalid amount');
+                                handleApplyDiscount(inv, amount);
+                              }}
+                              className="text-indigo-400 hover:text-indigo-300 text-xs font-semibold transition-colors"
+                            >
+                              + Discount
+                            </button>
+                            <button
+                              onClick={() => handleMarkPaid(inv)}
+                              disabled={markingPaid === inv.id}
+                              className="text-emerald-400 hover:text-emerald-300 text-xs font-semibold disabled:opacity-50 transition-colors"
+                            >
+                              {markingPaid === inv.id ? '...' : 'Mark Paid'}
+                            </button>
+                          </>
                         ) : (
                           <span className="text-slate-600 text-xs font-semibold">Paid ✓</span>
                         )}

@@ -78,6 +78,21 @@ export async function PATCH(request, { params }) {
     if (body.contact_name !== undefined) updateData.contact_name = body.contact_name;
     if (body.contact_email !== undefined) updateData.contact_email = body.contact_email;
     if (body.contact_phone !== undefined) updateData.contact_phone = body.contact_phone;
+    if (body.pending_discount_type !== undefined) updateData.pending_discount_type = body.pending_discount_type;
+    if (body.pending_discount_amount !== undefined) updateData.pending_discount_amount = parseFloat(body.pending_discount_amount || 0);
+
+    // Merge ivr_flow_config updates
+    if (body.rate_per_minute !== undefined || body.overage_multiplier !== undefined || body.payment_window_days !== undefined) {
+      // First fetch existing config
+      const { data: existingOrg } = await supabaseAdmin.from('organizations').select('ivr_flow_config').eq('id', id).single();
+      const newConfig = { ...(existingOrg?.ivr_flow_config || {}) };
+      
+      if (body.rate_per_minute !== undefined) newConfig.rate_per_minute = parseFloat(body.rate_per_minute) || null;
+      if (body.overage_multiplier !== undefined) newConfig.overage_multiplier = parseFloat(body.overage_multiplier) || null;
+      if (body.payment_window_days !== undefined) newConfig.payment_window_days = parseFloat(body.payment_window_days) || null;
+      
+      updateData.ivr_flow_config = newConfig;
+    }
 
     const { data, error } = await supabaseAdmin
       .from('organizations')

@@ -59,7 +59,7 @@ export async function GET(request) {
     // Invoices summary
     const { data: invoices } = await supabaseAdmin
       .from('invoices')
-      .select('status, total_amount')
+      .select('status, total_amount, subtotal, discount_amount')
       .order('created_at', { ascending: false });
 
     const invoiceSummary = {
@@ -69,13 +69,20 @@ export async function GET(request) {
       totalDue: 0,
       totalOverdue: 0,
       totalPaid: 0,
+      totalGross: 0,
+      totalDiscounts: 0,
+      totalNet: 0
     };
 
     (invoices || []).forEach(inv => {
       invoiceSummary[inv.status]++;
-      if (inv.status === 'due') invoiceSummary.totalDue += parseFloat(inv.total_amount);
-      if (inv.status === 'overdue') invoiceSummary.totalOverdue += parseFloat(inv.total_amount);
-      if (inv.status === 'paid') invoiceSummary.totalPaid += parseFloat(inv.total_amount);
+      if (inv.status === 'due') invoiceSummary.totalDue += parseFloat(inv.total_amount || 0);
+      if (inv.status === 'overdue') invoiceSummary.totalOverdue += parseFloat(inv.total_amount || 0);
+      if (inv.status === 'paid') invoiceSummary.totalPaid += parseFloat(inv.total_amount || 0);
+      
+      invoiceSummary.totalGross += parseFloat(inv.subtotal || 0);
+      invoiceSummary.totalDiscounts += parseFloat(inv.discount_amount || 0);
+      invoiceSummary.totalNet += parseFloat(inv.total_amount || 0);
     });
 
     // Per-org breakdown for this month

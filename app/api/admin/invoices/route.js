@@ -39,21 +39,28 @@ export async function PATCH(request) {
   }
 
   try {
-    const { invoice_id, paid_amount, notes } = await request.json();
+    const { invoice_id, action, paid_amount, discount_amount, total_amount, notes } = await request.json();
 
     if (!invoice_id) {
       return Response.json({ error: 'invoice_id is required' }, { status: 400 });
     }
 
+    let updatePayload = { updated_at: new Date().toISOString() };
+    
+    if (action === 'apply_discount') {
+      updatePayload.discount_amount = discount_amount;
+      updatePayload.total_amount = total_amount;
+    } else {
+      // Mark as paid (default behavior)
+      updatePayload.status = 'paid';
+      updatePayload.paid_date = new Date().toISOString().split('T')[0];
+      updatePayload.paid_amount = paid_amount || null;
+      updatePayload.notes = notes || null;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('invoices')
-      .update({
-        status: 'paid',
-        paid_date: new Date().toISOString().split('T')[0],
-        paid_amount: paid_amount || null,
-        notes: notes || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', invoice_id)
       .select()
       .single();

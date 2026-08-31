@@ -10,7 +10,7 @@ export default function AllClientsPage() {
   const [editingOrg, setEditingOrg] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const initial = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', subscription_plan: 'basic', notify_email: '', rate_per_minute: '', overage_multiplier: '', payment_window_days: '' };
+  const initial = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', subscription_plan: 'pay_as_you_go', notify_email: '', rate_per_minute: '', overage_multiplier: '', payment_window_days: '', pending_discount_type: 'fixed', pending_discount_amount: '' };
   const [form, setForm] = useState(initial);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
@@ -45,11 +45,13 @@ export default function AllClientsPage() {
       contact_name: org.contact_name || '',
       contact_email: org.notify_email || '',
       contact_phone: org.organization_numbers?.[0]?.phone_number || '',
-      subscription_plan: org.subscription_plan || 'basic',
+      subscription_plan: org.subscription_plan || 'pay_as_you_go',
       notify_email: org.notify_email || '',
       rate_per_minute: org.ivr_flow_config?.rate_per_minute || '',
       overage_multiplier: org.overage_multiplier || '',
-      payment_window_days: org.payment_window_days || ''
+      payment_window_days: org.payment_window_days || '',
+      pending_discount_type: org.pending_discount_type || 'fixed',
+      pending_discount_amount: org.pending_discount_amount || ''
     });
     setShowModal(true);
   }
@@ -267,6 +269,24 @@ export default function AllClientsPage() {
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">Pay Window (d)</label>
                     <input type="number" placeholder="Default" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.payment_window_days} onChange={e => setForm({ ...form, payment_window_days: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pending Discount */}
+              <div className="border-t border-white/10 pt-5 mt-5">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">One-Time Discount <span className="text-slate-500 font-normal normal-case">(applies to next invoice)</span></h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Discount Type</label>
+                    <select className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.pending_discount_type} onChange={e => setForm({ ...form, pending_discount_type: e.target.value })}>
+                      <option value="fixed">Fixed Amount ($)</option>
+                      <option value="percentage">Percentage (%)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Amount</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.pending_discount_amount} onChange={e => setForm({ ...form, pending_discount_amount: e.target.value })} />
                   </div>
                 </div>
               </div>

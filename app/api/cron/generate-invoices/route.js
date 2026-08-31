@@ -25,7 +25,7 @@ export async function GET(request) {
     // Get all organizations
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name, contact_name, notify_email, contact_email, subscription_plan, ivr_flow_config');
+      .select('id, name, company_name, contact_name, notify_email, contact_email, subscription_plan, ivr_flow_config, pending_discount_type, pending_discount_amount');
 
     let invoicesGenerated = 0;
     let totalRevenueGenerated = 0;
@@ -87,6 +87,20 @@ export async function GET(request) {
         }
 
         const subtotal = parseFloat((baseFee + usageCost).toFixed(2));
+        
+        let discountAmount = 0;
+        if (org.pending_discount_amount && parseFloat(org.pending_discount_amount) > 0) {
+          const discountVal = parseFloat(org.pending_discount_amount);
+          if (org.pending_discount_type === 'percentage') {
+            discountAmount = parseFloat(((subtotal * discountVal) / 100).toFixed(2));
+          } else {
+            discountAmount = discountVal;
+          }
+          // Cap discount at subtotal
+          if (discountAmount > subtotal) discountAmount = subtotal;
+        }
+
+        const totalAmount = parseFloat((subtotal - discountAmount).toFixed(2));
 
         // Due date: org specific window from generation
         const dueDate = new Date();
@@ -101,24 +115,33 @@ export async function GET(request) {
           total_calls: totalCalls,
           rate_per_minute: perMinRate,
           subtotal: subtotal,
+          discount_amount: discountAmount,
           overage_amount: 0,
-          total_amount: subtotal,
-          status: subtotal === 0 ? 'paid' : 'due', // Auto-mark $0 invoices as paid
+          total_amount: totalAmount,
+          status: totalAmount <= 0 ? 'paid' : 'due', // Auto-mark $0 invoices as paid
           due_date: dueDateStr,
         });
+        
+        // Reset the pending discount for this org
+        if (discountAmount > 0) {
+          await supabaseAdmin.from('organizations')
+            .update({ pending_discount_amount: 0 })
+            .eq('id', org.id);
+        }
 
         invoicesGenerated++;
-        totalRevenueGenerated += subtotal;
+        totalRevenueGenerated += totalAmount;
 
         // Send Invoice Email to Broker
-        if (sendEmail && getInvoiceEmailHtml && subtotal > 0) {
+        if (sendEmail && getInvoiceEmailHtml && totalAmount > 0) {
           const brokerEmail = org.notify_email || org.contact_email;
           if (brokerEmail) {
             const monthStr = prevMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
             await sendEmail({
               to: brokerEmail,
+              cc: 'info@primerealops.com',
               subject: `Your Prime Lead Bridge Invoice - ${monthStr}`,
-              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, subtotal, 0, subtotal, dueDateStr)
+              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr)
             });
           }
         }
