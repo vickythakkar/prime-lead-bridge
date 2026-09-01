@@ -338,8 +338,6 @@ export default function OrganizationDetailsPage() {
             </form>
           </div>
 
-        </div>
-
           {/* Invoice History */}
           <div className="bg-slate-900/50 border border-white/10 rounded-2xl overflow-hidden mt-8">
             <div className="px-6 py-5 border-b border-white/10 bg-white/[0.02]">
