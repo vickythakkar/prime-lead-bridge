@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import IVRFlowBuilder from '../components/IVRFlowBuilder';
+import IVRFlowBuilder from '../../components/IVRFlowBuilder';
 
 export default function NumberIVRBuilder({ numberData, onSaved }) {
   const [enabled, setEnabled] = useState(numberData.play_ivr_greeting ?? true);
