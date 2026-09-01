@@ -26,6 +26,16 @@ export default function WebDialer() {
     }
   }, []);
 
+  // Sync incoming call number to the dialer display
+  useEffect(() => {
+    if (activeCall && activeCall.parameters && activeCall.parameters.From) {
+      // Check if it's an incoming call (we didn't just dial it ourselves)
+      if (activeCall.direction === 'INCOMING' || (status === 'Connected' && !phoneNumber)) {
+        setPhoneNumber(activeCall.parameters.From);
+      }
+    }
+  }, [activeCall, status]);
+
   // Live lookup contact name when phone number changes
   useEffect(() => {
     async function lookupName() {

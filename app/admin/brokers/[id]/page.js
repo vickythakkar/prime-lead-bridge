@@ -153,7 +153,7 @@ export default function OrganizationDetailsPage() {
     
     const htmlContent = getInvoicePdfHtml(invoice, orgName, period, baseFee, usageCost, planName);
 
-    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
   }
