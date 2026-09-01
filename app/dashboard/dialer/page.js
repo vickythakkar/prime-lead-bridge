@@ -76,10 +76,12 @@ export default function WebDialer() {
 
       if (lead) {
         setContactName(lead.name);
+      } else {
+        setContactName(''); // Clear it if neither contact nor lead is found!
       }
     }
     
-    // Only lookup if we don't already have a name from URL or previous lookup
+    // Always run the lookup when the number changes, even if we had a name previously
     const timeoutId = setTimeout(() => lookupName(), 500);
     return () => clearTimeout(timeoutId);
   }, [phoneNumber]);
