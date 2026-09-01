@@ -251,7 +251,7 @@ export default function AdminBilling() {
               <tbody className="divide-y divide-white/5">
                 {filtered.map(inv => (
                   <tr key={inv.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-indigo-300 font-medium">{inv.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-indigo-300 font-medium">{inv.invoice_number || inv.id.slice(0, 8).toUpperCase()}</td>
                     <td className="px-6 py-4 font-medium text-white">{inv.organizations?.company_name || inv.organizations?.name || '—'}</td>
                     <td className="px-6 py-4 text-slate-300 text-sm">{inv.month_year || `${inv.billing_period_start || '—'}`}</td>
                     <td className="px-6 py-4 text-right text-sm">
@@ -290,7 +290,7 @@ export default function AdminBilling() {
                             ) : (
                               <button
                                 onClick={() => {
-                                  const amountStr = prompt(`Apply a fixed dollar discount to Invoice ${inv.id.slice(0, 8)}? (e.g. 5.00)\nCurrent subtotal is $${parseFloat(inv.subtotal || 0).toFixed(2)}`);
+                                  const amountStr = prompt(`Apply a fixed dollar discount to Invoice ${inv.invoice_number || inv.id.slice(0, 8)}? (e.g. 5.00)\nCurrent subtotal is $${parseFloat(inv.subtotal || 0).toFixed(2)}`);
                                   if (!amountStr) return;
                                   const amount = parseFloat(amountStr);
                                   if (isNaN(amount) || amount <= 0) return alert('Invalid amount');
