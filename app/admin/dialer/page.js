@@ -45,15 +45,27 @@ export default function AdminDialer() {
       const cleanPhone = phoneNumber.replace(/\D/g, '');
       if (cleanPhone.length < 10) return;
 
-      // Check admin contacts
+      // Check all contacts (since admin can see all)
       const { data: contact } = await supabase
-        .from('admin_contacts')
-        .select('name')
+        .from('contacts')
+        .select('name, organizations(company_name)')
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
         .maybeSingle();
       
       if (contact) {
-        setContactName(contact.name);
+        setContactName(contact.organizations ? `${contact.name} (${contact.organizations.company_name})` : contact.name);
+        return;
+      } 
+      
+      // Check leads
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('name, organizations(company_name)')
+        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .maybeSingle();
+
+      if (lead) {
+        setContactName(lead.organizations ? `${lead.name} (${lead.organizations.company_name})` : lead.name);
       } else {
         setContactName('');
       }
