@@ -40,6 +40,26 @@ export async function GET(request) {
       console.error('Email modules failed to load:', e);
     }
 
+    // Determine the invoice prefix year based on the billing period year
+    const invoiceYear = prevMonthStart.getFullYear();
+    const prefix = `PLB${invoiceYear}`;
+
+    // Find the latest invoice number for this year to continue the sequence
+    const { data: latestInvoices } = await supabaseAdmin
+      .from('invoices')
+      .select('invoice_number')
+      .like('invoice_number', `${prefix}%`)
+      .order('invoice_number', { ascending: false })
+      .limit(1);
+
+    let nextInvoiceSequence = 1;
+    if (latestInvoices && latestInvoices.length > 0 && latestInvoices[0].invoice_number) {
+      const lastSeq = parseInt(latestInvoices[0].invoice_number.replace(prefix, ''), 10);
+      if (!isNaN(lastSeq)) {
+        nextInvoiceSequence = lastSeq + 1;
+      }
+    }
+
     if (orgs) {
       for (const org of orgs) {
         // Check if invoice already exists for this billing period
@@ -112,8 +132,12 @@ export async function GET(request) {
         dueDate.setDate(dueDate.getDate() + orgPaymentWindow);
         const dueDateStr = dueDate.toISOString().split('T')[0];
 
+        const invoiceNumber = `${prefix}${String(nextInvoiceSequence).padStart(3, '0')}`;
+        nextInvoiceSequence++;
+
         await supabaseAdmin.from('invoices').insert({
           organization_id: org.id,
+          invoice_number: invoiceNumber,
           billing_period_start: billingPeriodStart,
           billing_period_end: billingPeriodEnd,
           total_minutes: totalMinutes,
@@ -147,7 +171,7 @@ export async function GET(request) {
               to: brokerEmail,
               cc: 'info@primerealops.com',
               subject: `Your Prime Lead Bridge Invoice - ${monthStr}`,
-              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr, planName)
+              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr, planName, invoiceNumber)
             });
           }
         }

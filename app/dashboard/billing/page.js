@@ -138,7 +138,7 @@ export default function BillingDashboard() {
                     <td style="text-align: right; font-size: 14px; color: #64748b; line-height: 1.6;">
                       <strong style="color: #0f172a; font-size: 16px;">Estimated Invoice</strong><br>
                       Date: ${new Date().toLocaleDateString()}<br>
-                      Org ID: ${org.id.split('-')[0].toUpperCase()}
+                      Org ID: ${org.id.slice(0,8).toUpperCase()}
                     </td>
                   </tr>
                 </table>
@@ -349,6 +349,7 @@ export default function BillingDashboard() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-900/40 border-b border-white/10">
                 <tr>
+                  <th className="px-4 py-3 font-semibold text-slate-400">Invoice</th>
                   <th className="px-4 py-3 font-semibold text-slate-400">Date</th>
                   <th className="px-4 py-3 font-semibold text-slate-400">Amount</th>
                   <th className="px-4 py-3 font-semibold text-slate-400">Status</th>
@@ -358,6 +359,7 @@ export default function BillingDashboard() {
               <tbody className="divide-y divide-white/5">
                 {/* Current pending estimate */}
                 <tr className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 text-slate-400 text-sm">Estimated</td>
                   <td className="px-4 py-3 text-slate-300">{new Date().toLocaleDateString()} (Current)</td>
                   <td className="px-4 py-3 text-slate-300">${totalEstimatedBill.toFixed(2)}</td>
                   <td className="px-4 py-3">
@@ -373,6 +375,7 @@ export default function BillingDashboard() {
                 {/* Past Invoices */}
                 {(stats.invoices || []).map(inv => (
                   <tr key={inv.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3 text-slate-300 font-medium">{inv.invoice_number || inv.id.slice(0,8).toUpperCase()}</td>
                     <td className="px-4 py-3 text-slate-300">{new Date(inv.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-slate-300">${parseFloat(inv.total_amount).toFixed(2)}</td>
                     <td className="px-4 py-3">
