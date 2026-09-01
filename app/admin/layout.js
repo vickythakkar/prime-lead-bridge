@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from './components/AdminSidebar';
 import { AdminDialerProvider } from './components/AdminDialerContext';
+import FloatingDialerButton from '@/components/FloatingDialerButton';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function AdminLayout({ children }) {
           <div className="p-8 max-w-7xl mx-auto relative z-10">
             {children}
           </div>
+          <FloatingDialerButton basePath="/admin" />
         </main>
       </AdminDialerProvider>
     </div>

@@ -1,5 +1,6 @@
 import Sidebar from './components/Sidebar';
 import { BrokerDialerProvider } from './components/BrokerDialerContext';
+import FloatingDialerButton from '@/components/FloatingDialerButton';
 
 export default function DashboardLayout({ children }) {
   return (
@@ -12,6 +13,7 @@ export default function DashboardLayout({ children }) {
           <div className="p-4 sm:p-8 max-w-7xl mx-auto relative z-10 pb-24 sm:pb-8 pt-20 sm:pt-8">
             {children}
           </div>
+          <FloatingDialerButton basePath="/dashboard" />
         </main>
       </BrokerDialerProvider>
     </div>
