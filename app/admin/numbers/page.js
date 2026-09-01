@@ -16,6 +16,13 @@ export default function AdminNumbers() {
   const [previewingId, setPreviewingId] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
 
+  // Toast State
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const AVAILABLE_VOICES = [
     { id: 'Polly.Matthew-Neural', name: 'Matthew (Male, Professional)' },
     { id: 'Polly.Stephen-Neural', name: 'Stephen (Male, Conversational)' },
@@ -53,7 +60,7 @@ export default function AdminNumbers() {
       if (!res.ok) throw new Error(data.error || 'Failed');
       setSearchResults(data.numbers || []);
     } catch (err) {
-      alert('Error: ' + err.message);
+      showToast('Error: ' + err.message, 'error');
     } finally {
       setSearching(false);
     }
@@ -74,9 +81,9 @@ export default function AdminNumbers() {
       setSelectedNumber(null);
       setSearchResults([]);
       setAreaCode('');
-      alert('Number purchased and provisioned!');
+      showToast('Number purchased and provisioned!');
     } catch (err) {
-      alert('Error: ' + err.message);
+      showToast('Error: ' + err.message, 'error');
     } finally {
       setPurchasing(false);
     }
@@ -88,11 +95,12 @@ export default function AdminNumbers() {
       const res = await fetch(`/api/twilio/release-number?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         setNumbers(numbers.filter(n => n.id !== id));
+        showToast("Number released successfully!");
       } else {
-        alert('Failed to release number.');
+        showToast('Failed to release number.', 'error');
       }
     } catch (err) {
-      alert('Error: ' + err.message);
+      showToast('Error: ' + err.message, 'error');
     }
   }
 
@@ -108,10 +116,10 @@ export default function AdminNumbers() {
         body: JSON.stringify({ voice_id: voiceId, phone_number: testPhone })
       });
       if (!res.ok) throw new Error('Failed to initiate preview call');
-      alert(`Preview initiated! You will receive a phone call at ${testPhone} in a few seconds.`);
+      showToast(`Preview initiated! You will receive a phone call at ${testPhone} in a few seconds.`);
     } catch (err) {
       console.error(err);
-      alert('Error: ' + err.message);
+      showToast('Error: ' + err.message, 'error');
     } finally {
       setPreviewingId(null);
     }
@@ -132,10 +140,10 @@ export default function AdminNumbers() {
       
       setNumbers(prev => prev.map(n => n.id === numberId ? { ...n, voice_id: voiceId } : n));
       const voiceName = AVAILABLE_VOICES.find(v => v.id === voiceId)?.name || 'the selected voice';
-      alert(`Voice successfully set to ${voiceName}!`);
+      showToast(`Voice successfully set to ${voiceName}!`);
     } catch (err) {
       console.error(err);
-      alert('Failed to update voice: ' + err.message);
+      showToast('Failed to update voice: ' + err.message, 'error');
     } finally {
       setUpdatingId(null);
     }
@@ -257,6 +265,15 @@ export default function AdminNumbers() {
           </div>
         )}
       </div>
+
+      {toast && (
+        <div className={`fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl border z-50 animate-in slide-in-from-bottom-5 ${toast.type === 'error' ? 'bg-red-500/90 border-red-500/20 text-white' : 'bg-emerald-500/90 border-emerald-500/20 text-white'}`}>
+          <span className="font-medium text-sm">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100">
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
