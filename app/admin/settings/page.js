@@ -3,12 +3,7 @@ import { useState, useEffect } from 'react';
 
 const ADMIN_ORG_ID = '8a564ec4-9544-4b63-ac58-98ec66d69a76';
 
-import IVRFlowBuilder from '../../components/IVRFlowBuilder';
 
-const DEFAULT_IVR = {
-  greeting: 'Thank you for calling Prime Real Ops. Please listen carefully as our menu has changed.',
-  flow: {}
-};
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('Profile');
@@ -108,7 +103,7 @@ export default function AdminSettings() {
 
 
 
-  const tabs = ['Profile', 'IVR Flow'];
+  const tabs = ['Profile'];
 
   return (
     <div className="animate-in fade-in duration-500 max-w-3xl">
@@ -181,33 +176,7 @@ export default function AdminSettings() {
         </form>
       )}
 
-      {activeTab === 'IVR Flow' && (
-        <form onSubmit={saveIvr} className="space-y-6">
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-white mb-4">IVR Greeting</h2>
-            <textarea
-              rows={3}
-              className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 resize-none"
-              value={ivr.greeting}
-              onChange={e => setIvr({ ...ivr, greeting: e.target.value })}
-              placeholder="Welcome message read by the IVR..."
-            />
-          </div>
 
-          <div className="glass-card rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-white mb-4">Call Routing Flow</h2>
-            <IVRFlowBuilder 
-              value={ivr.flow} 
-              onChange={f => setIvr({ ...ivr, flow: f })} 
-              teammates={teammates}
-            />
-          </div>
-
-          <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50">
-            {saving ? 'Saving...' : 'Save IVR Configuration'}
-          </button>
-        </form>
-      )}
     </div>
   );
 }

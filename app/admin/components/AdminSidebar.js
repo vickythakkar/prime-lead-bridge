@@ -42,6 +42,7 @@ export default function AdminSidebar() {
   const links = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: '📈' },
     { href: '/admin/numbers', label: 'My Numbers', icon: '📱' },
+    { href: '/admin/ivr', label: 'IVR Builder', icon: '🔀' },
     { href: '/admin/teammates', label: 'Teammates', icon: '👥' },
     { href: '/admin/leads', label: 'Leads', icon: '🎯' },
     { href: '/admin/contacts', label: 'Contacts', icon: '📋' },

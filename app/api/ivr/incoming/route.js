@@ -10,17 +10,19 @@ export async function POST(request) {
   const to = formData.get('To');
   
   let orgData = null;
+  let numberData = null;
   let voiceId = 'Polly.Matthew-Neural';
 
   if (to) {
     const { data: numData } = await supabaseAdmin
       .from('organization_numbers')
-      .select('organization_id, voice_id')
+      .select('*')
       .eq('phone_number', to)
       .eq('status', 'active')
       .maybeSingle();
 
     if (numData) {
+      numberData = numData;
       if (numData.voice_id) voiceId = numData.voice_id;
       const { data } = await supabaseAdmin
         .from('organizations')
@@ -35,7 +37,7 @@ export async function POST(request) {
   
   const twiml = new VoiceResponse();
 
-  if (!orgData) {
+  if (!orgData || !numberData) {
     twiml.say({ voice: voiceId }, 'This number is not configured correctly. Goodbye.');
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
@@ -58,10 +60,10 @@ export async function POST(request) {
   sendPushToOrg(orgData.id, pushPayload).catch(() => {});
   sendPushToAdmin({ ...pushPayload, url: '/admin/activity' }).catch(() => {});
 
-  const flowConfig = orgData.ivr_flow_config || {};
+  const flowConfig = numberData.ivr_flow_config || {};
 
   // If IVR Greeting is disabled (legacy fallback) or no keypress options exist
-  if (orgData.play_ivr_greeting === false) {
+  if (numberData.play_ivr_greeting === false) {
     twiml.redirect(`/api/ivr/handle-menu?Digits=1&voice=${encodeURIComponent(voiceId)}`);
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
@@ -70,7 +72,7 @@ export async function POST(request) {
   const defaultGreeting = `Welcome to ${orgData.company_name || 'our office'}. To connect with the office, press 1.` 
     + (orgData.enable_listing_lookup !== false ? ` If you are a buyer inquiring about a property, press 2.` : ``);
   
-  const greetingText = flowConfig.greeting || orgData.ivr_greeting || defaultGreeting;
+  const greetingText = flowConfig.greeting || numberData.ivr_greeting || defaultGreeting;
 
   const hasFlow = flowConfig.flow && Object.keys(flowConfig.flow).length > 0;
   const hasLegacyKeyPress = flowConfig.keyPress && Object.keys(flowConfig.keyPress).length > 0;

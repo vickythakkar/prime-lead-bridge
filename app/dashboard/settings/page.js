@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import IvrBuilder from './IvrBuilder';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('Profile');
@@ -132,7 +131,7 @@ export default function Settings() {
 
   const renderTabs = () => (
     <div className="flex space-x-6 border-b border-white/10 mb-8">
-      {['Profile', 'Inbound Calls'].map(tab => (
+      {['Profile'].map(tab => (
         <button
           key={tab}
           onClick={() => setActiveTab(tab)}
@@ -244,20 +243,6 @@ export default function Settings() {
                   </button>
                 </div>
               </form>
-            </div>
-          )}
-
-          {activeTab === 'Inbound Calls' && (
-            <div className="mb-8">
-              <IvrBuilder 
-                orgId={orgId} 
-                initialConfig={formData.ivr_flow_config} 
-                initialEnabled={formData.play_ivr_greeting !== false}
-                onSaved={(msg) => {
-                  setMessage(msg);
-                  setTimeout(() => setMessage(''), 3000);
-                }}
-              />
             </div>
           )}
 

@@ -13,15 +13,17 @@ export async function POST(request) {
   const voiceId = searchParams.get('voice') || 'Polly.Matthew-Neural';
   
   let orgData = null;
+  let numberData = null;
   if (to) {
     const { data: numData } = await supabaseAdmin
       .from('organization_numbers')
-      .select('organization_id')
+      .select('*')
       .eq('phone_number', to)
       .eq('status', 'active')
       .single();
 
     if (numData) {
+      numberData = numData;
       const { data } = await supabaseAdmin
         .from('organizations')
         .select('*')
@@ -33,13 +35,13 @@ export async function POST(request) {
 
   const twiml = new VoiceResponse();
 
-  if (!orgData) {
+  if (!orgData || !numberData) {
     twiml.say({ voice: voiceId }, 'System error. Goodbye.');
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
-  const flowConfig = orgData.ivr_flow_config || {};
+  const flowConfig = numberData.ivr_flow_config || {};
   let actionData = null;
 
   // 1. Traverse the tree using `path` and `digits`

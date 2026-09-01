@@ -54,6 +54,7 @@ export default function Sidebar() {
   const links = [
     { href: '/dashboard', label: 'Overview', icon: '📊' },
     { href: '/dashboard/numbers', label: 'My Numbers', icon: '📱' },
+    { href: '/dashboard/ivr', label: 'IVR Builder', icon: '🔀' },
     { href: '/dashboard/properties', label: 'Properties', icon: '🏠' },
     { href: '/dashboard/agents', label: 'Agents / Directory', icon: '👥' },
     { href: '/dashboard/leads', label: 'Leads', icon: '🎯' },
