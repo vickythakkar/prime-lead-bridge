@@ -6,6 +6,7 @@ export default function MyNumbers() {
   const [numbers, setNumbers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState(null);
+  const [agentPhone, setAgentPhone] = useState(null);
   
   // Admin Rates
   const [rates, setRates] = useState({ monthly: 0, setup: 0, perMinute: 0 });
@@ -15,6 +16,18 @@ export default function MyNumbers() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState(null);
+
+  // Voice Selection State
+  const [previewingId, setPreviewingId] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const AVAILABLE_VOICES = [
+    { id: 'Polly.Matthew-Neural', name: 'Matthew (Male, US)' },
+    { id: 'Polly.Joanna-Neural', name: 'Joanna (Female, US)' },
+    { id: 'Polly.Salli-Neural', name: 'Salli (Female, US - Friendly)' },
+    { id: 'Polly.Brian-Neural', name: 'Brian (Male, UK)' },
+    { id: 'Polly.Amy-Neural', name: 'Amy (Female, UK)' }
+  ];
 
   const fetchNumbers = async (oId) => {
     const { data, error } = await supabase
@@ -45,20 +58,22 @@ export default function MyNumbers() {
         return;
       }
       
-      const { data: agentData, error: agentError } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
+      const { data: agentData, error: agentError } = await supabase.from('agents').select('organization_id, cell_phone').eq('id', session.user.id).single();
       
       if (agentError) {
         console.error("Error fetching agent:", agentError);
         // Try fallback to just get the first agent if RLS isn't strict yet
-        const { data: fallback } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
+        const { data: fallback } = await supabase.from('agents').select('organization_id, cell_phone').eq('id', session.user.id).single();
         if (fallback) {
           setOrgId(fallback.organization_id);
+          setAgentPhone(fallback.cell_phone);
           fetchNumbers(fallback.organization_id);
         } else {
           setLoading(false);
         }
       } else if (agentData) {
         setOrgId(agentData.organization_id);
+        setAgentPhone(agentData.cell_phone);
         fetchNumbers(agentData.organization_id);
       } else {
         setLoading(false);
@@ -127,11 +142,62 @@ export default function MyNumbers() {
           alert('Failed to release number.');
         }
       } catch (err) {
-        console.error(err);
-        alert('Error releasing number.');
-      }
+      console.error(err);
+      alert(err.message);
     }
   }
+
+  async function handlePreviewVoice(voiceId) {
+    if (!agentPhone) {
+      alert("No cell phone number found in your profile to call for the preview. Please update your profile.");
+      return;
+    }
+    setPreviewingId(voiceId);
+    try {
+      const res = await fetch('/api/twilio/preview-voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice_id: voiceId, phone_number: agentPhone })
+      });
+      if (!res.ok) throw new Error('Failed to initiate preview call');
+      alert(`Preview initiated! You will receive a phone call at ${agentPhone} in a few seconds.`);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    } finally {
+      setPreviewingId(null);
+    }
+  }
+
+  async function handleUpdateVoice(numberId, voiceId) {
+    setUpdatingId(numberId);
+    try {
+      const { error } = await supabase
+        .from('organization_numbers')
+        .update({ voice_id: voiceId })
+        .eq('id', numberId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setNumbers(prev => prev.map(n => n.id === numberId ? { ...n, voice_id: voiceId } : n));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update voice: ' + err.message);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  if (loading) return (
+    <div className="animate-in fade-in duration-500">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-white">My Numbers</h1>
+        <p className="text-slate-400 mt-1">Manage your active Twilio numbers or purchase new ones.</p>
+      </header>
+      <div className="p-8 text-center text-slate-400">Loading numbers...</div>
+    </div>
+  );
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -156,6 +222,7 @@ export default function MyNumbers() {
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Phone Number</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Status</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Purchased</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">AI Voice</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300 text-right">Actions</th>
               </tr>
             </thead>
@@ -170,6 +237,28 @@ export default function MyNumbers() {
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">
                     {new Date(num.purchased_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={num.voice_id || 'Polly.Matthew-Neural'}
+                        onChange={(e) => handleUpdateVoice(num.id, e.target.value)}
+                        disabled={updatingId === num.id}
+                        className="bg-slate-900 border border-slate-700 text-sm rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500 min-w-[160px]"
+                      >
+                        {AVAILABLE_VOICES.map(v => (
+                          <option key={v.id} value={v.id}>{v.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handlePreviewVoice(num.voice_id || 'Polly.Matthew-Neural')}
+                        disabled={previewingId === (num.voice_id || 'Polly.Matthew-Neural')}
+                        className="text-xs bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+                        title="Call me to preview this voice"
+                      >
+                        {previewingId === (num.voice_id || 'Polly.Matthew-Neural') ? 'Calling...' : 'Preview'}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button 

@@ -11,12 +11,13 @@ export async function POST(request) {
   
   const { searchParams } = new URL(request.url);
   const idsParam = searchParams.get('ids');
+  const voiceId = searchParams.get('voice') || 'Polly.Matthew-Neural';
   
   const twiml = new VoiceResponse();
 
   if (!idsParam || !digits) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Invalid selection.');
-    twiml.redirect('/api/ivr/handle-menu?Digits=2');
+    twiml.say({ voice: voiceId }, 'Invalid selection.');
+    twiml.redirect(`/api/ivr/handle-menu?Digits=2&voice=${encodeURIComponent(voiceId)}`);
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
@@ -37,7 +38,7 @@ export async function POST(request) {
       .single();
 
     if (error || !property) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Error retrieving property.');
+      twiml.say({ voice: voiceId }, 'Error retrieving property.');
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
@@ -75,7 +76,7 @@ export async function POST(request) {
     }
 
     if (dialNumber) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${personName} for ${property.address}.`);
+      twiml.say({ voice: voiceId }, `Connecting you to ${personName} for ${property.address}.`);
       twiml.dial({
         record: 'record-from-ringing',
         recordingStatusCallback: `/api/twilio/recording?call_sid=${callSid}&org_id=${property.organization_id}`,
@@ -84,11 +85,11 @@ export async function POST(request) {
         method: 'POST'
       }, dialNumber);
     } else {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'We do not have a valid phone number on file for this property. Goodbye.');
+      twiml.say({ voice: voiceId }, 'We do not have a valid phone number on file for this property. Goodbye.');
     }
   } else {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Invalid selection.');
-    twiml.redirect('/api/ivr/handle-menu?Digits=2');
+    twiml.say({ voice: voiceId }, 'Invalid selection.');
+    twiml.redirect(`/api/ivr/handle-menu?Digits=2&voice=${encodeURIComponent(voiceId)}`);
   }
 
   return new Response(twiml.toString(), {

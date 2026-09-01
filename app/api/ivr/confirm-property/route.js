@@ -11,6 +11,7 @@ export async function POST(request) {
   
   const { searchParams } = new URL(request.url);
   const propertyId = searchParams.get('property_id');
+  const voiceId = searchParams.get('voice') || 'Polly.Matthew-Neural';
   
   const twiml = new VoiceResponse();
 
@@ -24,7 +25,7 @@ export async function POST(request) {
       .single();
 
     if (error || !property) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'An error occurred while routing your call. Please try again later.');
+      twiml.say({ voice: voiceId }, 'An error occurred while routing your call. Please try again later.');
       return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
     }
 
@@ -62,7 +63,7 @@ export async function POST(request) {
     }
 
     if (dialNumber) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${personName} now.`);
+      twiml.say({ voice: voiceId }, `Connecting you to ${personName} now.`);
       
       // We pass record="record-from-ringing" and provide a recordingStatusCallback 
       // so Twilio will ping our server when the recording is ready.
@@ -76,15 +77,15 @@ export async function POST(request) {
       }, dialNumber);
 
     } else {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'We do not have a valid phone number on file for this property. Goodbye.');
+      twiml.say({ voice: voiceId }, 'We do not have a valid phone number on file for this property. Goodbye.');
     }
     
   } else if (digits === '2') {
     // Try again
-    twiml.redirect('/api/ivr/handle-menu?Digits=2');
+    twiml.redirect(`/api/ivr/handle-menu?Digits=2&voice=${encodeURIComponent(voiceId)}`);
   } else {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Invalid choice.');
-    twiml.redirect(`/api/ivr/handle-menu?Digits=2`);
+    twiml.say({ voice: voiceId }, 'Invalid choice.');
+    twiml.redirect(`/api/ivr/handle-menu?Digits=2&voice=${encodeURIComponent(voiceId)}`);
   }
 
   return new Response(twiml.toString(), {

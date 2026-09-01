@@ -10,6 +10,7 @@ export async function POST(request) {
   const digits = formData.get('Digits') || searchParams.get('Digits');
   const to = formData.get('To');
   const path = searchParams.get('path');
+  const voiceId = searchParams.get('voice') || 'Polly.Matthew-Neural';
   
   let orgData = null;
   if (to) {
@@ -33,7 +34,7 @@ export async function POST(request) {
   const twiml = new VoiceResponse();
 
   if (!orgData) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'System error. Goodbye.');
+    twiml.say({ voice: voiceId }, 'System error. Goodbye.');
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
@@ -86,7 +87,7 @@ export async function POST(request) {
 
   // 3. Handle invalid selection
   if (!actionData) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Sorry, I don\'t understand that choice.');
+    twiml.say({ voice: voiceId }, 'Sorry, I don\'t understand that choice.');
     twiml.redirect('/api/ivr/incoming'); // Sends them back to main menu
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
@@ -106,7 +107,7 @@ export async function POST(request) {
       method: 'POST',
     });
     gather.say(
-      { voice: 'Polly.Matthew-Neural' },
+      { voice: voiceId },
       actionData.greeting || 'Please listen carefully to the following options.'
     );
     twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.options&To=${encodeURIComponent(to)}`);
@@ -129,11 +130,11 @@ export async function POST(request) {
     const numberToDial = actionData.phoneNumber || actionData.number || orgData.fallback_phone_number;
     
     if (numberToDial && normalizePhone(numberToDial) === normalizedTo) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'System configuration error: circular forwarding detected.');
+      twiml.say({ voice: voiceId }, 'System configuration error: circular forwarding detected.');
       if (actionData.fallback) twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.fallback&To=${encodeURIComponent(to)}`);
       else twiml.redirect('/api/ivr/incoming');
     } else if (numberToDial) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Connecting you now.');
+      twiml.say({ voice: voiceId }, 'Connecting you now.');
       const dial = twiml.dial({ 
         record: 'record-from-ringing',
         action: `/api/calls/status?org_id=${orgData.id}${fallbackQuery}`,
@@ -141,7 +142,7 @@ export async function POST(request) {
       });
       dial.number(numberToDial);
     } else {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'The forwarding number is not configured.');
+      twiml.say({ voice: voiceId }, 'The forwarding number is not configured.');
       if (actionData.fallback) twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.fallback&To=${encodeURIComponent(to)}`);
       else twiml.redirect('/api/ivr/incoming');
     }
@@ -169,11 +170,11 @@ export async function POST(request) {
     }
 
     if (agentPhone && normalizePhone(agentPhone) === normalizedTo) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'System configuration error: circular forwarding detected.');
+      twiml.say({ voice: voiceId }, 'System configuration error: circular forwarding detected.');
       if (actionData.fallback) twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.fallback&To=${encodeURIComponent(to)}`);
       else twiml.redirect('/api/ivr/incoming');
     } else if (agentPhone) {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, `Connecting you to ${agentName || 'our team'}.`);
+      twiml.say({ voice: voiceId }, `Connecting you to ${agentName || 'our team'}.`);
       const dial = twiml.dial({ 
         record: 'record-from-ringing',
         action: `/api/calls/status?org_id=${orgData.id}${fallbackQuery}`,
@@ -181,7 +182,7 @@ export async function POST(request) {
       });
       dial.number(agentPhone);
     } else {
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Sorry, no team members are available for that role.');
+      twiml.say({ voice: voiceId }, 'Sorry, no team members are available for that role.');
       if (actionData.fallback) twiml.redirect(`/api/ivr/handle-menu?path=${nextPath}.fallback&To=${encodeURIComponent(to)}`);
       else twiml.redirect('/api/ivr/incoming');
     }
@@ -190,7 +191,7 @@ export async function POST(request) {
   else if (action === 'voicemail') {
     const fromNumber = formData.get('From');
 
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'Our office is currently unavailable. Please leave a message after the beep.');
+    twiml.say({ voice: voiceId }, 'Our office is currently unavailable. Please leave a message after the beep.');
     twiml.record({
       action: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,
       recordingStatusCallback: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,
@@ -204,7 +205,7 @@ export async function POST(request) {
       method: 'POST',
     });
     gather.say(
-      { voice: 'Polly.Matthew-Neural' },
+      { voice: voiceId },
       'Please enter the street number or zip code of the property you are inquiring about, followed by the pound sign.'
     );
     twiml.redirect('/api/ivr/handle-menu?Digits=2&To=' + encodeURIComponent(to));
@@ -229,7 +230,7 @@ export async function GET(request) {
       method: 'POST',
     });
     gather.say(
-      { voice: 'Polly.Matthew-Neural' },
+      { voice: voiceId },
       'Please enter the street number or zip code of the property you are inquiring about, followed by the pound sign.'
     );
     twiml.redirect('/api/ivr/handle-menu?Digits=2&To=' + encodeURIComponent(to || ''));

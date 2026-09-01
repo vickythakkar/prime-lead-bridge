@@ -10,16 +10,18 @@ export async function POST(request) {
   const to = formData.get('To');
   
   let orgData = null;
+  let voiceId = 'Polly.Matthew-Neural';
 
   if (to) {
     const { data: numData } = await supabaseAdmin
       .from('organization_numbers')
-      .select('organization_id')
+      .select('organization_id, voice_id')
       .eq('phone_number', to)
       .eq('status', 'active')
       .maybeSingle();
 
     if (numData) {
+      if (numData.voice_id) voiceId = numData.voice_id;
       const { data } = await supabaseAdmin
         .from('organizations')
         .select('*')
@@ -34,14 +36,14 @@ export async function POST(request) {
   const twiml = new VoiceResponse();
 
   if (!orgData) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'This number is not configured correctly. Goodbye.');
+    twiml.say({ voice: voiceId }, 'This number is not configured correctly. Goodbye.');
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
   // ENFORCE SERVICE SUSPENSION
   if (orgData.service_active === false) {
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, 'The services for this number have been temporarily suspended. Please contact support. Goodbye.');
+    twiml.say({ voice: voiceId }, 'The services for this number have been temporarily suspended. Please contact support. Goodbye.');
     twiml.hangup();
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
@@ -60,7 +62,7 @@ export async function POST(request) {
 
   // If IVR Greeting is disabled (legacy fallback) or no keypress options exist
   if (orgData.play_ivr_greeting === false) {
-    twiml.redirect('/api/ivr/handle-menu?Digits=1');
+    twiml.redirect(`/api/ivr/handle-menu?Digits=1&voice=${encodeURIComponent(voiceId)}`);
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
@@ -75,19 +77,19 @@ export async function POST(request) {
 
   if (!hasFlow && !hasLegacyKeyPress) {
     // No routing options defined! Just play greeting and connect immediately (equivalent to pressing 1)
-    twiml.say({ voice: 'Polly.Matthew-Neural' }, greetingText);
-    twiml.redirect('/api/ivr/handle-menu?Digits=1');
+    twiml.say({ voice: voiceId }, greetingText);
+    twiml.redirect(`/api/ivr/handle-menu?Digits=1&voice=${encodeURIComponent(voiceId)}`);
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
   const gather = twiml.gather({
     numDigits: 1,
-    action: '/api/ivr/handle-menu',
+    action: `/api/ivr/handle-menu?voice=${encodeURIComponent(voiceId)}`,
     method: 'POST',
   });
 
   gather.say(
-    { voice: 'Polly.Matthew-Neural' },
+    { voice: voiceId },
     greetingText
   );
 
