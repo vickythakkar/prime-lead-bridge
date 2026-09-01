@@ -149,7 +149,7 @@ export async function POST(request) {
 
     // ONLY insert voicemail on the 'completed' webhook for recordings to prevent duplicates
     const recordingStatus = formData.get('RecordingStatus');
-    if (finalRecordingUrl && (isVoicemail || mappedStatus === 'missed' || recordingSource === 'RecordVerb')) {
+    if (finalRecordingUrl && (isVoicemail || recordingSource === 'RecordVerb')) {
       if (!recordingStatus || recordingStatus === 'completed') {
         const { data: existingVm } = await supabaseAdmin.from('voicemails').select('id').eq('recording_url', finalRecordingUrl).maybeSingle();
         
