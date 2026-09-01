@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useBrokerDialer } from '../components/BrokerDialerContext';
+import { supabase } from '@/lib/supabase';
 
 export default function WebDialer() {
   const {
@@ -9,15 +10,69 @@ export default function WebDialer() {
   } = useBrokerDialer();
   
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [contactName, setContactName] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const phoneParam = new URLSearchParams(window.location.search).get('phone');
+      const urlParams = new URLSearchParams(window.location.search);
+      const phoneParam = urlParams.get('phone');
       if (phoneParam) {
         setPhoneNumber(decodeURIComponent(phoneParam));
       }
+      const nameParam = urlParams.get('name');
+      if (nameParam) {
+        setContactName(decodeURIComponent(nameParam));
+      }
     }
   }, []);
+
+  // Live lookup contact name when phone number changes
+  useEffect(() => {
+    async function lookupName() {
+      if (!phoneNumber || phoneNumber.length < 10) {
+        setContactName('');
+        return;
+      }
+      // Remove all non-numeric characters for search
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (cleanPhone.length < 10) return;
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
+      if (!agentData) return;
+
+      // Check contacts
+      const { data: contact } = await supabase
+        .from('contacts')
+        .select('name')
+        .eq('organization_id', agentData.organization_id)
+        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .maybeSingle();
+      
+      if (contact) {
+        setContactName(contact.name);
+        return;
+      }
+
+      // Check leads if not in contacts
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('name')
+        .eq('organization_id', agentData.organization_id)
+        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .maybeSingle();
+
+      if (lead) {
+        setContactName(lead.name);
+      }
+    }
+    
+    // Only lookup if we don't already have a name from URL or previous lookup
+    const timeoutId = setTimeout(() => lookupName(), 500);
+    return () => clearTimeout(timeoutId);
+  }, [phoneNumber]);
 
   function localHandleDial() {
     if (!phoneNumber) {
@@ -61,7 +116,7 @@ export default function WebDialer() {
             </span>
           </div>
 
-          <div className="h-16 w-full flex items-center justify-center mb-6">
+          <div className={`h-16 w-full flex flex-col items-center justify-center ${contactName ? 'mb-2' : 'mb-6'}`}>
             <input 
               type="text" 
               value={phoneNumber} 
@@ -70,6 +125,12 @@ export default function WebDialer() {
               className="bg-transparent text-center text-3xl font-light text-white tracking-wider outline-none w-full"
             />
           </div>
+
+          {contactName && (
+            <div className="text-emerald-400 font-medium mb-4 text-center">
+              {contactName}
+            </div>
+          )}
 
           {activeCall && (
             <div className="text-2xl font-mono text-emerald-400 mb-6 font-light">

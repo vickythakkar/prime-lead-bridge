@@ -180,7 +180,7 @@ export default function ContactsPage() {
                           Message
                         </a>
                         <a 
-                          href={`/dashboard/dialer?phone=${encodeURIComponent(contact.phone)}`} 
+                          href={`/dashboard/dialer?phone=${encodeURIComponent(contact.phone)}&name=${encodeURIComponent(contact.name)}`} 
                           className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                         >
                           Call

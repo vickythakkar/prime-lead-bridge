@@ -224,7 +224,7 @@ export default function MessagesPage() {
                   <h3 className="font-bold text-white">{activeConversation.name}</h3>
                   <p className="text-xs text-slate-400">{activeConversation.phone}</p>
                 </div>
-                <a href={`/dashboard/dialer?phone=${encodeURIComponent(activeConversation.phone)}`} className="text-slate-400 hover:text-white transition-colors bg-white/5 p-2 rounded-full hover:bg-emerald-500/20 hover:text-emerald-400">
+                <a href={`/dashboard/dialer?phone=${encodeURIComponent(activeConversation.phone)}${activeConversation.name && activeConversation.name !== activeConversation.phone ? `&name=${encodeURIComponent(activeConversation.name)}` : ''}`} className="text-slate-400 hover:text-white transition-colors bg-white/5 p-2 rounded-full hover:bg-emerald-500/20 hover:text-emerald-400">
                   <span className="text-xl">📞</span>
                 </a>
               </div>
