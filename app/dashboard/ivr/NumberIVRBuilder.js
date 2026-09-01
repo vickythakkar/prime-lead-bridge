@@ -101,8 +101,8 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
         </div>
       </div>
 
-      <div className={`transition-opacity duration-300 ${!enabled ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-        <form onSubmit={saveConfig} className="space-y-8">
+      <form onSubmit={saveConfig} className="space-y-8">
+        <div className={`transition-opacity duration-300 space-y-8 ${!enabled ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
           <div className="space-y-3">
             <label className="block text-sm font-medium text-slate-300">
               Main Greeting Message
@@ -137,28 +137,28 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="pt-6 border-t border-white/10 flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              {saving ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                'Save Workflow'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className="pt-6 border-t border-white/10 flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          >
+            {saving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              'Save Workflow'
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
