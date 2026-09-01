@@ -1,14 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useDialer } from '../components/AdminDialerContext';
 
 export default function AdminDialer() {
+  const searchParams = useSearchParams();
   const {
     device, status, activeCall, callerId, isMuted, callDuration,
     handleDial, handleHangup, toggleMute, handleKeypad, formatDuration
   } = useDialer();
   
   const [phoneNumber, setPhoneNumber] = useState('');
+
+  useEffect(() => {
+    const phone = searchParams.get('phone');
+    if (phone) {
+      setPhoneNumber(phone);
+    }
+  }, [searchParams]);
 
   function localHandleDial() {
     if (!phoneNumber) {
