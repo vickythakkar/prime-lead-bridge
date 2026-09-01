@@ -139,6 +139,114 @@ export default function OrganizationDetailsPage() {
     setBuyingNumber(null);
   }
 
+  function handleDownloadInvoice(invoice) {
+    const orgName = data.organization?.company_name || data.organization?.name || 'Unknown';
+    const period = invoice.month_year || `${invoice.billing_period_start} — ${invoice.billing_period_end}`;
+    const usageCost = parseFloat(invoice.total_minutes || 0) * parseFloat(invoice.rate_per_minute || 0);
+    let baseFee = parseFloat(invoice.subtotal || 0) - usageCost;
+    if (baseFee < 0) baseFee = 0; // fallback rounding
+
+    const planName = data.organization?.subscription_plan 
+      ? data.organization.subscription_plan.replace(/_/g, ' ').toUpperCase()
+      : 'PAY AS YOU GO';
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Invoice ${invoice.id.slice(0, 8)}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+            .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #1e1b4b; font-size: 28px; }
+            .header p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+            .details { margin-bottom: 40px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f8f9fa; font-weight: 600; color: #444; }
+            .totals { width: 300px; float: right; }
+            .totals table { border: none; }
+            .totals th, .totals td { border: none; padding: 8px 12px; }
+            .total-row { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; }
+            .footer { clear: both; margin-top: 50px; text-align: center; color: #666; font-size: 0.9em; border-top: 1px solid #ddd; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Prime Lead Bridge</h1>
+            <p>A product of Prime Real Ops</p>
+          </div>
+          
+          <div class="details">
+            <strong>Invoice ID:</strong> ${invoice.id}<br>
+            <strong>Organization:</strong> ${orgName}<br>
+            <strong>Billing Period:</strong> ${period}<br>
+            <strong>Issue Date:</strong> ${new Date(invoice.created_at).toLocaleDateString()}<br>
+            <strong>Due Date:</strong> ${invoice.due_date || 'N/A'}<br>
+            <strong>Status:</strong> ${invoice.status?.toUpperCase()}<br>
+            ${invoice.status === 'paid' ? `<strong>Paid On:</strong> ${invoice.paid_date}<br>` : ''}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${planName} Base Plan</td>
+                <td>1</td>
+                <td>$${baseFee.toFixed(2)}</td>
+                <td>$${baseFee.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td>Voice Calls Usage</td>
+                <td>${invoice.total_minutes || 0} min</td>
+                <td>$${parseFloat(invoice.rate_per_minute || 0).toFixed(4)}/min</td>
+                <td>$${usageCost.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <table>
+              <tr>
+                <td>Subtotal</td>
+                <td style="text-align:right">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td>Discount Applied</td>
+                <td style="text-align:right">-$${parseFloat(invoice.discount_amount || 0).toFixed(2)}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Total Due</td>
+                <td style="text-align:right">$${parseFloat(invoice.total_amount || invoice.amount_due || 0).toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>info@primerealops.com</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
+
   if (loading || !data) {
     return <div className="p-8 text-white">Loading organization details...</div>;
   }
@@ -351,6 +459,7 @@ export default function OrganizationDetailsPage() {
                     <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Period</th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Amount</th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -370,11 +479,16 @@ export default function OrganizationDetailsPage() {
                           {inv.status}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={() => handleDownloadInvoice(inv)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border border-white/10">
+                          PDF
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {(!data.invoices || data.invoices.length === 0) && (
                     <tr>
-                      <td colSpan="4" className="px-6 py-8 text-center text-slate-400">No invoices found for this organization.</td>
+                      <td colSpan="5" className="px-6 py-8 text-center text-slate-400">No invoices found for this organization.</td>
                     </tr>
                   )}
                 </tbody>

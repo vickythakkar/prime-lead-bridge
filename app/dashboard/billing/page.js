@@ -195,31 +195,38 @@ export default function BillingDashboard() {
   const handleDownloadPastInvoice = (invoice) => {
     const orgName = org.company_name || org.name || 'Unknown';
     const period = invoice.month_year || `${invoice.billing_period_start} — ${invoice.billing_period_end}`;
+    const usageCost = parseFloat(invoice.total_minutes || 0) * parseFloat(invoice.rate_per_minute || 0);
+    let baseFee = parseFloat(invoice.subtotal || 0) - usageCost;
+    if (baseFee < 0) baseFee = 0; // fallback rounding
+
+    const planName = org.subscription_plan 
+      ? org.subscription_plan.replace(/_/g, ' ').toUpperCase()
+      : 'PAY AS YOU GO';
     
     const htmlContent = `
       <html>
         <head>
-          <title>Invoice - ${orgName}</title>
+          <title>Invoice ${invoice.id.slice(0, 8)}</title>
           <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
-            .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #4f46e5; }
-            .header p { margin: 5px 0 0 0; color: #666; }
-            .details { margin-bottom: 30px; line-height: 1.6; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+            .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #1e1b4b; font-size: 28px; }
+            .header p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+            .details { margin-bottom: 40px; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
             th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-            th { background-color: #f8fafc; }
-            .totals { width: 350px; float: right; }
-            .totals table { margin-bottom: 0; }
-            .totals table th { background: none; }
+            th { background-color: #f8f9fa; font-weight: 600; color: #444; }
+            .totals { width: 300px; float: right; }
+            .totals table { border: none; }
+            .totals th, .totals td { border: none; padding: 8px 12px; }
             .total-row { font-weight: bold; font-size: 1.2em; border-top: 2px solid #333; }
             .footer { clear: both; margin-top: 50px; text-align: center; color: #666; font-size: 0.9em; border-top: 1px solid #ddd; padding-top: 20px; }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>INVOICE</h1>
-            <p>Prime Real Ops &mdash; Platform Invoice</p>
+            <h1>Prime Lead Bridge</h1>
+            <p>A product of Prime Real Ops</p>
           </div>
           
           <div class="details">
@@ -243,10 +250,16 @@ export default function BillingDashboard() {
             </thead>
             <tbody>
               <tr>
+                <td>${planName} Base Plan</td>
+                <td>1</td>
+                <td>$${baseFee.toFixed(2)}</td>
+                <td>$${baseFee.toFixed(2)}</td>
+              </tr>
+              <tr>
                 <td>Voice Calls Usage</td>
                 <td>${invoice.total_minutes || 0} min</td>
                 <td>$${parseFloat(invoice.rate_per_minute || 0).toFixed(4)}/min</td>
-                <td>$${parseFloat(invoice.subtotal || 0).toFixed(2)}</td>
+                <td>$${usageCost.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>

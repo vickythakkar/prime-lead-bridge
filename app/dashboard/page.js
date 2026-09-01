@@ -35,7 +35,7 @@ export default function DashboardOverview() {
       
       // Minutes used (Current Month only)
       const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
       const { data: callData } = await supabase.from('call_logs').select('duration').eq('organization_id', oId).gte('created_at', currentMonthStart);
       const totalSeconds = callData ? callData.reduce((acc, call) => acc + (call.duration || 0), 0) : 0;
       const totalMinutes = Math.ceil(totalSeconds / 60);

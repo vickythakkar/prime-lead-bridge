@@ -86,6 +86,11 @@ export async function GET(request) {
           perMinRate = orgRate; // Defaults to 0.05 if not overridden
         }
 
+        // Admin org does not pay a base fee
+        if (org.company_name === 'Prime Real Ops') {
+          baseFee = 0;
+        }
+
         const subtotal = parseFloat((baseFee + usageCost).toFixed(2));
         
         let discountAmount = 0;
@@ -136,12 +141,13 @@ export async function GET(request) {
         if (sendEmail && getInvoiceEmailHtml && totalAmount > 0) {
           const brokerEmail = org.notify_email || org.contact_email;
           if (brokerEmail) {
+            const planName = plan === 'pay_as_you_go' ? 'PAY AS YOU GO' : plan.toUpperCase();
             const monthStr = prevMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
             await sendEmail({
               to: brokerEmail,
               cc: 'info@primerealops.com',
               subject: `Your Prime Lead Bridge Invoice - ${monthStr}`,
-              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr)
+              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr, planName)
             });
           }
         }
