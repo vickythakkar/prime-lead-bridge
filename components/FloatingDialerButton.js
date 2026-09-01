@@ -14,12 +14,12 @@ export default function FloatingDialerButton({ basePath = '/dashboard' }) {
   return (
     <div className="fixed bottom-8 right-8 z-50 group">
       {/* Animated glowing aura behind the button */}
-      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
       
       {/* The actual button */}
       <Link 
         href={dialerPath}
-        className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 via-purple-600 to-blue-600 text-white rounded-full shadow-2xl border border-white/20 transition-all duration-300 transform group-hover:scale-110 active:scale-95"
+        className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-400 via-blue-500 to-blue-700 text-white rounded-full shadow-2xl border border-white/20 transition-all duration-300 transform group-hover:scale-110 active:scale-95"
         title="Open Dialer"
       >
         {/* Inner glass reflection */}
