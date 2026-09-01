@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useDialer } from '../components/AdminDialerContext';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDialer() {
   const searchParams = useSearchParams();
@@ -11,13 +12,56 @@ export default function AdminDialer() {
   } = useDialer();
   
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [contactName, setContactName] = useState('');
 
   useEffect(() => {
     const phone = searchParams.get('phone');
     if (phone) {
-      setPhoneNumber(phone);
+      setPhoneNumber(decodeURIComponent(phone));
+    }
+    const name = searchParams.get('name');
+    if (name) {
+      setContactName(decodeURIComponent(name));
     }
   }, [searchParams]);
+
+  // Sync incoming call number to the dialer display
+  useEffect(() => {
+    if (activeCall && activeCall.parameters && activeCall.parameters.From) {
+      if (activeCall.direction === 'INCOMING' || (status === 'Connected' && !phoneNumber)) {
+        setPhoneNumber(activeCall.parameters.From);
+      }
+    }
+  }, [activeCall, status]);
+
+  // Live lookup admin contact name when phone number changes
+  useEffect(() => {
+    async function lookupName() {
+      if (!phoneNumber || phoneNumber.length < 10) {
+        setContactName('');
+        return;
+      }
+      
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      if (cleanPhone.length < 10) return;
+
+      // Check admin contacts
+      const { data: contact } = await supabase
+        .from('admin_contacts')
+        .select('name')
+        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .maybeSingle();
+      
+      if (contact) {
+        setContactName(contact.name);
+      } else {
+        setContactName('');
+      }
+    }
+    
+    const timeoutId = setTimeout(() => lookupName(), 500);
+    return () => clearTimeout(timeoutId);
+  }, [phoneNumber]);
 
   function localHandleDial() {
     if (!phoneNumber) {
@@ -61,7 +105,7 @@ export default function AdminDialer() {
             </span>
           </div>
 
-          <div className="h-16 w-full flex items-center justify-center mb-6">
+          <div className={`h-16 w-full flex flex-col items-center justify-center ${contactName ? 'mb-2' : 'mb-6'}`}>
             <input 
               type="text" 
               value={phoneNumber} 
@@ -70,6 +114,13 @@ export default function AdminDialer() {
               className="bg-transparent text-center text-3xl font-light text-white tracking-wider outline-none w-full"
             />
           </div>
+
+          {contactName && (
+            <div className="text-emerald-400 font-medium text-lg mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
+              {contactName}
+            </div>
+          )}
 
           {activeCall && (
             <div className="text-2xl font-mono text-emerald-400 mb-6 font-light">
