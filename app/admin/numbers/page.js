@@ -12,6 +12,23 @@ export default function AdminNumbers() {
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
 
+  // Voice Selection State
+  const [previewingId, setPreviewingId] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const AVAILABLE_VOICES = [
+    { id: 'Polly.Matthew-Neural', name: 'Matthew (Male, Professional)' },
+    { id: 'Polly.Stephen-Neural', name: 'Stephen (Male, Conversational)' },
+    { id: 'Polly.Justin-Neural', name: 'Justin (Male, Energetic)' },
+    { id: 'Polly.Joanna-Neural', name: 'Joanna (Female, Professional)' },
+    { id: 'Polly.Salli-Neural', name: 'Salli (Female, Friendly)' },
+    { id: 'Polly.Kendra-Neural', name: 'Kendra (Female, Authoritative)' },
+    { id: 'Polly.Kimberly-Neural', name: 'Kimberly (Female, Warm)' },
+    { id: 'Polly.Ruth-Neural', name: 'Ruth (Female, Conversational)' },
+    { id: 'Polly.Brian-Neural', name: 'Brian (Male, UK)' },
+    { id: 'Polly.Amy-Neural', name: 'Amy (Female, UK)' }
+  ];
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
   useEffect(() => { fetchNumbers(); }, []);
@@ -79,6 +96,51 @@ export default function AdminNumbers() {
     }
   }
 
+  async function handlePreviewVoice(voiceId) {
+    const testPhone = prompt("Enter a phone number (e.g. +1234567890) to call for the voice preview:", "");
+    if (!testPhone) return;
+
+    setPreviewingId(voiceId);
+    try {
+      const res = await fetch('/api/twilio/preview-voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice_id: voiceId, phone_number: testPhone })
+      });
+      if (!res.ok) throw new Error('Failed to initiate preview call');
+      alert(`Preview initiated! You will receive a phone call at ${testPhone} in a few seconds.`);
+    } catch (err) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    } finally {
+      setPreviewingId(null);
+    }
+  }
+
+  async function handleUpdateVoice(numberId, voiceId) {
+    setUpdatingId(numberId);
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      
+      const { error } = await sb
+        .from('organization_numbers')
+        .update({ voice_id: voiceId })
+        .eq('id', numberId);
+      
+      if (error) throw error;
+      
+      setNumbers(prev => prev.map(n => n.id === numberId ? { ...n, voice_id: voiceId } : n));
+      const voiceName = AVAILABLE_VOICES.find(v => v.id === voiceId)?.name || 'the selected voice';
+      alert(`Voice successfully set to ${voiceName}!`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update voice: ' + err.message);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   return (
     <div className="animate-in fade-in duration-500">
       <header className="mb-8">
@@ -103,6 +165,7 @@ export default function AdminNumbers() {
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Phone Number</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Status</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Purchased</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">AI Voice</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300 text-right">Actions</th>
               </tr>
             </thead>
@@ -114,6 +177,28 @@ export default function AdminNumbers() {
                     <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{num.status}</span>
                   </td>
                   <td className="px-6 py-4 text-slate-400 text-sm">{new Date(num.purchased_at).toLocaleDateString()}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={num.voice_id || 'Polly.Matthew-Neural'}
+                        onChange={(e) => handleUpdateVoice(num.id, e.target.value)}
+                        disabled={updatingId === num.id}
+                        className="bg-slate-900 border border-slate-700 text-sm rounded-md px-2 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500 min-w-[160px]"
+                      >
+                        {AVAILABLE_VOICES.map(v => (
+                          <option key={v.id} value={v.id}>{v.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handlePreviewVoice(num.voice_id || 'Polly.Matthew-Neural')}
+                        disabled={previewingId === (num.voice_id || 'Polly.Matthew-Neural')}
+                        className="text-xs bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+                        title="Call me to preview this voice"
+                      >
+                        {previewingId === (num.voice_id || 'Polly.Matthew-Neural') ? 'Calling...' : 'Preview'}
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <button onClick={() => handleRelease(num.id)} className="text-red-400 hover:text-red-300 text-sm font-medium">Release</button>
                   </td>

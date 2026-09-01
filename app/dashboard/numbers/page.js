@@ -22,9 +22,14 @@ export default function MyNumbers() {
   const [updatingId, setUpdatingId] = useState(null);
 
   const AVAILABLE_VOICES = [
-    { id: 'Polly.Matthew-Neural', name: 'Matthew (Male, US)' },
-    { id: 'Polly.Joanna-Neural', name: 'Joanna (Female, US)' },
-    { id: 'Polly.Salli-Neural', name: 'Salli (Female, US - Friendly)' },
+    { id: 'Polly.Matthew-Neural', name: 'Matthew (Male, Professional)' },
+    { id: 'Polly.Stephen-Neural', name: 'Stephen (Male, Conversational)' },
+    { id: 'Polly.Justin-Neural', name: 'Justin (Male, Energetic)' },
+    { id: 'Polly.Joanna-Neural', name: 'Joanna (Female, Professional)' },
+    { id: 'Polly.Salli-Neural', name: 'Salli (Female, Friendly)' },
+    { id: 'Polly.Kendra-Neural', name: 'Kendra (Female, Authoritative)' },
+    { id: 'Polly.Kimberly-Neural', name: 'Kimberly (Female, Warm)' },
+    { id: 'Polly.Ruth-Neural', name: 'Ruth (Female, Conversational)' },
     { id: 'Polly.Brian-Neural', name: 'Brian (Male, UK)' },
     { id: 'Polly.Amy-Neural', name: 'Amy (Female, UK)' }
   ];
@@ -183,6 +188,8 @@ export default function MyNumbers() {
       
       // Update local state
       setNumbers(prev => prev.map(n => n.id === numberId ? { ...n, voice_id: voiceId } : n));
+      const voiceName = AVAILABLE_VOICES.find(v => v.id === voiceId)?.name || 'the selected voice';
+      alert(`Voice successfully set to ${voiceName}!`);
     } catch (err) {
       console.error(err);
       alert('Failed to update voice: ' + err.message);
