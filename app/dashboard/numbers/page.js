@@ -142,10 +142,12 @@ export default function MyNumbers() {
           alert('Failed to release number.');
         }
       } catch (err) {
-      console.error(err);
-      alert(err.message);
+        console.error(err);
+        alert(err.message);
+      }
     }
   }
+
 
   async function handlePreviewVoice(voiceId) {
     if (!agentPhone) {
