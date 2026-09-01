@@ -375,9 +375,9 @@ export default function MyNumbers() {
       </div>
       
       {toast && (
-        <div className={`fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl border z-50 animate-in slide-in-from-bottom-5 ${toast.type === 'error' ? 'bg-red-500/90 border-red-500/20 text-white' : 'bg-emerald-500/90 border-emerald-500/20 text-white'}`}>
-          <span className="font-medium text-sm">{toast.message}</span>
-          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100">
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-50 animate-in fade-in slide-in-from-bottom-5 ${toast.type === 'error' ? 'bg-red-500/90 border-red-500/20 text-white' : 'bg-emerald-500/90 border-emerald-500/20 text-white backdrop-blur-md'}`}>
+          <span className="font-semibold text-sm whitespace-nowrap">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100 ml-2">
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
           </button>
         </div>
