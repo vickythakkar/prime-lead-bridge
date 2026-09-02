@@ -18,6 +18,7 @@ export function AdminDialerProvider({ children }) {
   const [callerId, setCallerId] = useState('Admin (System Default)');
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [lastDialedNumber, setLastDialedNumber] = useState('');
   const [incomingCall, setIncomingCall] = useState(null);
 
   // Request Notification permissions
@@ -112,6 +113,7 @@ export function AdminDialerProvider({ children }) {
           setStatus('Ready to Call');
           setActiveCall(null);
           setIsMuted(false);
+          setLastDialedNumber('');
           stopTimer();
         });
 
@@ -153,9 +155,10 @@ export function AdminDialerProvider({ children }) {
     if (!phoneNumber) return;
     
     setStatus('Dialing...');
+    setLastDialedNumber(phoneNumber);
     try {
       const call = await device.connect({ 
-        params: { targetNumber: phoneNumber } 
+        params: { targetNumber: phoneNumber, isAdmin: 'true' } 
       });
       
       setActiveCall(call);
@@ -245,7 +248,7 @@ export function AdminDialerProvider({ children }) {
     <DialerContext.Provider value={{
       device, status, activeCall, callerId, isMuted, callDuration,
       incomingCall, handleDial, handleHangup, toggleMute, handleKeypad, formatDuration,
-      acceptIncoming, rejectIncoming
+      acceptIncoming, rejectIncoming, lastDialedNumber
     }}>
       {children}
       

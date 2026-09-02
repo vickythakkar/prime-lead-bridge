@@ -21,6 +21,7 @@ export function BrokerDialerProvider({ children }) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [incomingCall, setIncomingCall] = useState(null);
+  const [lastDialedNumber, setLastDialedNumber] = useState('');
 
   // Request Notification permissions
   useEffect(() => {
@@ -189,6 +190,7 @@ export function BrokerDialerProvider({ children }) {
           setStatus('Ready to Call');
           setActiveCall(null);
           setIsMuted(false);
+          setLastDialedNumber('');
           stopTimer();
         });
 
@@ -240,6 +242,7 @@ export function BrokerDialerProvider({ children }) {
     if (!phoneNumber) return;
     
     setStatus('Dialing...');
+    setLastDialedNumber(phoneNumber);
     try {
       const call = await device.connect({ 
         params: { 
@@ -336,7 +339,7 @@ export function BrokerDialerProvider({ children }) {
     <DialerContext.Provider value={{
       device, status, activeCall, callerId, isMuted, callDuration,
       incomingCall, handleDial, handleHangup, toggleMute, handleKeypad, formatDuration,
-      acceptIncoming, rejectIncoming
+      acceptIncoming, rejectIncoming, lastDialedNumber
     }}>
       {children}
       

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 export default function WebDialer() {
   const {
     device, status, activeCall, callerId, isMuted, callDuration,
-    handleDial, handleHangup, toggleMute, handleKeypad, formatDuration
+    handleDial, handleHangup, toggleMute, handleKeypad, formatDuration, lastDialedNumber
   } = useBrokerDialer();
   
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -18,6 +18,8 @@ export default function WebDialer() {
       const phoneParam = urlParams.get('phone');
       if (phoneParam) {
         setPhoneNumber(decodeURIComponent(phoneParam));
+      } else if (lastDialedNumber && activeCall) {
+        setPhoneNumber(lastDialedNumber);
       }
       const nameParam = urlParams.get('name');
       if (nameParam) {
@@ -30,11 +32,15 @@ export default function WebDialer() {
   useEffect(() => {
     if (activeCall && activeCall.parameters && activeCall.parameters.From) {
       // Check if it's an incoming call (we didn't just dial it ourselves)
-      if (activeCall.direction === 'INCOMING' || (status === 'Connected' && !phoneNumber)) {
+      if (activeCall.direction === 'INCOMING') {
         setPhoneNumber(activeCall.parameters.From);
+      } else if (status === 'Connected' && !phoneNumber && lastDialedNumber) {
+        setPhoneNumber(lastDialedNumber);
       }
+    } else if (activeCall && !phoneNumber && lastDialedNumber) {
+      setPhoneNumber(lastDialedNumber);
     }
-  }, [activeCall, status]);
+  }, [activeCall, status, lastDialedNumber]);
 
   // Live lookup contact name when phone number changes
   useEffect(() => {

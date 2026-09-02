@@ -8,7 +8,7 @@ export default function AdminDialer() {
   const searchParams = useSearchParams();
   const {
     device, status, activeCall, callerId, isMuted, callDuration,
-    handleDial, handleHangup, toggleMute, handleKeypad, formatDuration
+    handleDial, handleHangup, toggleMute, handleKeypad, formatDuration, lastDialedNumber
   } = useDialer();
   
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -18,6 +18,8 @@ export default function AdminDialer() {
     const phone = searchParams.get('phone');
     if (phone) {
       setPhoneNumber(decodeURIComponent(phone));
+    } else if (lastDialedNumber && activeCall) {
+      setPhoneNumber(lastDialedNumber);
     }
     const name = searchParams.get('name');
     if (name) {
@@ -28,11 +30,15 @@ export default function AdminDialer() {
   // Sync incoming call number to the dialer display
   useEffect(() => {
     if (activeCall && activeCall.parameters && activeCall.parameters.From) {
-      if (activeCall.direction === 'INCOMING' || (status === 'Connected' && !phoneNumber)) {
+      if (activeCall.direction === 'INCOMING') {
         setPhoneNumber(activeCall.parameters.From);
+      } else if (status === 'Connected' && !phoneNumber && lastDialedNumber) {
+        setPhoneNumber(lastDialedNumber);
       }
+    } else if (activeCall && !phoneNumber && lastDialedNumber) {
+      setPhoneNumber(lastDialedNumber);
     }
-  }, [activeCall, status]);
+  }, [activeCall, status, lastDialedNumber]);
 
   // Live lookup admin contact name when phone number changes
   useEffect(() => {
