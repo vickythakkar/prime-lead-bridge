@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import CallWrapUpModal from './CallWrapUpModal';
 
 const DialerContext = createContext();
 
@@ -22,6 +23,8 @@ export function BrokerDialerProvider({ children }) {
   const [callDuration, setCallDuration] = useState(0);
   const [incomingCall, setIncomingCall] = useState(null);
   const [lastDialedNumber, setLastDialedNumber] = useState('');
+  const [wrapUpDetails, setWrapUpDetails] = useState(null);
+  const [showWrapUp, setShowWrapUp] = useState(false);
 
   // Request Notification permissions
   useEffect(() => {
@@ -262,6 +265,14 @@ export function BrokerDialerProvider({ children }) {
 
       call.on('disconnect', () => {
         setStatus('Ready to Call');
+        
+        // Trigger wrap up modal for outbound calls
+        setWrapUpDetails({
+          callSid: call.parameters.CallSid,
+          phoneNumber: call.parameters.To || call.customParameters?.get('targetNumber') || lastDialedNumber
+        });
+        setShowWrapUp(true);
+
         setActiveCall(null);
         setIsMuted(false);
         stopTimer();
@@ -293,6 +304,14 @@ export function BrokerDialerProvider({ children }) {
       
       incomingCall.on('disconnect', () => {
         setStatus('Ready to Call');
+        
+        // Trigger wrap up modal for incoming calls
+        setWrapUpDetails({
+          callSid: incomingCall.parameters.CallSid,
+          phoneNumber: incomingCall.parameters.From
+        });
+        setShowWrapUp(true);
+
         setActiveCall(null);
         setIsMuted(false);
         stopTimer();
@@ -423,6 +442,13 @@ export function BrokerDialerProvider({ children }) {
           </div>
         </div>
       )}
+
+      <CallWrapUpModal 
+        isOpen={showWrapUp} 
+        onClose={() => setShowWrapUp(false)} 
+        callDetails={wrapUpDetails} 
+        orgId={orgId} 
+      />
     </DialerContext.Provider>
   );
 }

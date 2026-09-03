@@ -14,7 +14,7 @@ export default function DashboardOverview() {
     minutesUsed: 0,
     planLimit: 250
   });
-
+  const [tasks, setTasks] = useState([]);
   useEffect(() => {
     async function loadData() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -78,6 +78,16 @@ export default function DashboardOverview() {
         minutesUsed: totalMinutes,
         planLimit: planLimit
       });
+
+      // Tasks
+      const { data: pendingTasks } = await supabase.from('tasks')
+        .select('*')
+        .eq('organization_id', oId)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true })
+        .limit(5);
+
+      setTasks(pendingTasks || []);
 
       setLoading(false);
     }
@@ -158,6 +168,64 @@ export default function DashboardOverview() {
                   </div>
                 </a>
               </div>
+            </div>
+            {/* Pending Follow-ups */}
+            <div className="glass-card rounded-2xl p-6 lg:col-span-3">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-bold text-white">Pending Follow-ups</h2>
+                <Link href="/dashboard/tasks" className="text-sm text-indigo-400 hover:text-indigo-300">View All</Link>
+              </div>
+              
+              {tasks.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <p>You have no pending follow-ups. Great job!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tasks.map(task => {
+                    const isOverdue = new Date(task.due_date) < new Date();
+                    return (
+                      <div key={task.id} className="flex items-center justify-between p-4 bg-slate-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
+                        <div>
+                          <h3 className="font-medium text-white">{task.title}</h3>
+                          <div className="flex items-center gap-3 mt-1 text-sm">
+                            <span className={isOverdue ? 'text-red-400 font-medium' : 'text-slate-400'}>
+                              {new Date(task.due_date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                            </span>
+                            {task.phone_number && (
+                              <>
+                                <span className="text-slate-600">•</span>
+                                <span className="text-slate-400 font-mono">{task.phone_number}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {task.phone_number && (
+                            <Link 
+                              href={`/dashboard/dialer?phone=${encodeURIComponent(task.phone_number)}`}
+                              className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/20 transition-colors"
+                              title="Call Now"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328z"/></svg>
+                            </Link>
+                          )}
+                          <button 
+                            onClick={async () => {
+                              await supabase.from('tasks').update({ status: 'completed' }).eq('id', task.id);
+                              setTasks(tasks.filter(t => t.id !== task.id));
+                            }}
+                            className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 transition-colors"
+                            title="Mark as Done"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </>
