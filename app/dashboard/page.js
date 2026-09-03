@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import StatsCard from './components/StatsCard';
+import Link from 'next/link';
 
 export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
