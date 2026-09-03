@@ -118,13 +118,14 @@ export function AdminDialerProvider({ children }) {
           });
         });
 
-        newDevice.on('disconnect', () => {
+        newDevice.on('disconnect', (conn) => {
           setStatus('Ready to Call');
           
-          if (activeCall) {
+          // Use the disconnected connection object directly instead of stale activeCall state
+          if (conn) {
             setWrapUpDetails({
-              callSid: activeCall.parameters?.CallSid,
-              phoneNumber: activeCall.parameters?.To || activeCall.customParameters?.get('targetNumber') || lastDialedNumber
+              callSid: conn.parameters?.CallSid,
+              phoneNumber: conn.parameters?.To || conn.customParameters?.get('targetNumber')
             });
             setShowWrapUp(true);
           }

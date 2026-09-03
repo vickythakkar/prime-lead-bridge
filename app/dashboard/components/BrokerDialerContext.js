@@ -269,7 +269,7 @@ export function BrokerDialerProvider({ children }) {
         // Trigger wrap up modal for outbound calls
         setWrapUpDetails({
           callSid: call.parameters?.CallSid,
-          phoneNumber: call.parameters?.To || call.customParameters?.get('targetNumber') || lastDialedNumber
+          phoneNumber: call.parameters?.To || call.customParameters?.get('targetNumber') || phoneNumber
         });
         setShowWrapUp(true);
 
