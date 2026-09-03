@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import AdminCallWrapUpModal from './AdminCallWrapUpModal';
 
 const DialerContext = createContext();
 
@@ -20,6 +21,9 @@ export function AdminDialerProvider({ children }) {
   const [callDuration, setCallDuration] = useState(0);
   const [lastDialedNumber, setLastDialedNumber] = useState('');
   const [incomingCall, setIncomingCall] = useState(null);
+  
+  const [wrapUpDetails, setWrapUpDetails] = useState(null);
+  const [showWrapUp, setShowWrapUp] = useState(false);
 
   // Request Notification permissions
   useEffect(() => {
@@ -99,6 +103,11 @@ export function AdminDialerProvider({ children }) {
           });
 
           call.on('disconnect', () => {
+            setWrapUpDetails({
+              callSid: call.parameters.CallSid,
+              phoneNumber: call.parameters.From
+            });
+            setShowWrapUp(true);
             setIncomingCall(null);
             setStatus('Ready to Call');
           });
@@ -111,6 +120,15 @@ export function AdminDialerProvider({ children }) {
 
         newDevice.on('disconnect', () => {
           setStatus('Ready to Call');
+          
+          if (activeCall) {
+            setWrapUpDetails({
+              callSid: activeCall.parameters?.CallSid,
+              phoneNumber: activeCall.parameters?.To || activeCall.customParameters?.get('targetNumber') || lastDialedNumber
+            });
+            setShowWrapUp(true);
+          }
+
           setActiveCall(null);
           setIsMuted(false);
           setLastDialedNumber('');
@@ -332,6 +350,12 @@ export function AdminDialerProvider({ children }) {
           </div>
         </div>
       )}
+
+      <AdminCallWrapUpModal 
+        isOpen={showWrapUp} 
+        onClose={() => setShowWrapUp(false)} 
+        callDetails={wrapUpDetails} 
+      />
     </DialerContext.Provider>
   );
 }
