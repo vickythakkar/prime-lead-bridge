@@ -104,8 +104,8 @@ export function AdminDialerProvider({ children }) {
 
           call.on('disconnect', () => {
             setWrapUpDetails({
-              callSid: call.parameters.CallSid,
-              phoneNumber: call.parameters.From
+              callSid: call.parameters?.CallSid,
+              phoneNumber: call.parameters?.From
             });
             setShowWrapUp(true);
             setIncomingCall(null);

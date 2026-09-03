@@ -268,8 +268,8 @@ export function BrokerDialerProvider({ children }) {
         
         // Trigger wrap up modal for outbound calls
         setWrapUpDetails({
-          callSid: call.parameters.CallSid,
-          phoneNumber: call.parameters.To || call.customParameters?.get('targetNumber') || lastDialedNumber
+          callSid: call.parameters?.CallSid,
+          phoneNumber: call.parameters?.To || call.customParameters?.get('targetNumber') || lastDialedNumber
         });
         setShowWrapUp(true);
 
@@ -307,8 +307,8 @@ export function BrokerDialerProvider({ children }) {
         
         // Trigger wrap up modal for incoming calls
         setWrapUpDetails({
-          callSid: incomingCall.parameters.CallSid,
-          phoneNumber: incomingCall.parameters.From
+          callSid: incomingCall.parameters?.CallSid,
+          phoneNumber: incomingCall.parameters?.From
         });
         setShowWrapUp(true);
 
