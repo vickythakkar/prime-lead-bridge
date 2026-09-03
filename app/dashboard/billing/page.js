@@ -193,7 +193,7 @@ export default function BillingDashboard() {
     invoiceWindow.document.close();
   };
 
-  const handleDownloadPastInvoice = (invoice) => {
+  const handleDownloadPastInvoice = async (invoice) => {
     const orgName = org.company_name || org.name || 'Unknown';
     const period = invoice.month_year || `${invoice.billing_period_start} — ${invoice.billing_period_end}`;
     const usageCost = parseFloat(invoice.total_minutes || 0) * parseFloat(invoice.rate_per_minute || 0);
@@ -204,7 +204,16 @@ export default function BillingDashboard() {
       ? org.subscription_plan.replace(/_/g, ' ').toUpperCase()
       : 'PAY AS YOU GO';
     
-    const htmlContent = getInvoicePdfHtml(invoice, orgName, period, baseFee, usageCost, planName);
+    // Fetch call logs for this billing period
+    const { data: callLogs } = await supabase
+      .from('call_logs')
+      .select('*')
+      .eq('organization_id', org.id)
+      .gte('created_at', invoice.billing_period_start)
+      .lte('created_at', invoice.billing_period_end)
+      .order('created_at', { ascending: true });
+
+    const htmlContent = getInvoicePdfHtml(invoice, orgName, period, baseFee, usageCost, planName, callLogs || []);
 
     const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
