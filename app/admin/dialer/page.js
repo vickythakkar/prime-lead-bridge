@@ -57,6 +57,7 @@ export default function AdminDialer() {
         .from('contacts')
         .select('name, organizations(company_name)')
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .maybeSingle();
       
       if (contact) {
@@ -69,6 +70,7 @@ export default function AdminDialer() {
         .from('leads')
         .select('name, organizations(company_name)')
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .maybeSingle();
 
       if (lead) {

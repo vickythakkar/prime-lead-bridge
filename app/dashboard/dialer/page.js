@@ -66,6 +66,7 @@ export default function WebDialer() {
         .select('name')
         .eq('organization_id', agentData.organization_id)
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .maybeSingle();
       
       if (contact) {
@@ -79,6 +80,7 @@ export default function WebDialer() {
         .select('name')
         .eq('organization_id', agentData.organization_id)
         .ilike('phone', `%${cleanPhone.slice(-10)}%`)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .maybeSingle();
 
       if (lead) {

@@ -102,95 +102,30 @@ export default function BillingDashboard() {
       alert('Failed to update plan.');
     }
   };
+  const handleDownloadInvoice = async () => {
+    // Fetch call logs for the current billing cycle
+    const now = new Date();
+    const cycleStart = org.billing_cycle_start ? new Date(org.billing_cycle_start) : new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const { data: callLogs } = await supabase
+      .from('call_logs')
+      .select('*')
+      .eq('organization_id', org.id)
+      .gte('created_at', cycleStart.toISOString())
+      .order('created_at', { ascending: true });
 
-  const handleDownloadInvoice = () => {
-    const invoiceWindow = window.open('', '_blank');
-    const invoiceHtml = `
-      <html>
-      <head>
-        <title>Invoice - ${org.name}</title>
-        <style>
-          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
-          .invoice-box { max-width: 800px; margin: auto; padding: 40px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); font-size: 16px; line-height: 24px; color: #555; }
-          .invoice-box table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; }
-          .invoice-box table td { padding: 5px; vertical-align: top; }
-          .invoice-box table tr.top table td { padding-bottom: 20px; }
-          .invoice-box table tr.top table td.title { font-size: 32px; line-height: 45px; color: #4f46e5; font-weight: 800; }
-          .invoice-box table tr.information table td { padding-bottom: 40px; }
-          .invoice-box table tr.heading td { background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-weight: bold; color: #1e293b; padding: 10px; }
-          .invoice-box table tr.details td { padding-bottom: 20px; }
-          .invoice-box table tr.item td { border-bottom: 1px solid #f1f5f9; padding: 15px 10px; }
-          .invoice-box table tr.item.last td { border-bottom: none; }
-          .invoice-box table tr.total td:nth-child(2) { border-top: 2px solid #e2e8f0; font-weight: bold; font-size: 18px; color: #0f172a; padding: 15px 10px; }
-        </style>
-      </head>
-      <body>
-        <div class="invoice-box">
-          <table cellpadding="0" cellspacing="0">
-            <tr class="top">
-              <td colspan="2">
-                <table>
-                  <tr>
-                    <td class="title">
-                      Prime Lead Bridge
-                      <div style="font-size: 14px; font-weight: normal; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 4px;">A PrimeRealOps Product</div>
-                    </td>
-                    <td style="text-align: right; font-size: 14px; color: #64748b; line-height: 1.6;">
-                      <strong style="color: #0f172a; font-size: 16px;">Estimated Invoice</strong><br>
-                      Date: ${new Date().toLocaleDateString()}<br>
-                      Org ID: ${org.id.slice(0,8).toUpperCase()}
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr class="information">
-              <td colspan="2">
-                <table>
-                  <tr>
-                    <td style="color: #475569; line-height: 1.6;">
-                      <strong style="color: #0f172a;">Prime Lead Bridge</strong><br>
-                      info@primerealops.com
-                    </td>
-                    <td style="text-align: right; color: #475569; line-height: 1.6;">
-                      <strong style="color: #0f172a;">${org.company_name || org.name}</strong><br>
-                      ${org.contact_name || ''}<br>
-                      ${org.contact_email || ''}
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr class="heading">
-              <td>Description</td>
-              <td style="text-align: right;">Amount</td>
-            </tr>
-            <tr class="item">
-              <td>${planName}</td>
-              <td style="text-align: right;">$${baseMonthlyCost.toFixed(2)}</td>
-            </tr>
-            <tr class="item last">
-              <td>Minute Overages (${overageMinutes} mins)</td>
-              <td style="text-align: right;">$${estimatedOverageCost.toFixed(2)}</td>
-            </tr>
-            <tr class="total">
-              <td></td>
-              <td style="text-align: right;">Total: $${totalEstimatedBill.toFixed(2)}</td>
-            </tr>
-          </table>
-        </div>
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 500);
-          }
-        </script>
-      </body>
-      </html>
-    `;
-    invoiceWindow.document.write(invoiceHtml);
-    invoiceWindow.document.close();
+    const invoice = {
+      invoice_number: 'Estimated',
+      created_at: now.toISOString(),
+      status: 'pending'
+    };
+
+    const period = `Current Cycle (Since ${cycleStart.toLocaleDateString()})`;
+    const htmlContent = getInvoicePdfHtml(invoice, org.company_name || org.name || 'Unknown', period, baseMonthlyCost, estimatedOverageCost, planName, callLogs || []);
+    
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
 
   const handleDownloadPastInvoice = async (invoice) => {

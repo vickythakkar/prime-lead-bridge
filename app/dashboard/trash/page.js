@@ -35,13 +35,25 @@ export default function TrashPage() {
     else if (tab === 'leads') { table = 'leads'; select = '*, properties(address)'; }
     else if (tab === 'messages') { table = 'conversations'; select = '*, contacts(name)'; }
     else if (tab === 'agents') table = 'agents';
+    else if (tab === 'tasks') table = 'tasks';
 
-    const { data, error } = await supabase
+    let query = supabase
       .from(table)
       .select(select)
       .eq('organization_id', orgId)
       .eq('is_deleted', true)
       .order('created_at', { ascending: false });
+
+    // Handle agents table which may not have organization_id
+    if (table === 'agents') {
+      query = supabase
+        .from(table)
+        .select(select)
+        .eq('is_deleted', true)
+        .order('created_at', { ascending: false });
+    }
+
+    const { data, error } = await query;
 
     if (!error && data) {
       setItems(data);

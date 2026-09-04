@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 export default function CallLogs() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingNote, setEditingNote] = useState(null); // { id: string, notes: string, saving: boolean }
 
   useEffect(() => {
     async function fetchCalls() {
@@ -47,6 +48,24 @@ export default function CallLogs() {
     }
     fetchCalls();
   }, []);
+
+  async function handleSaveNote() {
+    if (!editingNote) return;
+    setEditingNote(prev => ({ ...prev, saving: true }));
+    
+    const { error } = await supabase
+      .from('call_logs')
+      .update({ notes: editingNote.notes })
+      .eq('id', editingNote.id);
+      
+    if (!error) {
+      setCalls(calls.map(c => c.id === editingNote.id ? { ...c, notes: editingNote.notes } : c));
+      setEditingNote(null);
+    } else {
+      alert("Failed to save note. Please try again.");
+      setEditingNote(prev => ({ ...prev, saving: false }));
+    }
+  }
 
   function exportCSV() {
     const headers = ['Date', 'Type', 'Contact / Number', 'Property', 'Duration (seconds)', 'Recording URL'];
@@ -146,11 +165,37 @@ export default function CallLogs() {
                     <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
                     <td className="px-6 py-4">
                       {call.notes ? (
-                        <div className="text-sm text-slate-200 italic line-clamp-3" title={call.notes}>
-                          "{call.notes}"
+                        <div className="group relative">
+                          <div className="text-sm text-slate-200 italic line-clamp-2">
+                            "{call.notes}"
+                          </div>
+                          {call.notes.length > 60 && (
+                            <button 
+                              onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
+                              className="text-xs text-indigo-400 hover:text-indigo-300 mt-1"
+                            >
+                              Read full / Edit
+                            </button>
+                          )}
+                          {call.notes.length <= 60 && (
+                            <button 
+                              onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
+                              className="text-xs text-slate-500 hover:text-indigo-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              Edit Note
+                            </button>
+                          )}
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-500 italic">No notes</span>
+                        <div className="group flex items-center gap-2">
+                          <span className="text-sm text-slate-500 italic">No notes</span>
+                          <button 
+                            onClick={() => setEditingNote({ id: call.id, notes: '', saving: false })}
+                            className="text-xs text-slate-600 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            + Add
+                          </button>
+                        </div>
                       )}
                       {call.disposition && (
                         <div className="mt-1">
@@ -226,6 +271,45 @@ export default function CallLogs() {
           </div>
         )}
       </div>
+
+      {editingNote && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+            <button 
+              onClick={() => setEditingNote(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+              </svg>
+            </button>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Edit Note</h3>
+              <textarea 
+                value={editingNote.notes}
+                onChange={(e) => setEditingNote({...editingNote, notes: e.target.value})}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-slate-200 h-48 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+                placeholder="Enter call notes..."
+              />
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  onClick={() => setEditingNote(null)}
+                  className="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveNote}
+                  disabled={editingNote.saving}
+                  className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                >
+                  {editingNote.saving ? 'Saving...' : 'Save Note'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
