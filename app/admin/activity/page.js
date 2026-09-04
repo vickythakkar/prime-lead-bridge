@@ -150,7 +150,9 @@ export default function AdminActivityLog() {
                       )}
                     </td>
                     <td className="px-5 py-4 text-slate-400 text-sm">
-                      {new Date(call.created_at).toLocaleString()}
+                      {new Date(call.created_at + (call.created_at.includes('T') && !call.created_at.endsWith('Z') && !call.created_at.includes('+') ? 'Z' : '')).toLocaleString(undefined, {
+                        year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+                      })}
                     </td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{call.duration ? `${call.duration}s` : '0s'}</td>
                     <td className="px-5 py-4">

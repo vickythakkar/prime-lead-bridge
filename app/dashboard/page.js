@@ -152,9 +152,9 @@ export default function DashboardOverview() {
                     const isOverdue = new Date(task.due_date) < new Date();
                     return (
                       <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors gap-4">
-                        <div className="flex-1">
+                        <div className="w-[35%] min-w-[250px]">
                           <div className="flex items-center gap-2">
-                            <h3 className="font-medium text-white">{task.title}</h3>
+                            <h4 className="font-medium text-white">{task.title}</h4>
                             {task.disposition && (
                               <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                                 {task.disposition}
@@ -162,13 +162,9 @@ export default function DashboardOverview() {
                             )}
                           </div>
                           
-                          {task.description && (
-                            <p className="text-sm text-slate-400 mt-1 line-clamp-2 italic">&quot;{task.description}&quot;</p>
-                          )}
-                          
                           <div className="flex items-center gap-3 mt-2 text-sm">
                             <span className={isOverdue ? 'text-red-400 font-medium' : 'text-slate-400'}>
-                              {new Date(task.due_date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              {new Date(task.due_date + (task.due_date.includes('T') && !task.due_date.endsWith('Z') && !task.due_date.includes('+') ? 'Z' : '')).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                             </span>
                             {task.phone_number && (
                               <>
@@ -177,6 +173,14 @@ export default function DashboardOverview() {
                               </>
                             )}
                           </div>
+                        </div>
+
+                        <div className="flex-1 px-4 border-l border-white/5">
+                          {task.description ? (
+                            <p className="text-sm text-slate-200 line-clamp-2 italic">&quot;{task.description}&quot;</p>
+                          ) : (
+                            <p className="text-sm text-slate-500 italic">No notes provided</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 sm:self-start">
                           <button

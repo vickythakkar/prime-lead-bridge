@@ -106,7 +106,7 @@ export default function TasksPage() {
             const isOverdue = task.status === 'pending' && new Date(task.due_date) < new Date();
             return (
               <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors gap-4">
-                <div className="flex-1">
+                <div className="w-[35%] min-w-[250px]">
                   <div className="flex items-center gap-2">
                     <h3 className={`font-medium ${task.status === 'completed' ? 'text-slate-500 line-through' : 'text-white'}`}>{task.title}</h3>
                     {task.disposition && (
@@ -118,12 +118,10 @@ export default function TasksPage() {
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Done</span>
                     )}
                   </div>
-                  {task.description && (
-                    <p className="text-sm text-slate-400 mt-1 line-clamp-2 italic">&quot;{task.description}&quot;</p>
-                  )}
+
                   <div className="flex items-center gap-3 mt-2 text-sm">
                     <span className={isOverdue ? 'text-red-400 font-medium' : 'text-slate-400'}>
-                      {new Date(task.due_date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                      {new Date(task.due_date + (task.due_date.includes('T') && !task.due_date.endsWith('Z') && !task.due_date.includes('+') ? 'Z' : '')).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                     {task.phone_number && (
                       <>
@@ -132,6 +130,14 @@ export default function TasksPage() {
                       </>
                     )}
                   </div>
+                </div>
+
+                <div className="flex-1 px-4 border-l border-white/5">
+                  {task.description ? (
+                    <p className={`text-sm line-clamp-2 italic ${task.status === 'completed' ? 'text-slate-500' : 'text-slate-200'}`}>&quot;{task.description}&quot;</p>
+                  ) : (
+                    <p className="text-sm text-slate-500 italic">No notes provided</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 sm:self-start">
                   <button onClick={() => setEditingTask(task)} className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 hover:text-white transition-colors" title="Edit">

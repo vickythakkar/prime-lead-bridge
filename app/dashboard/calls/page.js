@@ -159,7 +159,9 @@ export default function CallLogs() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-400 text-sm">
-                      {new Date(call.created_at).toLocaleString()}
+                      {new Date(call.created_at + (call.created_at.includes('T') && !call.created_at.endsWith('Z') && !call.created_at.includes('+') ? 'Z' : '')).toLocaleString(undefined, {
+                        year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+                      })}
                     </td>
                     <td className="px-6 py-4 text-slate-300 text-sm">
                       {call.duration ? `${call.duration}s` : '0s'}
