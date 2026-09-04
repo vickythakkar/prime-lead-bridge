@@ -171,7 +171,7 @@ export default function AdminActivityLog() {
                           {call.notes.length > 60 && (
                             <button 
                               onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
-                              className="text-xs text-indigo-400 hover:text-indigo-300 mt-1"
+                              className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 block"
                             >
                               Read full / Edit
                             </button>
@@ -179,18 +179,18 @@ export default function AdminActivityLog() {
                           {call.notes.length <= 60 && (
                             <button 
                               onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
-                              className="text-xs text-slate-500 hover:text-indigo-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="text-xs text-slate-400 hover:text-indigo-400 mt-1 block transition-colors"
                             >
                               Edit Note
                             </button>
                           )}
                         </div>
                       ) : (
-                        <div className="group flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                           <span className="text-sm text-slate-500 italic">No notes</span>
                           <button 
                             onClick={() => setEditingNote({ id: call.id, notes: '', saving: false })}
-                            className="text-xs text-slate-600 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-xs text-indigo-400/70 hover:text-indigo-400 transition-colors"
                           >
                             + Add
                           </button>
