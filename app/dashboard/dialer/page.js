@@ -33,6 +33,7 @@ export default function WebDialer() {
     if (activeCall && activeCall.parameters && activeCall.parameters.From) {
       // Check if it's an incoming call (we didn't just dial it ourselves)
       if (activeCall.direction === 'INCOMING') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPhoneNumber(activeCall.parameters.From);
       } else if (status === 'Connected' && !phoneNumber && lastDialedNumber) {
         setPhoneNumber(lastDialedNumber);

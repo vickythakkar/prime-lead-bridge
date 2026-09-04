@@ -31,6 +31,7 @@ export default function AdminDialer() {
   useEffect(() => {
     if (activeCall && activeCall.parameters && activeCall.parameters.From) {
       if (activeCall.direction === 'INCOMING') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPhoneNumber(activeCall.parameters.From);
       } else if (status === 'Connected' && !phoneNumber && lastDialedNumber) {
         setPhoneNumber(lastDialedNumber);
