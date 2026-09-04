@@ -18,12 +18,18 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
 
   useEffect(() => {
     if (isOpen) {
+      const getTomorrowDateString = () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+
       // Reset form
       setForm({
         disposition: '',
         notes: '',
         scheduleFollowUp: false,
-        followUpDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
+        followUpDate: getTomorrowDateString(),
         followUpTime: '09:00',
         followUpTitle: 'Follow up call'
       });

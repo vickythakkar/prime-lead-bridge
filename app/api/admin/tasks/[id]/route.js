@@ -7,7 +7,7 @@ export async function PATCH(request, { params }) {
     if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const updates = await request.json();
-    const { id } = params;
+    const { id } = await params;
 
     const { error } = await supabaseAdmin.from('tasks').update(updates).eq('id', id);
     if (error) throw error;
@@ -24,7 +24,7 @@ export async function DELETE(request, { params }) {
     const admin = verifyAdminToken(request);
     if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { error } = await supabaseAdmin.from('tasks').delete().eq('id', id);
     if (error) throw error;
 

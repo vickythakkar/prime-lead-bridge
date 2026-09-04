@@ -15,9 +15,20 @@ export default function EditTaskModal({ isOpen, onClose, task }) {
       setDescription(task.description || '');
       
       if (task.due_date) {
-        const d = new Date(task.due_date);
-        setDueDate(d.toISOString().split('T')[0]);
-        setDueTime(d.toISOString().split('T')[1].slice(0,5));
+        // Append Z if it's missing to ensure it parses as UTC, not local time
+        const dateStr = task.due_date + (task.due_date.includes('T') && !task.due_date.endsWith('Z') && !task.due_date.includes('+') ? 'Z' : '');
+        const d = new Date(dateStr);
+        
+        // Format as YYYY-MM-DD in local time
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        setDueDate(`${year}-${month}-${day}`);
+        
+        // Format as HH:MM in local time
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        setDueTime(`${hours}:${minutes}`);
       }
     }
   }, [isOpen, task]);
