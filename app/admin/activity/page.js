@@ -171,17 +171,19 @@ export default function AdminActivityLog() {
                           {call.notes.length > 60 && (
                             <button 
                               onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
-                              className="mt-2 text-[10px] uppercase font-semibold tracking-wider text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 rounded-md border border-indigo-500/20 transition-colors"
+                              className="mt-1.5 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
                             >
-                              Read full / Edit
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M10.478 1.647a.5.5 0 1 0-.956-.294l-4 13a.5.5 0 0 0 .956.294l4-13zM4.854 4.146a.5.5 0 0 1 0 .708L1.707 8l3.147 3.146a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0zm6.292 0a.5.5 0 0 0 0 .708L14.293 8l-3.147 3.146a.5.5 0 0 0 .708.708l3.5-3.5a.5.5 0 0 0 0-.708l-3.5-3.5a.5.5 0 0 0-.708 0z"/></svg>
+                              Read full & Edit
                             </button>
                           )}
                           {call.notes.length <= 60 && (
                             <button 
                               onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
-                              className="mt-2 text-[10px] uppercase font-semibold tracking-wider text-slate-400 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-md border border-white/10 transition-colors"
+                              className="mt-1.5 text-[11px] font-medium text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition-colors"
                             >
-                              Edit Note
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+                              Edit note
                             </button>
                           )}
                         </div>
@@ -190,7 +192,7 @@ export default function AdminActivityLog() {
                           <span className="text-sm text-slate-500 italic">No notes</span>
                           <button 
                             onClick={() => setEditingNote({ id: call.id, notes: '', saving: false })}
-                            className="text-[10px] uppercase font-semibold tracking-wider text-slate-300 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-md border border-white/10 transition-colors flex items-center gap-1"
+                            className="text-[11px] font-medium text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition-colors border border-slate-700 hover:border-indigo-500/50 rounded px-2 py-0.5"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
                             Add
