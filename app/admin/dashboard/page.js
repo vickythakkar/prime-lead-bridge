@@ -150,8 +150,9 @@ export default function AdminDashboard() {
                 <a href="/admin/brokers" className="text-indigo-400 hover:text-indigo-300 text-sm font-medium">View all organizations →</a>
               </div>
             </div>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Pending Follow-ups */}
             <div className="glass-card p-6 rounded-2xl border-indigo-500/10 border">
               <div className="flex justify-between items-center mb-6">
