@@ -49,7 +49,7 @@ export default function IVRPage() {
 
       {numbers.length === 0 ? (
         <div className="glass-card rounded-2xl p-8 border border-white/10 text-center">
-          <p className="text-slate-400 mb-4">You don't have any active phone numbers yet.</p>
+          <p className="text-slate-400 mb-4">You don&apos;t have any active phone numbers yet.</p>
         </div>
       ) : (
         <div className="space-y-6">
