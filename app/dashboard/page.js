@@ -189,8 +189,14 @@ export default function DashboardOverview() {
                           
                           <button
                             onClick={async () => {
-                              if (!confirm('Move this follow-up to trash?')) return;
                               await supabase.from('tasks').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', task.id);
+                              
+                              const toastEl = document.createElement('div');
+                              toastEl.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 bg-emerald-500/90 border-emerald-500/20 text-white backdrop-blur-md font-semibold text-sm whitespace-nowrap';
+                              toastEl.innerText = 'Follow-up moved to trash';
+                              document.body.appendChild(toastEl);
+                              setTimeout(() => { toastEl.remove(); }, 3000);
+
                               setTasks(tasks.filter(t => t.id !== task.id));
                             }}
                             className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"
@@ -211,6 +217,13 @@ export default function DashboardOverview() {
                           <button 
                             onClick={async () => {
                               await supabase.from('tasks').update({ status: 'completed' }).eq('id', task.id);
+                              
+                              const toastEl = document.createElement('div');
+                              toastEl.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 bg-indigo-500/90 border-indigo-500/20 text-white backdrop-blur-md font-semibold text-sm whitespace-nowrap';
+                              toastEl.innerText = 'Task marked as completed';
+                              document.body.appendChild(toastEl);
+                              setTimeout(() => { toastEl.remove(); }, 3000);
+
                               setTasks(tasks.filter(t => t.id !== task.id));
                             }}
                             className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 transition-colors"

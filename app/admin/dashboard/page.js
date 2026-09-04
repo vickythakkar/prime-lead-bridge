@@ -152,12 +152,11 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* Pending Follow-ups */}
-            <div className="glass-card p-6 rounded-2xl border-indigo-500/10 border">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-white">Pending Follow-ups</h3>
-              </div>
+          <div className="glass-card p-6 rounded-2xl mb-6 border-indigo-500/10 border mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-white">Pending Follow-ups</h3>
+              <Link href="/admin/tasks" className="text-indigo-400 hover:text-indigo-300 text-sm font-medium">View All</Link>
+            </div>
               
               {!stats?.pendingTasks || stats.pendingTasks.length === 0 ? (
                 <div className="text-center py-8 text-slate-400">
@@ -206,18 +205,25 @@ export default function AdminDashboard() {
                           
                           <button
                             onClick={async () => {
-                              if (!confirm('Move this follow-up to trash?')) return;
                               const token = localStorage.getItem('admin_token');
-                              await fetch(`/api/admin/tasks/${task.id}`, { 
+                              const res = await fetch(`/api/admin/tasks/${task.id}`, { 
                                 method: 'PATCH', 
                                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ is_deleted: true, deleted_at: new Date().toISOString() })
                               });
-                              const fetchStats = async () => {
-                                const res = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
-                                if (res.ok) setStats(await res.json());
-                              };
-                              fetchStats();
+                              if (res.ok) {
+                                const toastEl = document.createElement('div');
+                                toastEl.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 bg-emerald-500/90 border-emerald-500/20 text-white backdrop-blur-md font-semibold text-sm whitespace-nowrap';
+                                toastEl.innerText = 'Task moved to trash';
+                                document.body.appendChild(toastEl);
+                                setTimeout(() => { toastEl.remove(); }, 3000);
+                                
+                                const fetchStats = async () => {
+                                  const sRes = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
+                                  if (sRes.ok) setStats(await sRes.json());
+                                };
+                                fetchStats();
+                              }
                             }}
                             className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"
                             title="Delete Task"
@@ -237,16 +243,24 @@ export default function AdminDashboard() {
                           <button 
                             onClick={async () => {
                               const token = localStorage.getItem('admin_token');
-                              await fetch(`/api/admin/tasks/${task.id}`, { 
+                              const res = await fetch(`/api/admin/tasks/${task.id}`, { 
                                 method: 'PATCH', 
                                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ status: 'completed' })
                               });
-                              const fetchStats = async () => {
-                                const res = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
-                                if (res.ok) setStats(await res.json());
-                              };
-                              fetchStats();
+                              if (res.ok) {
+                                const toastEl = document.createElement('div');
+                                toastEl.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 bg-indigo-500/90 border-indigo-500/20 text-white backdrop-blur-md font-semibold text-sm whitespace-nowrap';
+                                toastEl.innerText = 'Task marked as completed';
+                                document.body.appendChild(toastEl);
+                                setTimeout(() => { toastEl.remove(); }, 3000);
+                                
+                                const fetchStats = async () => {
+                                  const sRes = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
+                                  if (sRes.ok) setStats(await sRes.json());
+                                };
+                                fetchStats();
+                              }
                             }}
                             className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 transition-colors"
                             title="Mark as Done"
@@ -262,7 +276,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div className="glass-card p-6 rounded-2xl border border-white/5">
+            <div className="glass-card p-6 rounded-2xl border border-white/5 mb-6">
               <h2 className="text-lg font-bold text-white mb-6">Recent Activity</h2>
               <div className="space-y-6">
                 {stats?.recentActivity?.map((activity, i) => (
@@ -275,7 +289,6 @@ export default function AdminDashboard() {
                 ))}
               </div>
             </div>
-          </div>
         </>
       )}
 

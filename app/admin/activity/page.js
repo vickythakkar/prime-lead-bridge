@@ -91,12 +91,13 @@ export default function AdminActivityLog() {
             <table className="w-full text-left min-w-[1000px]">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300">Type</th>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300">Organization</th>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-5 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Organization</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[200px]">Notes</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -121,16 +122,36 @@ export default function AdminActivityLog() {
                         </div>
                       )}
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="text-slate-300 text-sm font-medium">{call.organizations?.company_name || call.organizations?.name || '—'}</span>
+                    <td className="px-5 py-4 text-slate-300 font-medium">
+                      {call.organizations?.name || call.organizations?.company_name || 'Unknown'}
                     </td>
                     <td className="px-5 py-4 font-medium text-white">
-                      <div className="flex flex-col">
-                        <span>{call.contacts?.name || (call.call_type === 'outbound' ? call.to_number : call.from_number)}</span>
-                        {call.contacts?.name && <span className="text-xs text-slate-500 font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>}
-                      </div>
+                      {call.contacts?.name ? (
+                        <div className="flex flex-col">
+                          <span>{call.contacts.name}</span>
+                          <span className="text-xs text-slate-500 font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>
+                        </div>
+                      ) : (
+                        <span className="font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>
+                      )}
                     </td>
-                    <td className="px-5 py-4 text-slate-400 text-sm">{new Date(call.created_at).toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      {call.notes ? (
+                        <div className="text-sm text-slate-300 italic line-clamp-3" title={call.notes}>
+                          "{call.notes}"
+                        </div>
+                      ) : (
+                        <span className="text-sm text-slate-600 italic">No notes</span>
+                      )}
+                      {call.disposition && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">{call.disposition}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-slate-400 text-sm">
+                      {new Date(call.created_at).toLocaleString()}
+                    </td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{call.duration ? `${call.duration}s` : '0s'}</td>
                     <td className="px-5 py-4">
                       <div className="flex flex-col gap-2 w-[320px] shrink-0">
