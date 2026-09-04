@@ -105,6 +105,7 @@ export default function CallLogs() {
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[200px]">Notes</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
@@ -143,6 +144,20 @@ export default function CallLogs() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
+                    <td className="px-6 py-4">
+                      {call.notes ? (
+                        <div className="text-sm text-slate-300 italic line-clamp-3" title={call.notes}>
+                          "{call.notes}"
+                        </div>
+                      ) : (
+                        <span className="text-sm text-slate-600 italic">No notes</span>
+                      )}
+                      {call.disposition && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">{call.disposition}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-slate-400 text-sm">
                       {new Date(call.created_at).toLocaleString()}
                     </td>

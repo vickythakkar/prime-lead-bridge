@@ -46,7 +46,7 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
     try {
       const token = localStorage.getItem('admin_token');
       
-      await fetch('/api/admin/crm/wrap-up', {
+      const res = await fetch('/api/admin/crm/wrap-up', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,6 +60,13 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
 
       if (res.ok) {
         window.dispatchEvent(new CustomEvent('tasksUpdated'));
+        
+        const toastEl = document.createElement('div');
+        toastEl.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 bg-emerald-500/90 border-emerald-500/20 text-white backdrop-blur-md font-semibold text-sm whitespace-nowrap';
+        toastEl.innerText = 'Wrap-up details saved!';
+        document.body.appendChild(toastEl);
+        setTimeout(() => { toastEl.remove(); }, 3000);
+
         onClose();
       } else {
         alert('Failed to save details');

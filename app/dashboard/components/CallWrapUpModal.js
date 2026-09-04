@@ -106,21 +106,28 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
           due_date: dueDateTime,
           status: 'pending',
           phone_number: callDetails?.phoneNumber || null,
-          user_id: userId,
           agent_id: agentId,
           contact_id: contactId,
           lead_id: leadId,
           disposition: form.disposition
         };
 
-        await supabase.from('tasks').insert(taskData);
+        const { error: insertError } = await supabase.from('tasks').insert(taskData);
+        if (insertError) throw insertError;
         window.dispatchEvent(new CustomEvent('tasksUpdated'));
       }
+
+      // Success Toast manually created here since we are in a modal
+      const toastEl = document.createElement('div');
+      toastEl.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 bg-emerald-500/90 border-emerald-500/20 text-white backdrop-blur-md font-semibold text-sm whitespace-nowrap';
+      toastEl.innerText = 'Wrap-up details saved!';
+      document.body.appendChild(toastEl);
+      setTimeout(() => { toastEl.remove(); }, 3000);
 
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Failed to save details');
+      alert('Failed to save details: ' + (err.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
