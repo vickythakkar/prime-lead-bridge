@@ -7,45 +7,43 @@ export default function PushNotificationManager({ userType = 'broker', organizat
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPermission(Notification.permission);
-    registerAndSubscribe();
-  }, []);
-
-  async function registerAndSubscribe() {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-
-      const existingSub = await registration.pushManager.getSubscription();
-      if (existingSub) {
-        // Already subscribed, just sync with backend
-        await syncSubscription(existingSub);
-        setSubscribed(true);
-        return;
+    
+    async function registerAndSubscribe() {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+  
+        const existingSub = await registration.pushManager.getSubscription();
+        if (existingSub) {
+          await syncSubscription(existingSub);
+          setSubscribed(true);
+          return;
+        }
+  
+        if (Notification.permission === 'default') {
+          const perm = await Notification.requestPermission();
+          setPermission(perm);
+          if (perm !== 'granted') return;
+        }
+  
+        if (Notification.permission === 'granted') {
+          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          const sub = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+          });
+          await syncSubscription(sub);
+          setSubscribed(true);
+        }
+      } catch (err) {
+        console.error('Push registration error:', err);
       }
-
-      // Request permission if not yet granted
-      if (Notification.permission === 'default') {
-        const result = await Notification.requestPermission();
-        setPermission(result);
-        if (result !== 'granted') return;
-      } else if (Notification.permission === 'denied') {
-        return;
-      }
-
-      // Subscribe
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      const sub = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-      });
-
-      await syncSubscription(sub);
-      setSubscribed(true);
-    } catch (err) {
-      console.error('Push registration error:', err);
     }
-  }
+    
+    registerAndSubscribe();
+  }, [organizationId, authToken, userType]);
 
   async function syncSubscription(sub) {
     const subJson = sub.toJSON();

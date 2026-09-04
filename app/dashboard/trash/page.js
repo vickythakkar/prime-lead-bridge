@@ -26,12 +26,6 @@ export default function TrashPage() {
     init();
   }, []);
 
-  useEffect(() => {
-    if (orgId) {
-      fetchTrashItems(activeTab);
-    }
-  }, [activeTab, orgId]);
-
   const fetchTrashItems = async (tab) => {
     setLoading(true);
     let table = '';
@@ -56,6 +50,12 @@ export default function TrashPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (orgId) {
+      fetchTrashItems(activeTab);
+    }
+  }, [activeTab, orgId]);
 
   const handleRestore = async (id) => {
     let table = activeTab === 'messages' ? 'conversations' : activeTab;

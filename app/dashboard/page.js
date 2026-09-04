@@ -157,7 +157,7 @@ export default function DashboardOverview() {
                           </div>
                           
                           {task.description && (
-                            <p className="text-sm text-slate-400 mt-1 line-clamp-2 italic">"{task.description}"</p>
+                            <p className="text-sm text-slate-400 mt-1 line-clamp-2 italic">&quot;{task.description}&quot;</p>
                           )}
                           
                           <div className="flex items-center gap-3 mt-2 text-sm">
