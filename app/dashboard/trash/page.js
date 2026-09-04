@@ -156,18 +156,18 @@ export default function TrashPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left table-fixed min-w-[800px]">
               <thead className="bg-slate-900/40 border-b border-white/10">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-full">Item Details</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Deleted Date</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Actions</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Item Details</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-40">Deleted Date</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider w-72">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-300">
+                    <td className="px-6 py-4 font-medium text-slate-300 truncate">
                       {renderItemName(item)}
                     </td>
                     <td className="px-6 py-4 text-slate-500 text-sm whitespace-nowrap">
