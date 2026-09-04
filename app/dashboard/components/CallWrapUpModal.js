@@ -63,12 +63,26 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
     try {
       // 1. Update call log if we have the call SID
       if (callDetails?.callSid) {
-        await supabase.from('call_logs')
-          .update({
+        const { data: callLog } = await supabase
+          .from('call_logs')
+          .select('id')
+          .eq('twilio_call_sid', callDetails.callSid)
+          .maybeSingle();
+
+        if (callLog) {
+          await supabase.from('call_logs').update({
+            disposition: form.disposition,
+            notes: form.notes
+          }).eq('id', callLog.id);
+        } else {
+          await supabase.from('call_logs').insert({
+            twilio_call_sid: callDetails.callSid,
+            organization_id: orgId,
+            disposition: form.disposition,
             notes: form.notes,
-            disposition: form.disposition
-          })
-          .eq('call_sid', callDetails.callSid);
+            call_type: 'outbound'
+          });
+        }
       }
 
       // 2. Handle Contact Status for "Do Not Call"

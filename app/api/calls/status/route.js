@@ -81,6 +81,7 @@ export async function POST(request) {
           .select('id')
           .eq('organization_id', orgId)
           .ilike('phone', `%${last10}%`)
+          .or('is_deleted.is.null,is_deleted.eq.false')
           .maybeSingle(); // maybeSingle to avoid 406 if multiple matches (though ideally only 1)
           
         if (contact) {
@@ -93,6 +94,7 @@ export async function POST(request) {
           .select('id')
           .eq('organization_id', orgId)
           .eq('phone', contactNumber)
+          .or('is_deleted.is.null,is_deleted.eq.false')
           .maybeSingle();
         if (contact) contactId = contact.id;
       }

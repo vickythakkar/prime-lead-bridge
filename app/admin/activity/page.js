@@ -55,7 +55,7 @@ export default function AdminActivityLog() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
+    <div className="animate-in fade-in duration-500 w-full">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">Activity Log</h1>
@@ -137,11 +137,11 @@ export default function AdminActivityLog() {
                     </td>
                     <td className="px-6 py-4">
                       {call.notes ? (
-                        <div className="text-sm text-slate-300 italic line-clamp-3" title={call.notes}>
+                        <div className="text-sm text-slate-200 italic line-clamp-3" title={call.notes}>
                           "{call.notes}"
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-600 italic">No notes</span>
+                        <span className="text-sm text-slate-500 italic">No notes</span>
                       )}
                       {call.disposition && (
                         <div className="mt-1">

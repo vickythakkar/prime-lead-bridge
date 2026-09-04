@@ -73,7 +73,7 @@ export default function CallLogs() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
+    <div className="animate-in fade-in duration-500 w-full">
       <header className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">Call Activity Log</h1>
@@ -146,11 +146,11 @@ export default function CallLogs() {
                     <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
                     <td className="px-6 py-4">
                       {call.notes ? (
-                        <div className="text-sm text-slate-300 italic line-clamp-3" title={call.notes}>
+                        <div className="text-sm text-slate-200 italic line-clamp-3" title={call.notes}>
                           "{call.notes}"
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-600 italic">No notes</span>
+                        <span className="text-sm text-slate-500 italic">No notes</span>
                       )}
                       {call.disposition && (
                         <div className="mt-1">

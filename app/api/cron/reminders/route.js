@@ -51,45 +51,40 @@ export async function GET(request) {
       }
     }
 
-    return Response.json({ success: true, sent: dueTasks.length });
-  } catch (err) {
-    console.error('Cron reminders error:', err);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-// POST handler for trash auto-purge (also called by vercel cron)
-export async function POST(request) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {
-      return new Response('Unauthorized', { status: 401 });
-    }
-
+    // 4. Run the Trash Auto-Purge
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    
-    // Permanently delete soft-deleted items older than 30 days
     const tables = ['tasks', 'leads', 'properties', 'contacts', 'conversations'];
-    const results = {};
+    const purgeResults = {};
 
     for (const table of tables) {
-      const { count, error } = await supabaseAdmin
+      let { count, error } = await supabaseAdmin
         .from(table)
         .delete({ count: 'exact' })
         .eq('is_deleted', true)
         .lt('deleted_at', thirtyDaysAgo);
       
+      if (error && error.message.includes('deleted_at')) {
+        // Fallback to updated_at or created_at if deleted_at column doesn't exist
+        const res = await supabaseAdmin
+          .from(table)
+          .delete({ count: 'exact' })
+          .eq('is_deleted', true)
+          .lt('updated_at', thirtyDaysAgo);
+        
+        count = res.count;
+        error = res.error;
+      }
+
       if (!error) {
-        results[table] = count || 0;
+        purgeResults[table] = count || 0;
       } else {
-        // Table might not have deleted_at column yet — skip
-        results[table] = `skipped: ${error.message}`;
+        purgeResults[table] = `skipped: ${error.message}`;
       }
     }
 
-    return Response.json({ success: true, purged: results });
+    return Response.json({ success: true, sent: dueTasks?.length || 0, purged: purgeResults });
   } catch (err) {
-    console.error('Trash purge error:', err);
+    console.error('Cron reminders error:', err);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

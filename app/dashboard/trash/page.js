@@ -136,7 +136,19 @@ export default function TrashPage() {
                       {renderItemName(item)}
                     </td>
                     <td className="px-6 py-4 text-slate-500 text-sm">
-                      {new Date(item.created_at).toLocaleDateString()}
+                      <div className="flex flex-col">
+                        <span>{new Date(item.deleted_at || item.updated_at || item.created_at).toLocaleDateString()}</span>
+                        {(() => {
+                          const delDate = new Date(item.deleted_at || item.updated_at || item.created_at);
+                          const purgeDate = new Date(delDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                          const daysRemaining = Math.ceil((purgeDate - new Date()) / (1000 * 60 * 60 * 24));
+                          return (
+                            <span className={`text-xs ${daysRemaining <= 5 ? 'text-rose-400 font-medium' : 'text-slate-500'}`}>
+                              {daysRemaining > 0 ? `${daysRemaining} days left` : 'Purging soon'}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-3 items-center">

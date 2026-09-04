@@ -25,7 +25,10 @@ export async function DELETE(request, { params }) {
     if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
-    const { error } = await supabaseAdmin.from('tasks').delete().eq('id', id);
+    const { error } = await supabaseAdmin
+      .from('tasks')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) throw error;
 
     return Response.json({ success: true });

@@ -10,13 +10,25 @@ export async function POST(request) {
 
     // Handle Contact Status / Notes
     if (callDetails?.callSid) {
-      // In this system, admin calls aren't logged in `call_logs` the exact same way or they might not have a call log since the admin dialer wasn't logging calls to `call_logs` but let's try
-      await supabaseAdmin.from('call_logs')
-        .update({
+      const { data: callLog } = await supabaseAdmin
+        .from('call_logs')
+        .select('id')
+        .eq('twilio_call_sid', callDetails.callSid)
+        .maybeSingle();
+
+      if (callLog) {
+        await supabaseAdmin.from('call_logs').update({
           notes: form.notes,
           disposition: form.disposition
-        })
-        .eq('call_sid', callDetails.callSid);
+        }).eq('id', callLog.id);
+      } else {
+        await supabaseAdmin.from('call_logs').insert({
+          twilio_call_sid: callDetails.callSid,
+          disposition: form.disposition,
+          notes: form.notes,
+          call_type: 'outbound'
+        });
+      }
     }
 
     if (form.scheduleFollowUp && form.followUpDate && form.followUpTime) {

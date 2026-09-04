@@ -20,6 +20,7 @@ export default function AdminTrashPage() {
     else if (tab === 'leads') { table = 'leads'; select = '*, properties(address)'; }
     else if (tab === 'messages') { table = 'conversations'; select = '*, contacts(name)'; }
     else if (tab === 'agents') table = 'agents';
+    else if (tab === 'tasks') table = 'tasks';
 
     const { data, error } = await supabase
       .from(table)
@@ -37,7 +38,7 @@ export default function AdminTrashPage() {
 
   const handleRestore = async (id) => {
     let table = activeTab === 'messages' ? 'conversations' : activeTab;
-    const { error } = await supabase.from(table).update({ is_deleted: false }).eq('id', id);
+    const { error } = await supabase.from(table).update({ is_deleted: false, deleted_at: null }).eq('id', id);
     if (!error) {
       setItems(items.filter(item => item.id !== id));
     }
@@ -58,6 +59,7 @@ export default function AdminTrashPage() {
     if (activeTab === 'contacts' || activeTab === 'agents') return item.name || item.phone || item.cell_phone;
     if (activeTab === 'properties') return item.address;
     if (activeTab === 'leads') return `Lead: ${item.caller_phone} (Property: ${item.properties?.address || 'Unknown'})`;
+    if (activeTab === 'tasks') return `Task: ${item.title}`;
     if (activeTab === 'messages') return `Conversation: ${item.contacts?.name || item.contact_phone}`;
     return 'Unknown Item';
   };
@@ -70,7 +72,7 @@ export default function AdminTrashPage() {
       </header>
 
       <div className="mb-6 flex space-x-2 border-b border-white/10 overflow-x-auto pb-2">
-        {['contacts', 'properties', 'leads', 'messages', 'agents'].map((tab) => (
+        {['contacts', 'properties', 'leads', 'messages', 'agents', 'tasks'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -117,7 +119,19 @@ export default function AdminTrashPage() {
                       {item.organization_id}
                     </td>
                     <td className="px-6 py-4 text-slate-500 text-sm">
-                      {new Date(item.created_at).toLocaleDateString()}
+                      <div className="flex flex-col">
+                        <span>{new Date(item.deleted_at || item.updated_at || item.created_at).toLocaleDateString()}</span>
+                        {(() => {
+                          const delDate = new Date(item.deleted_at || item.updated_at || item.created_at);
+                          const purgeDate = new Date(delDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                          const daysRemaining = Math.ceil((purgeDate - new Date()) / (1000 * 60 * 60 * 24));
+                          return (
+                            <span className={`text-xs ${daysRemaining <= 5 ? 'text-rose-400 font-medium' : 'text-slate-500'}`}>
+                              {daysRemaining > 0 ? `${daysRemaining} days left` : 'Purging soon'}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-3 items-center">
