@@ -164,6 +164,7 @@ export async function GET(request) {
       .select('*')
       .eq('user_type', 'admin')
       .eq('status', 'pending')
+      .or('is_deleted.is.null,is_deleted.eq.false')
       .order('due_date', { ascending: true })
       .limit(5);
 

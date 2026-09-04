@@ -81,6 +81,7 @@ export default function TrashPage() {
     if (activeTab === 'properties') return item.address;
     if (activeTab === 'leads') return `Lead: ${item.caller_phone} (Property: ${item.properties?.address || 'Unknown'})`;
     if (activeTab === 'messages') return `Conversation: ${item.contacts?.name || item.contact_phone}`;
+    if (activeTab === 'tasks') return `${item.title}${item.phone_number ? ' — ' + item.phone_number : ''}`;
     return 'Unknown Item';
   };
 
@@ -88,11 +89,11 @@ export default function TrashPage() {
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-white">Trash / Recycle Bin</h1>
-        <p className="text-slate-400 mt-1">Restore or permanently delete soft-deleted items.</p>
+        <p className="text-slate-400 mt-1">Restore or permanently delete soft-deleted items. Items are auto-purged after 30 days.</p>
       </header>
 
       <div className="mb-6 flex space-x-2 border-b border-white/10 overflow-x-auto pb-2">
-        {['contacts', 'properties', 'leads', 'messages', 'agents'].map((tab) => (
+        {['contacts', 'properties', 'leads', 'messages', 'tasks', 'agents'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}

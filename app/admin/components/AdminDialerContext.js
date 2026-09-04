@@ -190,6 +190,14 @@ export function AdminDialerProvider({ children }) {
 
       call.on('disconnect', () => {
         setStatus('Ready to Call');
+        
+        // Trigger wrap-up modal for outbound calls
+        setWrapUpDetails({
+          callSid: call.parameters?.CallSid,
+          phoneNumber: call.parameters?.To || call.customParameters?.get('targetNumber') || phoneNumber
+        });
+        setShowWrapUp(true);
+
         setActiveCall(null);
         setIsMuted(false);
         stopTimer();

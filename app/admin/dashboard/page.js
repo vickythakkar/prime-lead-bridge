@@ -206,9 +206,13 @@ export default function AdminDashboard() {
                           
                           <button
                             onClick={async () => {
-                              if (!confirm('Delete this follow-up?')) return;
+                              if (!confirm('Move this follow-up to trash?')) return;
                               const token = localStorage.getItem('admin_token');
-                              await fetch(`/api/admin/tasks/${task.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                              await fetch(`/api/admin/tasks/${task.id}`, { 
+                                method: 'PATCH', 
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ is_deleted: true, deleted_at: new Date().toISOString() })
+                              });
                               const fetchStats = async () => {
                                 const res = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
                                 if (res.ok) setStats(await res.json());

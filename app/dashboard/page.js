@@ -89,6 +89,7 @@ export default function DashboardOverview() {
           .select('*')
           .eq('organization_id', oId)
           .eq('status', 'pending')
+          .or('is_deleted.is.null,is_deleted.eq.false')
           .order('due_date', { ascending: true })
           .limit(5);
         setTasks(pendingTasks || []);
@@ -100,13 +101,18 @@ export default function DashboardOverview() {
       const handleTasksUpdate = () => fetchTasks();
       window.addEventListener('tasksUpdated', handleTasksUpdate);
       
-      setLoading(false);
-      
-      return () => {
+      // Store cleanup ref so we can use it
+      window.__plbTasksCleanup = () => {
         window.removeEventListener('tasksUpdated', handleTasksUpdate);
       };
+
+      setLoading(false);
     }
     loadData();
+    
+    return () => {
+      if (window.__plbTasksCleanup) window.__plbTasksCleanup();
+    };
   }, []);
 
   return (
@@ -183,8 +189,8 @@ export default function DashboardOverview() {
                           
                           <button
                             onClick={async () => {
-                              if (!confirm('Delete this follow-up?')) return;
-                              await supabase.from('tasks').delete().eq('id', task.id);
+                              if (!confirm('Move this follow-up to trash?')) return;
+                              await supabase.from('tasks').update({ is_deleted: true, deleted_at: new Date().toISOString() }).eq('id', task.id);
                               setTasks(tasks.filter(t => t.id !== task.id));
                             }}
                             className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"
