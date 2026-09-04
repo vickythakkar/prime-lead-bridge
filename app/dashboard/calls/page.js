@@ -1,11 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import CallWrapUpModal from '../components/CallWrapUpModal';
 
 export default function CallLogs() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingNote, setEditingNote] = useState(null); // { id: string, notes: string, saving: boolean }
+  const [editingNote, setEditingNote] = useState(null);
+  const [orgId, setOrgId] = useState(null);
 
   useEffect(() => {
     async function fetchCalls() {
@@ -14,6 +16,7 @@ export default function CallLogs() {
       
       const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
       if (agentData) {
+        setOrgId(agentData.organization_id);
         const { data, error } = await supabase
           .from('call_logs')
           .select('*, properties(address), contacts(name)')
@@ -171,7 +174,7 @@ export default function CallLogs() {
                           </div>
                           {call.notes.length > 60 && (
                             <button 
-                              onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
+                              onClick={() => setEditingNote(call)}
                               className="mt-1.5 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M10.478 1.647a.5.5 0 1 0-.956-.294l-4 13a.5.5 0 0 0 .956.294l4-13zM4.854 4.146a.5.5 0 0 1 0 .708L1.707 8l3.147 3.146a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0zm6.292 0a.5.5 0 0 0 0 .708L14.293 8l-3.147 3.146a.5.5 0 0 0 .708.708l3.5-3.5a.5.5 0 0 0 0-.708l-3.5-3.5a.5.5 0 0 0-.708 0z"/></svg>
@@ -180,7 +183,7 @@ export default function CallLogs() {
                           )}
                           {call.notes.length <= 60 && (
                             <button 
-                              onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
+                              onClick={() => setEditingNote(call)}
                               className="mt-1.5 text-[11px] font-medium text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition-colors"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
@@ -192,7 +195,7 @@ export default function CallLogs() {
                         <div className="flex items-center gap-3">
                           <span className="text-sm text-slate-500 italic">No notes</span>
                           <button 
-                            onClick={() => setEditingNote({ id: call.id, notes: '', saving: false })}
+                            onClick={() => setEditingNote(call)}
                             className="text-[11px] font-medium text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition-colors border border-slate-700 hover:border-indigo-500/50 rounded px-2 py-0.5"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
@@ -275,44 +278,19 @@ export default function CallLogs() {
         )}
       </div>
 
-      {editingNote && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
-            <button 
-              onClick={() => setEditingNote(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
-              </svg>
-            </button>
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-white mb-4">Edit Note</h3>
-              <textarea 
-                value={editingNote.notes}
-                onChange={(e) => setEditingNote({...editingNote, notes: e.target.value})}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-slate-200 h-48 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-                placeholder="Enter call notes..."
-              />
-              <div className="flex justify-end gap-3 mt-6">
-                <button 
-                  onClick={() => setEditingNote(null)}
-                  className="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSaveNote}
-                  disabled={editingNote.saving}
-                  className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors disabled:opacity-50"
-                >
-                  {editingNote.saving ? 'Saving...' : 'Save Note'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CallWrapUpModal 
+        isOpen={!!editingNote} 
+        onClose={(changed) => {
+          if (changed) window.location.reload(); // refresh to show updated data
+          setEditingNote(null);
+        }} 
+        callDetails={{ 
+          callSid: editingNote?.twilio_call_sid,
+          phoneNumber: editingNote?.call_type === 'outbound' ? editingNote?.to_number : editingNote?.from_number
+        }} 
+        orgId={orgId} 
+        initialData={editingNote} 
+      />
     </div>
   );
 }

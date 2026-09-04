@@ -6,7 +6,7 @@ export async function POST(request) {
     const admin = verifyAdminToken(request);
     if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { callDetails, form } = await request.json();
+    const { callDetails, form, callId } = await request.json();
 
     // Handle Contact Status / Notes
     if (callDetails?.callSid) {
@@ -29,6 +29,11 @@ export async function POST(request) {
           call_type: 'outbound'
         });
       }
+    } else if (callId) {
+      await supabaseAdmin.from('call_logs').update({
+        notes: form.notes,
+        disposition: form.disposition
+      }).eq('id', callId);
     }
 
     if (form.scheduleFollowUp && form.followUpDate && form.followUpTime) {

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
+export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails, initialData }) {
   const [dispositions, setDispositions] = useState(["Left Voicemail", "Spoke to Client", "Not Interested", "Wrong Number", "Follow Up Required"]);
   const [newDisposition, setNewDisposition] = useState('');
   const [isAddingDisposition, setIsAddingDisposition] = useState(false);
@@ -24,17 +24,16 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       };
 
-      // Reset form
       setForm({
-        disposition: '',
-        notes: '',
+        disposition: initialData?.disposition || '',
+        notes: initialData?.notes || '',
         scheduleFollowUp: false,
         followUpDate: getTomorrowDateString(),
         followUpTime: '09:00',
         followUpTitle: 'Follow up call'
       });
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   async function handleAddDisposition() {
     if (!newDisposition.trim()) return;
@@ -60,7 +59,8 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
         },
         body: JSON.stringify({
           callDetails,
-          form
+          form,
+          callId: initialData?.id
         })
       });
 
@@ -193,13 +193,42 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
             )}
           </div>
           
-          <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium transition-colors">
-              Skip
-            </button>
-            <button type="submit" disabled={saving || (!form.disposition && !form.notes && !form.scheduleFollowUp)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
-              {saving ? 'Saving...' : 'Save Details'}
-            </button>
+          <div className="pt-2 flex justify-between gap-3 items-center">
+            {initialData?.notes || initialData?.disposition ? (
+              <button 
+                type="button" 
+                onClick={async () => {
+                  if (confirm('Are you sure you want to clear these details?')) {
+                    setSaving(true);
+                    const token = localStorage.getItem('admin_token');
+                    await fetch('/api/admin/crm/wrap-up', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                      body: JSON.stringify({
+                        callDetails,
+                        callId: initialData?.id,
+                        form: { disposition: null, notes: null, scheduleFollowUp: false }
+                      })
+                    });
+                    setSaving(false);
+                    onClose(true); // pass true to indicate changes
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 font-medium transition-colors text-sm"
+              >
+                Clear Details
+              </button>
+            ) : (
+              <div></div>
+            )}
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Details'}
+              </button>
+            </div>
           </div>
 
         </form>

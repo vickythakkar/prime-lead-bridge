@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId }) {
+export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId, initialData }) {
   const [dispositions, setDispositions] = useState(["Left Voicemail", "Spoke to Decision Maker", "Not Interested", "Wrong Number", "Follow Up Required", "Do Not Call"]);
   const [newDisposition, setNewDisposition] = useState('');
   const [isAddingDisposition, setIsAddingDisposition] = useState(false);
@@ -25,17 +25,17 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
         d.setDate(d.getDate() + 1);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       };
-      // Reset form
+      
       setForm({
-        disposition: '',
-        notes: '',
+        disposition: initialData?.disposition || '',
+        notes: initialData?.notes || '',
         scheduleFollowUp: false,
-        followUpDate: getTomorrowDateString(), // Tomorrow
+        followUpDate: getTomorrowDateString(),
         followUpTime: '09:00',
         followUpTitle: 'Follow up call'
       });
     }
-  }, [isOpen, orgId]);
+  }, [isOpen, orgId, initialData]);
 
   async function loadDispositions() {
     const { data } = await supabase.from('organizations').select('call_dispositions').eq('id', orgId).single();
@@ -61,7 +61,7 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
     setSaving(true);
     
     try {
-      // 1. Update call log if we have the call SID
+      // 1. Update call log if we have the call SID or ID
       if (callDetails?.callSid) {
         const { data: callLog } = await supabase
           .from('call_logs')
@@ -83,6 +83,11 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
             call_type: 'outbound'
           });
         }
+      } else if (initialData?.id) {
+        await supabase.from('call_logs').update({
+          disposition: form.disposition,
+          notes: form.notes
+        }).eq('id', initialData.id);
       }
 
       // 2. Handle Contact Status for "Do Not Call"
@@ -260,13 +265,37 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
             )}
           </div>
           
-          <div className="pt-2 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium transition-colors">
-              Skip
-            </button>
-            <button type="submit" disabled={saving || (!form.disposition && !form.notes && !form.scheduleFollowUp)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
-              {saving ? 'Saving...' : 'Save Details'}
-            </button>
+          <div className="pt-2 flex justify-between gap-3 items-center">
+            {initialData?.notes || initialData?.disposition ? (
+              <button 
+                type="button" 
+                onClick={async () => {
+                  if (confirm('Are you sure you want to clear these details?')) {
+                    setSaving(true);
+                    if (callDetails?.callSid) {
+                      await supabase.from('call_logs').update({ notes: null, disposition: null }).eq('twilio_call_sid', callDetails.callSid);
+                    } else if (initialData?.id) {
+                      await supabase.from('call_logs').update({ notes: null, disposition: null }).eq('id', initialData.id);
+                    }
+                    setSaving(false);
+                    onClose(true); // pass true to indicate changes
+                  }
+                }}
+                className="px-4 py-2 rounded-lg text-rose-400 hover:bg-rose-500/10 font-medium transition-colors text-sm"
+              >
+                Clear Details
+              </button>
+            ) : (
+              <div></div>
+            )}
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Details'}
+              </button>
+            </div>
           </div>
 
         </form>
