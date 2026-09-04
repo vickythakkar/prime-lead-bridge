@@ -89,12 +89,35 @@ export default function TrashPage() {
   };
 
   const renderItemName = (item) => {
-    if (activeTab === 'contacts' || activeTab === 'agents') return item.name || item.phone || item.cell_phone;
-    if (activeTab === 'properties') return item.address;
-    if (activeTab === 'leads') return `Lead: ${item.caller_phone} (Property: ${item.properties?.address || 'Unknown'})`;
-    if (activeTab === 'messages') return `Conversation: ${item.contacts?.name || item.contact_phone}`;
-    if (activeTab === 'tasks') return `${item.title}${item.phone_number ? ' — ' + item.phone_number : ''}`;
-    return 'Unknown Item';
+    let name = 'Unknown Item';
+    if (activeTab === 'contacts' || activeTab === 'agents') name = item.name || item.phone || item.cell_phone;
+    else if (activeTab === 'properties') name = item.address;
+    else if (activeTab === 'leads') name = `Lead: ${item.caller_phone} (Property: ${item.properties?.address || 'Unknown'})`;
+    else if (activeTab === 'messages') name = `Conversation: ${item.contacts?.name || item.contact_phone}`;
+    else if (activeTab === 'tasks') name = `${item.title}${item.phone_number ? ' — ' + item.phone_number : ''}`;
+
+    if (activeTab === 'tasks') {
+      return (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-slate-200">{name}</span>
+          <div className="flex items-center gap-2">
+            {item.disposition && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider shrink-0">
+                {item.disposition}
+              </span>
+            )}
+            {item.description && (
+              <span className="text-xs text-slate-400 italic line-clamp-1">"{item.description}"</span>
+            )}
+            {!item.disposition && !item.description && (
+              <span className="text-xs text-slate-600 italic">No notes</span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return name;
   };
 
   return (
