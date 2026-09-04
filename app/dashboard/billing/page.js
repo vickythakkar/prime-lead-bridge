@@ -117,7 +117,12 @@ export default function BillingDashboard() {
     const invoice = {
       invoice_number: 'Estimated',
       created_at: now.toISOString(),
-      status: 'pending'
+      status: 'pending',
+      total_minutes: stats.totalMinutes || 0,
+      rate_per_minute: overageRate,
+      subtotal: totalEstimatedBill,
+      discount_amount: 0,
+      total_amount: totalEstimatedBill
     };
 
     const period = `Current Cycle (Since ${cycleStart.toLocaleDateString()})`;

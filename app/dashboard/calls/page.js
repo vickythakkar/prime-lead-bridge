@@ -172,7 +172,7 @@ export default function CallLogs() {
                           {call.notes.length > 60 && (
                             <button 
                               onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
-                              className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 block"
+                              className="mt-2 text-[10px] uppercase font-semibold tracking-wider text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 px-2.5 py-1 rounded-md border border-indigo-500/20 transition-colors"
                             >
                               Read full / Edit
                             </button>
@@ -180,20 +180,21 @@ export default function CallLogs() {
                           {call.notes.length <= 60 && (
                             <button 
                               onClick={() => setEditingNote({ id: call.id, notes: call.notes, saving: false })}
-                              className="text-xs text-slate-400 hover:text-indigo-400 mt-1 block transition-colors"
+                              className="mt-2 text-[10px] uppercase font-semibold tracking-wider text-slate-400 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-md border border-white/10 transition-colors"
                             >
                               Edit Note
                             </button>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <span className="text-sm text-slate-500 italic">No notes</span>
                           <button 
                             onClick={() => setEditingNote({ id: call.id, notes: '', saving: false })}
-                            className="text-xs text-indigo-400/70 hover:text-indigo-400 transition-colors"
+                            className="text-[10px] uppercase font-semibold tracking-wider text-slate-300 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-md border border-white/10 transition-colors flex items-center gap-1"
                           >
-                            + Add
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+                            Add
                           </button>
                         </div>
                       )}
