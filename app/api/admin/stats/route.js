@@ -151,12 +151,23 @@ export async function GET(request) {
       return Math.round(((current - previous) / previous) * 100);
     };
 
-    const orgsGrowth = calculateGrowth(totalOrgs, prevTotalOrgs || 0);
-    const callsGrowth = calculateGrowth(totalCalls, prevTotalCalls);
-    const minutesGrowth = calculateGrowth(totalMinutes, prevTotalMinutes);
-    const revenueGrowth = calculateGrowth(currentRevenueAmount, prevRevenueAmount);
+    // Recent Activity
+    const { data: recentActivityRaw } = await supabaseAdmin
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+      
+    // Admin Pending Tasks
+    const { data: pendingTasks } = await supabaseAdmin
+      .from('tasks')
+      .select('*')
+      .eq('user_type', 'admin')
+      .eq('status', 'pending')
+      .order('due_date', { ascending: true })
+      .limit(5);
 
-    const totalRevenue = currentRevenueAmount.toFixed(2);
+    const totalRevenue = currentRevenueAmount;
     
     orgUsage.sort((a, b) => b.usage - a.usage);
 
@@ -164,15 +175,17 @@ export async function GET(request) {
       totalOrgs,
       totalCalls,
       totalMinutes,
-      totalRevenue,
+      totalRevenue: Number(totalRevenue.toFixed(2)),
       invoiceSummary,
       topOrgs: orgUsage,
       growth: {
-        orgs: orgsGrowth,
-        calls: callsGrowth,
-        minutes: minutesGrowth,
-        revenue: revenueGrowth
-      }
+        orgs: calculateGrowth(totalOrgs, prevTotalOrgs || 0),
+        calls: calculateGrowth(totalCalls, prevTotalCalls),
+        minutes: calculateGrowth(totalMinutes, prevTotalMinutes),
+        revenue: calculateGrowth(currentRevenueAmount, prevRevenueAmount)
+      },
+      recentActivity: recentActivityRaw || [],
+      pendingTasks: pendingTasks || []
     });
   } catch (err) {
     console.error('Admin stats error:', err);

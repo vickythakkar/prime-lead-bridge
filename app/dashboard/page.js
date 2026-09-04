@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import StatsCard from './components/StatsCard';
 import Link from 'next/link';
+import EditTaskModal from './components/EditTaskModal';
 
 export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
@@ -16,6 +17,8 @@ export default function DashboardOverview() {
     planLimit: 250
   });
   const [tasks, setTasks] = useState([]);
+  const [editingTask, setEditingTask] = useState(null);
+  
   useEffect(() => {
     async function loadData() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -81,16 +84,27 @@ export default function DashboardOverview() {
       });
 
       // Tasks
-      const { data: pendingTasks } = await supabase.from('tasks')
-        .select('*')
-        .eq('organization_id', oId)
-        .eq('status', 'pending')
-        .order('due_date', { ascending: true })
-        .limit(5);
-
-      setTasks(pendingTasks || []);
-
+      const fetchTasks = async () => {
+        const { data: pendingTasks } = await supabase.from('tasks')
+          .select('*')
+          .eq('organization_id', oId)
+          .eq('status', 'pending')
+          .order('due_date', { ascending: true })
+          .limit(5);
+        setTasks(pendingTasks || []);
+      };
+      
+      await fetchTasks();
+      
+      // Real-time update listener
+      const handleTasksUpdate = () => fetchTasks();
+      window.addEventListener('tasksUpdated', handleTasksUpdate);
+      
       setLoading(false);
+      
+      return () => {
+        window.removeEventListener('tasksUpdated', handleTasksUpdate);
+      };
     }
     loadData();
   }, []);
@@ -131,10 +145,22 @@ export default function DashboardOverview() {
                   {tasks.map(task => {
                     const isOverdue = new Date(task.due_date) < new Date();
                     return (
-                      <div key={task.id} className="flex items-center justify-between p-4 bg-slate-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
-                        <div>
-                          <h3 className="font-medium text-white">{task.title}</h3>
-                          <div className="flex items-center gap-3 mt-1 text-sm">
+                      <div key={task.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-white">{task.title}</h3>
+                            {task.disposition && (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                {task.disposition}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {task.description && (
+                            <p className="text-sm text-slate-400 mt-1 line-clamp-2 italic">"{task.description}"</p>
+                          )}
+                          
+                          <div className="flex items-center gap-3 mt-2 text-sm">
                             <span className={isOverdue ? 'text-red-400 font-medium' : 'text-slate-400'}>
                               {new Date(task.due_date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                             </span>
@@ -146,11 +172,31 @@ export default function DashboardOverview() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 sm:self-start">
+                          <button
+                            onClick={() => setEditingTask(task)}
+                            className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 hover:text-white transition-colors"
+                            title="Edit Task"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+                          </button>
+                          
+                          <button
+                            onClick={async () => {
+                              if (!confirm('Delete this follow-up?')) return;
+                              await supabase.from('tasks').delete().eq('id', task.id);
+                              setTasks(tasks.filter(t => t.id !== task.id));
+                            }}
+                            className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                            title="Delete Task"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                          </button>
+                          
                           {task.phone_number && (
                             <Link 
                               href={`/dashboard/dialer?phone=${encodeURIComponent(task.phone_number)}`}
-                              className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/20 transition-colors"
+                              className="w-10 h-10 ml-2 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/20 transition-colors"
                               title="Call Now"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328z"/></svg>
@@ -232,6 +278,12 @@ export default function DashboardOverview() {
           </div>
         </>
       )}
+
+      <EditTaskModal 
+        isOpen={!!editingTask} 
+        onClose={() => setEditingTask(null)} 
+        task={editingTask} 
+      />
     </div>
   );
 }

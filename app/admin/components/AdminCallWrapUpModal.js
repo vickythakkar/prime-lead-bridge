@@ -58,7 +58,12 @@ export default function AdminCallWrapUpModal({ isOpen, onClose, callDetails }) {
         })
       });
 
-      onClose();
+      if (res.ok) {
+        window.dispatchEvent(new CustomEvent('tasksUpdated'));
+        onClose();
+      } else {
+        alert('Failed to save details');
+      }
     } catch (err) {
       console.error('Error saving admin wrap-up:', err);
       alert('Failed to save wrap-up details.');

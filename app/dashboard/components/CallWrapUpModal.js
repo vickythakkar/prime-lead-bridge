@@ -101,24 +101,26 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId })
 
         const taskData = {
           organization_id: orgId,
-          agent_id: agentId,
-          contact_id: contactId,
-          lead_id: leadId,
-          phone_number: callDetails?.phoneNumber || null,
           title: form.followUpTitle,
           description: form.notes,
           due_date: dueDateTime,
-          status: 'pending'
+          status: 'pending',
+          phone_number: callDetails?.phoneNumber || null,
+          user_id: userId,
+          agent_id: agentId,
+          contact_id: contactId,
+          lead_id: leadId,
+          disposition: form.disposition
         };
 
-        const { error } = await supabase.from('tasks').insert(taskData);
-        if (error) console.error("Error creating task:", error);
+        await supabase.from('tasks').insert(taskData);
+        window.dispatchEvent(new CustomEvent('tasksUpdated'));
       }
 
       onClose();
     } catch (err) {
-      console.error('Error saving wrap-up:', err);
-      alert('Failed to save wrap-up details.');
+      console.error(err);
+      alert('Failed to save details');
     } finally {
       setSaving(false);
     }

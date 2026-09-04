@@ -28,7 +28,8 @@ export async function POST(request) {
         due_date: dueDateTime,
         status: 'pending',
         user_type: 'admin',
-        phone_number: callDetails?.phoneNumber || null
+        phone_number: callDetails?.phoneNumber || null,
+        disposition: form.disposition
       };
 
       const { error } = await supabaseAdmin.from('tasks').insert(taskData);
