@@ -159,9 +159,9 @@ export default function TrashPage() {
             <table className="w-full text-left">
               <thead className="bg-slate-900/40 border-b border-white/10">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Item Details</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Deleted Date</th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-full">Item Details</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Deleted Date</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -170,7 +170,7 @@ export default function TrashPage() {
                     <td className="px-6 py-4 font-medium text-slate-300">
                       {renderItemName(item)}
                     </td>
-                    <td className="px-6 py-4 text-slate-500 text-sm">
+                    <td className="px-6 py-4 text-slate-500 text-sm whitespace-nowrap">
                       <div className="flex flex-col">
                         <span>{new Date(item.deleted_at || item.updated_at || item.created_at).toLocaleDateString()}</span>
                         {(() => {
@@ -185,7 +185,7 @@ export default function TrashPage() {
                         })()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-3 items-center">
                         <button 
                           onClick={() => handleRestore(item.id)} 
