@@ -9,8 +9,8 @@ export default function CallLogs() {
   const [editingNote, setEditingNote] = useState(null);
   const [orgId, setOrgId] = useState(null);
 
-  async function fetchCalls() {
-    setLoading(true);
+  async function fetchCalls(silent = false) {
+    if (!silent) setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     
@@ -47,7 +47,7 @@ export default function CallLogs() {
         }
       }
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }
 
   useEffect(() => {
@@ -286,7 +286,7 @@ export default function CallLogs() {
       <CallWrapUpModal 
         isOpen={!!editingNote} 
         onClose={(changed) => {
-          if (changed) fetchCalls();
+          if (changed) fetchCalls(true);
           setEditingNote(null);
         }} 
         callDetails={{ 

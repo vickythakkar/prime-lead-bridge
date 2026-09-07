@@ -20,13 +20,13 @@ export default function AdminActivityLog() {
     setOrgs(data.organizations || []);
   }
 
-  async function fetchLogs() {
-    setLoading(true);
+  async function fetchLogs(silent = false) {
+    if (!silent) setLoading(true);
     const url = selectedOrg ? `/api/admin/call-logs?org_id=${selectedOrg}` : '/api/admin/call-logs';
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     setCalls(data.logs || []);
-    setLoading(false);
+    if (!silent) setLoading(false);
     fetch('/api/admin/call-logs', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
   }
 
@@ -268,7 +268,7 @@ export default function AdminActivityLog() {
       <AdminCallWrapUpModal 
         isOpen={!!editingNote} 
         onClose={(changed) => {
-          if (changed) fetchLogs(); // reload data
+          if (changed) fetchLogs(true);
           setEditingNote(null);
         }} 
         callDetails={{ 
