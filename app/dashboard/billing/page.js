@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 export default function BillingDashboard() {
   const [org, setOrg] = useState(null);
   const [rates, setRates] = useState(null);
+  const [plans, setPlans] = useState([]);
   const [stats, setStats] = useState({
     totalMinutes: 0,
     totalCalls: 0,
@@ -26,9 +27,13 @@ export default function BillingDashboard() {
       const { data: orgData } = await supabase.from('organizations').select('*').eq('id', oId).single();
       if (orgData) setOrg(orgData);
 
-      // Load Admin Rates (which acts as pricing for the broker)
+      // Load Admin Rates
       const { data: adminData } = await supabase.from('admin_settings').select('*').eq('id', 1).single();
       if (adminData) setRates(adminData);
+
+      // Load Subscription Plans
+      const { data: plansData } = await supabase.from('subscription_plans').select('*').order('base_price', { ascending: true });
+      if (plansData) setPlans(plansData);
 
       // Load Active Numbers
       const { data: numData } = await supabase.from('organization_numbers').select('id').eq('organization_id', oId);
@@ -69,23 +74,18 @@ export default function BillingDashboard() {
   if (loading) return <div className="p-8 text-slate-400">Loading billing details...</div>;
   if (!org || !rates) return <div className="p-8 text-red-400">Error loading billing data.</div>;
 
-  const plan = org.subscription_plan || 'pay_as_you_go';
-  let planName = 'Pay As You Go';
-  let includedMinutes = 0;
-  let baseMonthlyCost = 5;
-  let overageRate = rates.broker_per_minute_charge;
+  const activePlanId = org.subscription_plan || 'pay_as_you_go';
+  const currentPlan = plans.find(p => p.id === activePlanId) || {
+    name: 'Pay As You Go',
+    base_price: 5,
+    included_minutes: 0,
+    overage_rate: rates.broker_per_minute_charge
+  };
 
-  if (plan === 'starter') {
-    planName = 'Starter Plan';
-    includedMinutes = 500;
-    baseMonthlyCost = 49;
-    overageRate = 0.12;
-  } else if (plan === 'growth') {
-    planName = 'Growth Plan';
-    includedMinutes = 1000;
-    baseMonthlyCost = 89;
-    overageRate = 0.10;
-  }
+  const planName = currentPlan.name;
+  const includedMinutes = currentPlan.included_minutes;
+  const baseMonthlyCost = currentPlan.base_price;
+  const overageRate = currentPlan.overage_rate;
   
   const overageMinutes = Math.max(0, stats.totalMinutes - includedMinutes);
   const estimatedOverageCost = overageMinutes * overageRate;
@@ -231,62 +231,32 @@ export default function BillingDashboard() {
           <h2 className="text-xl font-bold text-white mb-6">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Pay As You Go */}
-            <div className={`glass-card rounded-xl p-5 border ${plan === 'pay_as_you_go' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-white">Pay As You Go</h3>
-                {plan === 'pay_as_you_go' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
-              </div>
-              <div className="text-2xl font-bold text-white mb-3">$5<span className="text-sm font-normal text-slate-400">/mo</span></div>
-              <ul className="space-y-2 text-xs text-slate-300 mb-4">
-                <li className="flex items-center gap-2"><span>✓</span> 0 Included Minutes</li>
-                <li className="flex items-center gap-2"><span>✓</span> $0.05 / minute</li>
-                <li className="flex items-center gap-2"><span>✓</span> Basic Analytics</li>
-              </ul>
-              {plan !== 'pay_as_you_go' && (
-                <button onClick={() => handlePlanChange('pay_as_you_go')} className="w-full py-2 rounded bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors border border-white/10">
-                  Switch to PAYG
-                </button>
-              )}
-            </div>
-
-            {/* Starter Plan */}
-            <div className={`glass-card rounded-xl p-5 border ${plan === 'starter' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-white">Starter</h3>
-                {plan === 'starter' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
-              </div>
-              <div className="text-2xl font-bold text-white mb-3">$49<span className="text-sm font-normal text-slate-400">/mo</span></div>
-              <ul className="space-y-2 text-xs text-slate-300 mb-4">
-                <li className="flex items-center gap-2"><span>✓</span> 500 Included Minutes</li>
-                <li className="flex items-center gap-2"><span>✓</span> $0.12 / extra minute</li>
-                <li className="flex items-center gap-2"><span>✓</span> Incoming & Outgoing Calls</li>
-              </ul>
-              {plan !== 'starter' && (
-                <button onClick={() => handlePlanChange('starter')} className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
-                  {plan === 'growth' ? 'Downgrade to Starter' : 'Upgrade to Starter'}
-                </button>
-              )}
-            </div>
-
-            {/* Growth Plan */}
-            <div className={`glass-card rounded-xl p-5 border ${plan === 'growth' ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-white">Growth</h3>
-                {plan === 'growth' && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
-              </div>
-              <div className="text-2xl font-bold text-white mb-3">$89<span className="text-sm font-normal text-slate-400">/mo</span></div>
-              <ul className="space-y-2 text-xs text-slate-300 mb-4">
-                <li className="flex items-center gap-2 text-indigo-300 font-medium"><span>✓</span> 1000 Included Minutes</li>
-                <li className="flex items-center gap-2"><span>✓</span> $0.10 / extra minute</li>
-                <li className="flex items-center gap-2"><span>✓</span> Advanced Analytics</li>
-              </ul>
-              {plan !== 'growth' && (
-                <button onClick={() => handlePlanChange('growth')} className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
-                  Upgrade to Growth
-                </button>
-              )}
-            </div>
+            {plans.map((p) => {
+              const isCurrent = activePlanId === p.id;
+              
+              return (
+                <div key={p.id} className={`glass-card rounded-xl p-5 border ${isCurrent ? 'border-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.2)]' : 'border-white/10'}`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-bold text-white">{p.name}</h3>
+                    {isCurrent && <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded uppercase">Current</span>}
+                  </div>
+                  <div className="text-2xl font-bold text-white mb-3">${p.base_price}<span className="text-sm font-normal text-slate-400">/mo</span></div>
+                  <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                    <li className="flex items-center gap-2"><span>✓</span> {p.included_minutes} Included Minutes</li>
+                    <li className="flex items-center gap-2"><span>✓</span> ${p.overage_rate} / extra minute</li>
+                    <li className="flex items-center gap-2"><span>✓</span> Platform Access</li>
+                  </ul>
+                  {!isCurrent && (
+                    <button 
+                      onClick={() => handlePlanChange(p.id)} 
+                      className={`w-full py-2 rounded text-white text-sm font-medium transition-colors ${p.base_price > currentPlan.base_price ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-white/5 hover:bg-white/10 border border-white/10'}`}
+                    >
+                      {p.base_price > currentPlan.base_price ? `Upgrade to ${p.name}` : `Switch to ${p.name}`}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
 
           </div>
         </div>
