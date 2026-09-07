@@ -127,6 +127,7 @@ export default function CallLogs() {
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Tag</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[200px]">Notes</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
@@ -167,6 +168,13 @@ export default function CallLogs() {
                     </td>
                     <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
                     <td className="px-6 py-4">
+                      {call.disposition ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider whitespace-nowrap">{call.disposition}</span>
+                      ) : (
+                        <span className="text-slate-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
                       {call.notes ? (
                         <div className="group relative">
                           <div className="text-sm text-slate-200 italic line-clamp-2">
@@ -201,11 +209,6 @@ export default function CallLogs() {
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
                             Add
                           </button>
-                        </div>
-                      )}
-                      {call.disposition && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">{call.disposition}</span>
                         </div>
                       )}
                     </td>
