@@ -137,7 +137,7 @@ export default function WebDialer() {
             </span>
           </div>
 
-          <div className={`h-16 w-full flex flex-col items-center justify-center ${contactName ? 'mb-2' : 'mb-6'}`}>
+          <div className={`h-16 w-full relative flex flex-col items-center justify-center ${contactName ? 'mb-2' : 'mb-6'}`}>
             <input 
               type="text" 
               value={phoneNumber} 
@@ -145,6 +145,17 @@ export default function WebDialer() {
               placeholder="(555) 555-5555"
               className="bg-transparent text-center text-3xl font-light text-white tracking-wider outline-none w-full"
             />
+            {phoneNumber && !activeCall && (
+              <button 
+                onClick={() => setPhoneNumber(prev => prev.slice(0, -1))}
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-2 rounded-full hover:bg-white/5 transition-colors"
+                title="Backspace"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {contactName && (
