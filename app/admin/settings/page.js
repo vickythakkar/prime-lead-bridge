@@ -3,8 +3,12 @@ import { useState, useEffect } from 'react';
 
 const ADMIN_ORG_ID = '8a564ec4-9544-4b63-ac58-98ec66d69a76';
 
-
-
+const DEFAULT_IVR = {
+  greeting: 'Thank you for calling. Please listen to the following options.',
+  flow: {
+    'TIMEOUT': { action: 'voicemail' }
+  }
+};
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('Profile');
   const [saving, setSaving] = useState(false);
