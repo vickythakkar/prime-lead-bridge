@@ -124,20 +124,20 @@ export default function CallLogs() {
             <table className="w-full text-left">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Tag</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-48">Notes</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Recording & Actions</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Type</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Contact / Number</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Property / Route</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Tag</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 w-full min-w-[200px]">Notes</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Date/Time</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Duration</th>
+                  <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {calls.map((call) => (
                   <tr key={call.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       {call.call_type === 'outbound' ? (
                         <div className="flex flex-col gap-1 items-start">
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Outbound</span>
@@ -156,7 +156,7 @@ export default function CallLogs() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-medium text-white">
+                    <td className="px-4 py-3 font-medium text-white">
                       {call.contacts?.name ? (
                         <div className="flex flex-col">
                           <span>{call.contacts.name}</span>
@@ -166,15 +166,15 @@ export default function CallLogs() {
                         <span className="font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 text-slate-300">{call.properties?.address || 'Office Menu'}</td>
+                    <td className="px-4 py-3">
                       {call.disposition ? (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider whitespace-nowrap">{call.disposition}</span>
                       ) : (
                         <span className="text-slate-600 text-xs">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       {call.notes ? (
                         <div className="group relative">
                           <div className="text-sm text-slate-200 italic line-clamp-2">
@@ -201,10 +201,10 @@ export default function CallLogs() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-slate-500 italic">No notes</span>
+                          <span className="text-sm text-slate-400 italic">No notes</span>
                           <button 
                             onClick={() => setEditingNote(call)}
-                            className="text-[11px] font-medium text-slate-400 hover:text-indigo-400 flex items-center gap-1 transition-colors border border-slate-700 hover:border-indigo-500/50 rounded px-2 py-0.5"
+                            className="text-[11px] font-medium text-slate-300 hover:text-indigo-400 flex items-center gap-1 transition-colors border border-slate-600 hover:border-indigo-400 rounded px-2 py-0.5"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
                             Add
@@ -212,15 +212,15 @@ export default function CallLogs() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 text-sm">
+                    <td className="px-4 py-3 text-slate-300 text-sm whitespace-nowrap">
                       {new Date(call.created_at + (call.created_at.includes('T') && !call.created_at.endsWith('Z') && !call.created_at.includes('+') ? 'Z' : '')).toLocaleString(undefined, {
                         year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
                       })}
                     </td>
-                    <td className="px-6 py-4 text-slate-300 text-sm">
+                    <td className="px-4 py-3 text-slate-300 text-sm">
                       {call.duration ? `${call.duration}s` : '0s'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex flex-col gap-2 w-64 shrink-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
@@ -268,7 +268,7 @@ export default function CallLogs() {
                           </div>
                         ) : (
                           <div className="h-10 w-full max-w-[250px] bg-white/5 rounded-full flex items-center justify-center border border-white/5">
-                            <span className="text-xs text-slate-500 font-medium">No recording available</span>
+                            <span className="text-xs text-slate-400 font-medium">No recording available</span>
                           </div>
                         )}
                       </div>
