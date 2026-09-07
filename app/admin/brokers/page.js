@@ -15,7 +15,24 @@ export default function AllClientsPage() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
-  useEffect(() => { fetchOrgs(); }, []);
+  const [plans, setPlans] = useState([]);
+
+  useEffect(() => { 
+    fetchOrgs(); 
+    fetchPlans();
+  }, []);
+
+  async function fetchPlans() {
+    try {
+      const res = await fetch('/api/admin/subscription-plans', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setPlans(data.plans || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   async function fetchOrgs() {
     setLoading(true);
@@ -242,9 +259,15 @@ export default function AllClientsPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Subscription Plan *</label>
                   <select required className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form.subscription_plan} onChange={e => setForm({ ...form, subscription_plan: e.target.value })}>
-                    <option value="pay_as_you_go">Pay As You Go ($5/mo — $0.05/min)</option>
-                    <option value="starter">Starter ($49/mo — 500 min)</option>
-                    <option value="growth">Growth ($89/mo — 1000 min)</option>
+                    {plans.length > 0 ? plans.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} (${p.base_price}/mo — {p.included_minutes === 0 ? 'PAYG' : `${p.included_minutes} min`})</option>
+                    )) : (
+                      <>
+                        <option value="pay_as_you_go">Pay As You Go ($5/mo — $0.05/min)</option>
+                        <option value="starter">Starter ($49/mo — 500 min)</option>
+                        <option value="growth">Growth ($89/mo — 1000 min)</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>

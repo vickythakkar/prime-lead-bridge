@@ -35,17 +35,19 @@ export async function POST(request) {
           let includedMins = 0;
           let perMinRate = 0.05; // default fallback
           
-          const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toLowerCase();
+          const planId = (org.subscription_plan || 'pay_as_you_go').toLowerCase();
           
-          if (plan === 'starter') {
-            includedMins = 500;
-            perMinRate = 0.12;
-          } else if (plan === 'growth') {
-            includedMins = 1000;
-            perMinRate = 0.10;
+          const { data: planData } = await supabaseAdmin
+            .from('subscription_plans')
+            .select('included_minutes, overage_rate')
+            .eq('id', planId)
+            .single();
+
+          if (planData) {
+            includedMins = planData.included_minutes || 0;
+            perMinRate = parseFloat(planData.overage_rate || 0);
           } else {
-            // Pay as you go
-            includedMins = 0;
+            // Fallback for custom PAYG overrides or legacy
             const orgRate = org.ivr_flow_config?.rate_per_minute;
             if (orgRate !== null && orgRate !== undefined && orgRate !== '') {
               perMinRate = parseFloat(orgRate);

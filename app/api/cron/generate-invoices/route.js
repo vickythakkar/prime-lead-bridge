@@ -15,6 +15,12 @@ export async function GET(request) {
     const overageMultiplier = parseFloat(rateData?.overage_multiplier || 2.0);
     const paymentWindowDays = rateData?.payment_window_days || 7;
 
+    const { data: plansData } = await supabaseAdmin.from('subscription_plans').select('*');
+    const plansMap = {};
+    if (plansData) {
+      plansData.forEach(p => plansMap[p.id] = p);
+    }
+
     // ── 2. Generate invoices for PREVIOUS month ────────────────
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of prev month
@@ -92,18 +98,15 @@ export async function GET(request) {
         
         let baseFee = 0;
         let perMinRate = orgRate;
-        const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toLowerCase();
+        const planId = (org.subscription_plan || 'pay_as_you_go').toLowerCase();
+        const planObj = plansMap[planId];
 
-        if (plan === 'starter') {
-          baseFee = 49.00;
-          perMinRate = 0.12;
-        } else if (plan === 'growth') {
-          baseFee = 89.00;
-          perMinRate = 0.10;
+        if (planObj) {
+          baseFee = parseFloat(planObj.base_price);
+          perMinRate = parseFloat(planObj.overage_rate);
         } else {
-          // Pay As You Go or default
-          baseFee = 5.00;
-          perMinRate = orgRate; // Defaults to 0.05 if not overridden
+          baseFee = 5.00; // legacy default
+          perMinRate = orgRate;
         }
 
         // Admin org does not pay a base fee
@@ -165,7 +168,7 @@ export async function GET(request) {
         if (sendEmail && getInvoiceEmailHtml && totalAmount > 0) {
           const brokerEmail = org.notify_email || org.contact_email;
           if (brokerEmail) {
-            const planName = plan === 'pay_as_you_go' ? 'PAY AS YOU GO' : plan.toUpperCase();
+            const planName = planObj ? planObj.name.toUpperCase() : (planId === 'pay_as_you_go' ? 'PAY AS YOU GO' : planId.toUpperCase());
             const monthStr = prevMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
             await sendEmail({
               to: brokerEmail,

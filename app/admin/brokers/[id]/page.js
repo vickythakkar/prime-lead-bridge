@@ -10,6 +10,7 @@ export default function OrganizationDetailsPage() {
   const { id } = params;
 
   const [data, setData] = useState(null);
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Settings Form State
@@ -33,9 +34,16 @@ export default function OrganizationDetailsPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const res = await fetch(`/api/admin/organizations/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const [res, plansRes] = await Promise.all([
+        fetch(`/api/admin/organizations/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/admin/subscription-plans', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      
+      if (plansRes.ok) {
+        const pData = await plansRes.json();
+        setPlans(pData.plans || []);
+      }
+
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -289,9 +297,15 @@ export default function OrganizationDetailsPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Subscription Plan</label>
                   <select className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={settings.subscription_plan} onChange={e => setSettings({...settings, subscription_plan: e.target.value})}>
-                    <option value="PAY_AS_YOU_GO">Pay As You Go ($5/mo)</option>
-                    <option value="STARTER">Starter ($49/mo)</option>
-                    <option value="GROWTH">Growth ($89/mo)</option>
+                    {plans.length > 0 ? plans.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} (${p.base_price}/mo — {p.included_minutes === 0 ? 'PAYG' : `${p.included_minutes} min`})</option>
+                    )) : (
+                      <>
+                        <option value="pay_as_you_go">Pay As You Go ($5/mo)</option>
+                        <option value="starter">Starter ($49/mo)</option>
+                        <option value="growth">Growth ($89/mo)</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
