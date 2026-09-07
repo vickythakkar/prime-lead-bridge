@@ -121,17 +121,17 @@ export default function CallLogs() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[1000px]">
+            <table className="w-full text-left">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Property / Route</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Tag</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[200px]">Notes</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-48">Notes</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -221,7 +221,7 @@ export default function CallLogs() {
                       {call.duration ? `${call.duration}s` : '0s'}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-2 w-[320px] shrink-0">
+                      <div className="flex flex-col gap-2 w-64 shrink-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           <div className="flex items-center gap-2">
@@ -263,11 +263,11 @@ export default function CallLogs() {
                             <audio 
                               controls 
                               src={call.audio_link}
-                              className="h-10 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
+                              className="h-10 w-full max-w-[250px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
                             />
                           </div>
                         ) : (
-                          <div className="h-10 w-full bg-white/5 rounded-full flex items-center justify-center border border-white/5">
+                          <div className="h-10 w-full max-w-[250px] bg-white/5 rounded-full flex items-center justify-center border border-white/5">
                             <span className="text-xs text-slate-500 font-medium">No recording available</span>
                           </div>
                         )}

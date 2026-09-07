@@ -134,15 +134,15 @@ export default function AdminContacts() {
             <p className="text-slate-400">Add contacts manually or they'll sync automatically when teammates are added.</p>
           </div>
         ) : (
-          <table className="w-full text-left table-fixed min-w-[1000px]">
+          <table className="w-full text-left">
             <thead className="bg-slate-900/40 border-b border-white/10">
               <tr>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-64">Name</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-48">Organization</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-32">Tag</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-40">Phone</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">Name</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">Organization</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">Tag</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300">Phone</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-300">Email</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-300 text-right w-24">Actions</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-300 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -150,7 +150,7 @@ export default function AdminContacts() {
                 const role = c.custom_fields?.role;
                 return (
                   <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 truncate">
+                    <td className="px-6 py-4 truncate max-w-[200px]">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ backgroundColor: (c.avatar_color || '#4f46e5') + '33', color: c.avatar_color || '#818cf8' }}>
                           {(c.name || '?')[0].toUpperCase()}
@@ -158,19 +158,19 @@ export default function AdminContacts() {
                         <span className="font-medium text-white truncate">{c.name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 truncate">
+                    <td className="px-6 py-4 truncate max-w-[150px]">
+                      <span className="text-sm font-medium text-slate-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 truncate inline-block max-w-full" title={c.organization_name || 'Admin Platform'}>
+                        {c.organization_name || 'Admin Platform'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 truncate max-w-[150px]">
                       {role ? (
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${roleColors[role] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>{role}</span>
                       ) : <span className="text-slate-600 text-xs">—</span>}
                     </td>
-                    <td className="px-6 py-4 truncate">
-                      <span className="text-sm font-medium text-slate-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
-                        {c.organization_name || 'Admin Platform'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-300 font-mono text-sm truncate">{c.phone || '—'}</td>
-                    <td className="px-6 py-4 text-slate-400 text-sm truncate" title={c.email}>{c.email || '—'}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-slate-300 font-mono text-sm whitespace-nowrap">{c.phone || '—'}</td>
+                    <td className="px-6 py-4 text-slate-400 text-sm truncate max-w-xs" title={c.email}>{c.email || '—'}</td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-3 items-center">
                         {c.phone && (
                           <button onClick={() => window.location.href = `/admin/dialer?phone=${encodeURIComponent(c.phone)}&name=${encodeURIComponent(c.name)}`} className="text-slate-500 hover:text-green-400 transition-colors" title="Call">
