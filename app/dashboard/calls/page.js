@@ -9,46 +9,48 @@ export default function CallLogs() {
   const [editingNote, setEditingNote] = useState(null);
   const [orgId, setOrgId] = useState(null);
 
-  useEffect(() => {
-    async function fetchCalls() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      
-      const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
-      if (agentData) {
-        setOrgId(agentData.organization_id);
-        const { data, error } = await supabase
-          .from('call_logs')
-          .select('*, properties(address), contacts(name)')
-          .eq('organization_id', agentData.organization_id)
-          .order('created_at', { ascending: false });
-          
-        if (!error && data) {
-          // Resolve public URLs for recordings
-          const callsWithUrls = data.map(call => {
-            if (call.recording_url) {
-              if (call.recording_url.includes('api.twilio.com')) {
-                return { ...call, audio_link: `/api/twilio/recording?url=${encodeURIComponent(call.recording_url)}` };
-              } else {
-                const { data: urlData } = supabase.storage
-                  .from('call_recordings')
-                  .getPublicUrl(call.recording_url);
-                return { ...call, audio_link: urlData.publicUrl };
-              }
+  async function fetchCalls() {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    
+    const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
+    if (agentData) {
+      setOrgId(agentData.organization_id);
+      const { data, error } = await supabase
+        .from('call_logs')
+        .select('*, properties(address), contacts(name)')
+        .eq('organization_id', agentData.organization_id)
+        .order('created_at', { ascending: false });
+        
+      if (!error && data) {
+        // Resolve public URLs for recordings
+        const callsWithUrls = data.map(call => {
+          if (call.recording_url) {
+            if (call.recording_url.includes('api.twilio.com')) {
+              return { ...call, audio_link: `/api/twilio/recording?url=${encodeURIComponent(call.recording_url)}` };
+            } else {
+              const { data: urlData } = supabase.storage
+                .from('call_recordings')
+                .getPublicUrl(call.recording_url);
+              return { ...call, audio_link: urlData.publicUrl };
             }
-            return call;
-          });
-          setCalls(callsWithUrls);
-
-          // Mark as seen
-          const unseenIds = data.filter(c => !c.seen).map(c => c.id);
-          if (unseenIds.length > 0) {
-            await supabase.from('call_logs').update({ seen: true }).in('id', unseenIds);
           }
+          return call;
+        });
+        setCalls(callsWithUrls);
+
+        // Mark as seen
+        const unseenIds = data.filter(c => !c.seen).map(c => c.id);
+        if (unseenIds.length > 0) {
+          await supabase.from('call_logs').update({ seen: true }).in('id', unseenIds);
         }
       }
-      setLoading(false);
     }
+    setLoading(false);
+  }
+
+  useEffect(() => {
     fetchCalls();
   }, []);
 
