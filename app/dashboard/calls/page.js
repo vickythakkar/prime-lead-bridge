@@ -284,7 +284,7 @@ export default function CallLogs() {
       <CallWrapUpModal 
         isOpen={!!editingNote} 
         onClose={(changed) => {
-          if (changed) window.location.reload(); // refresh to show updated data
+          if (changed) fetchCalls();
           setEditingNote(null);
         }} 
         callDetails={{ 
