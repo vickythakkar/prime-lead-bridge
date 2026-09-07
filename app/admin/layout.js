@@ -42,7 +42,7 @@ export default function AdminLayout({ children }) {
           {/* Subtle background glow for admin area */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
           
-          <div className="p-8 max-w-7xl mx-auto relative z-10">
+          <div className="p-8 w-full relative z-10">
             {children}
           </div>
           <FloatingDialerButton basePath="/admin" />
