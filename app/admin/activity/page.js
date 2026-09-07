@@ -116,16 +116,17 @@ export default function AdminActivityLog() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[1000px]">
+            <table className="w-full text-left">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Type</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Organization</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Contact / Number</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[200px]">Notes</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Tag</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 w-48">Notes</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Date/Time</th>
                   <th className="px-6 py-4 text-sm font-semibold text-slate-300">Duration</th>
-                  <th className="px-6 py-4 text-sm font-semibold text-slate-300 min-w-[350px]">Recording & Actions</th>
+                  <th className="px-6 py-4 text-sm font-semibold text-slate-300">Recording & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -161,6 +162,13 @@ export default function AdminActivityLog() {
                         </div>
                       ) : (
                         <span className="font-mono">{call.call_type === 'outbound' ? call.to_number : call.from_number}</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {call.disposition ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider whitespace-nowrap">{call.disposition}</span>
+                      ) : (
+                        <span className="text-slate-600 text-xs">—</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -200,11 +208,6 @@ export default function AdminActivityLog() {
                           </button>
                         </div>
                       )}
-                      {call.disposition && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">{call.disposition}</span>
-                        </div>
-                      )}
                     </td>
                     <td className="px-5 py-4 text-slate-400 text-sm">
                       {new Date(call.created_at + (call.created_at.includes('T') && !call.created_at.endsWith('Z') && !call.created_at.includes('+') ? 'Z' : '')).toLocaleString(undefined, {
@@ -213,7 +216,7 @@ export default function AdminActivityLog() {
                     </td>
                     <td className="px-5 py-4 text-slate-300 text-sm">{call.duration ? `${call.duration}s` : '0s'}</td>
                     <td className="px-5 py-4">
-                      <div className="flex flex-col gap-2 w-[320px] shrink-0">
+                      <div className="flex flex-col gap-2 w-64 shrink-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           <div className="flex items-center gap-2">
@@ -231,16 +234,25 @@ export default function AdminActivityLog() {
                                 className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-red-500/10"
                                 title="Delete Recording"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                  <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                </svg>
                               </button>
                             )}
                           </div>
                         </div>
                         {call.audio_link ? (
-                          <audio controls src={call.audio_link} className="h-9 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" />
+                          <div className="w-full">
+                            <audio 
+                              controls 
+                              src={call.audio_link}
+                              className="h-10 w-full max-w-[250px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
+                            />
+                          </div>
                         ) : (
-                          <div className="h-9 w-full bg-white/5 rounded-full flex items-center justify-center border border-white/5">
-                            <span className="text-xs text-slate-500">No recording</span>
+                          <div className="h-10 w-full max-w-[250px] bg-white/5 rounded-full flex items-center justify-center border border-white/5">
+                            <span className="text-xs text-slate-500 font-medium">No recording</span>
                           </div>
                         )}
                       </div>
