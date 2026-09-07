@@ -233,7 +233,7 @@ export default function ContactsPage() {
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
                 <input 
-                  type="email"
+                  type="email" multiple
                   className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
                   value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />

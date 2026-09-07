@@ -204,7 +204,7 @@ export default function AdminContacts() {
               {[['Name', 'name', 'text', true], ['Phone', 'phone', 'tel', false], ['Email', 'email', 'email', false], ['Company', 'company', 'text', false]].map(([label, key, type, req]) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
-                  <input type={type} required={req} className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+                  <input type={type} required={req} multiple={type === 'email'} className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
                 </div>
               ))}
               <div>
