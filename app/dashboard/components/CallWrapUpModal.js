@@ -148,7 +148,7 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId, i
       document.body.appendChild(toastEl);
       setTimeout(() => { toastEl.remove(); }, 3000);
 
-      onClose();
+      onClose(true);
     } catch (err) {
       console.error(err);
       alert('Failed to save details: ' + (err.message || 'Unknown error'));
@@ -164,7 +164,7 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId, i
       <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Call Wrap-Up</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={() => onClose(false)} className="text-slate-400 hover:text-white transition-colors">
             ✕
           </button>
         </div>
