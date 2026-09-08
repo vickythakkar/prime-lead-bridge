@@ -26,6 +26,13 @@ export async function POST(request) {
       return new Response('Missing org_id', { status: 400 });
     }
 
+    // Delay the terminal statusCallback by 2 seconds to allow the <Dial> action webhook 
+    // (which fires simultaneously) to insert the call log first. This prevents a race 
+    // condition that creates duplicate logs.
+    if (callStatus === 'completed' && !dialCallStatus) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     // We must safely handle missing From/To because Twilio's recordingStatusCallback omits them.
     let finalFrom = realFrom || from;
     let finalTo = realTo || to;
