@@ -85,16 +85,51 @@ export default function BillingDashboard() {
   const planName = currentPlan.name;
   const includedMinutes = currentPlan.included_minutes;
   const baseMonthlyCost = currentPlan.base_price;
+  const planRate = currentPlan.overage_rate;
 
-  const customRate = org.ivr_flow_config?.rate_per_minute;
-  const overageRate = customRate !== null && customRate !== undefined && customRate !== ''
-    ? parseFloat(customRate)
-    : currentPlan.overage_rate;
+  const customRateStr = org.ivr_flow_config?.rate_per_minute;
+  const customRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== ''
+    ? parseFloat(customRateStr)
+    : null;
   
+  let overageRate = planRate;
+  let displayRate = planRate;
+  let rateDiscountAmount = 0;
+
+  if (customRate !== null) {
+    overageRate = customRate;
+    if (customRate < planRate) {
+      displayRate = planRate;
+    } else {
+      displayRate = customRate;
+    }
+  }
+
   const overageMinutes = Math.max(0, stats.totalMinutes - includedMinutes);
-  const estimatedOverageCost = overageMinutes * overageRate;
   
-  const totalEstimatedBill = baseMonthlyCost + estimatedOverageCost;
+  // Calculate the display subtotal based on the display rate
+  const estimatedOverageCost = overageMinutes * displayRate;
+  
+  // Calculate the discount
+  if (customRate !== null && customRate < planRate) {
+    const actualCost = overageMinutes * customRate;
+    rateDiscountAmount = estimatedOverageCost - actualCost;
+  }
+  
+  const subtotal = baseMonthlyCost + estimatedOverageCost;
+  
+  let userDiscount = 0;
+  if (org.pending_discount_amount && parseFloat(org.pending_discount_amount) > 0) {
+    const discountVal = parseFloat(org.pending_discount_amount);
+    if (org.pending_discount_type === 'percentage') {
+      userDiscount = (subtotal * discountVal) / 100;
+    } else {
+      userDiscount = discountVal;
+    }
+  }
+  
+  const totalDiscount = rateDiscountAmount + userDiscount;
+  const totalEstimatedBill = Math.max(0, subtotal - totalDiscount);
 
   const handlePlanChange = async (newPlan) => {
     if (!confirm(`Are you sure you want to switch to this plan?`)) return;
@@ -123,9 +158,9 @@ export default function BillingDashboard() {
       created_at: now.toISOString(),
       status: 'pending',
       total_minutes: stats.totalMinutes || 0,
-      rate_per_minute: overageRate,
-      subtotal: totalEstimatedBill,
-      discount_amount: 0,
+      rate_per_minute: displayRate,
+      subtotal: subtotal,
+      discount_amount: totalDiscount,
       total_amount: totalEstimatedBill
     };
 
@@ -140,9 +175,11 @@ export default function BillingDashboard() {
   const handleDownloadPastInvoice = async (invoice) => {
     const orgName = org.company_name || org.name || 'Unknown';
     const period = invoice.month_year || `${invoice.billing_period_start} — ${invoice.billing_period_end}`;
-    const usageCost = parseFloat(invoice.total_minutes || 0) * parseFloat(invoice.rate_per_minute || 0);
-    let baseFee = parseFloat(invoice.subtotal || 0) - usageCost;
-    if (baseFee < 0) baseFee = 0; // fallback rounding
+    let baseFee = baseMonthlyCost;
+    if (baseFee > parseFloat(invoice.subtotal || 0)) {
+      baseFee = parseFloat(invoice.subtotal || 0); // Handle edge cases where subtotal is lower than base fee
+    }
+    const usageCost = parseFloat(invoice.subtotal || 0) - baseFee;
 
     const planName = org.subscription_plan 
       ? org.subscription_plan.replace(/_/g, ' ').toUpperCase()

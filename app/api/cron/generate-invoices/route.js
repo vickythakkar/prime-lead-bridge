@@ -93,23 +93,53 @@ export async function GET(request) {
         const totalSeconds = (calls || []).reduce((sum, c) => sum + (c.duration || 0), 0);
         const totalMinutes = Math.ceil(totalSeconds / 60);
         
-        // Sum up the pre-calculated, prorated cost of all calls
-        const usageCost = (calls || []).reduce((sum, c) => sum + (parseFloat(c.cost_broker) || 0), 0);
+        let usageCost = (calls || []).reduce((sum, c) => sum + (parseFloat(c.cost_broker) || 0), 0);
         
         let baseFee = 0;
         let perMinRate = orgRate;
+        let displayRate = orgRate;
+        let rateDiscountAmount = 0;
+
+        let finalBillableMinutes = totalMinutes;
         const planId = (org.subscription_plan || 'pay_as_you_go').toLowerCase();
         const planObj = plansMap[planId];
 
         if (planObj) {
           baseFee = parseFloat(planObj.base_price);
+          const planRate = parseFloat(planObj.overage_rate);
           const customRateStr = org.ivr_flow_config?.rate_per_minute;
-          perMinRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== ''
-            ? parseFloat(customRateStr)
-            : parseFloat(planObj.overage_rate);
+          const customRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== '' ? parseFloat(customRateStr) : null;
+          
+          if (customRate !== null) {
+            perMinRate = customRate;
+            if (customRate < planRate) {
+              displayRate = planRate;
+              
+              let billableMinutes = 0;
+              if (customRate > 0) {
+                 billableMinutes = Math.round(usageCost / customRate);
+              } else {
+                 billableMinutes = Math.max(0, totalMinutes - (planObj.included_minutes || 0));
+              }
+              finalBillableMinutes = billableMinutes;
+              
+              const displayUsageCost = billableMinutes * planRate;
+              rateDiscountAmount = parseFloat((displayUsageCost - usageCost).toFixed(2));
+              usageCost = displayUsageCost; // Override usageCost to display amount
+            } else {
+              displayRate = customRate;
+              finalBillableMinutes = customRate > 0 ? Math.round(usageCost / customRate) : Math.max(0, totalMinutes - (planObj.included_minutes || 0));
+            }
+          } else {
+            perMinRate = planRate;
+            displayRate = planRate;
+            finalBillableMinutes = planRate > 0 ? Math.round(usageCost / planRate) : Math.max(0, totalMinutes - (planObj.included_minutes || 0));
+          }
         } else {
           baseFee = 5.00; // legacy default
           perMinRate = orgRate;
+          displayRate = orgRate;
+          finalBillableMinutes = orgRate > 0 ? Math.round(usageCost / orgRate) : totalMinutes;
         }
 
         // Admin org does not pay a base fee
@@ -119,13 +149,13 @@ export async function GET(request) {
 
         const subtotal = parseFloat((baseFee + usageCost).toFixed(2));
         
-        let discountAmount = 0;
+        let discountAmount = rateDiscountAmount; // Start with rate discount
         if (org.pending_discount_amount && parseFloat(org.pending_discount_amount) > 0) {
           const discountVal = parseFloat(org.pending_discount_amount);
           if (org.pending_discount_type === 'percentage') {
-            discountAmount = parseFloat(((subtotal * discountVal) / 100).toFixed(2));
+            discountAmount += parseFloat(((subtotal * discountVal) / 100).toFixed(2));
           } else {
-            discountAmount = discountVal;
+            discountAmount += discountVal;
           }
           // Cap discount at subtotal
           if (discountAmount > subtotal) discountAmount = subtotal;
@@ -146,9 +176,9 @@ export async function GET(request) {
           invoice_number: invoiceNumber,
           billing_period_start: billingPeriodStart,
           billing_period_end: billingPeriodEnd,
-          total_minutes: totalMinutes,
+          total_minutes: totalMinutes, // Still store raw total minutes for records
           total_calls: totalCalls,
-          rate_per_minute: perMinRate,
+          rate_per_minute: displayRate, // The user-facing rate shown on the invoice UI
           subtotal: subtotal,
           discount_amount: discountAmount,
           overage_amount: 0,
@@ -177,7 +207,7 @@ export async function GET(request) {
               to: brokerEmail,
               cc: 'info@primerealops.com',
               subject: `Your Prime Lead Bridge Invoice - ${monthStr}`,
-              html: getInvoiceEmailHtml(org.company_name, monthStr, totalMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr, planName, invoiceNumber)
+              html: getInvoiceEmailHtml(org.company_name, monthStr, finalBillableMinutes, baseFee, usageCost, subtotal, discountAmount, 0, totalAmount, dueDateStr, planName, invoiceNumber)
             });
           }
         }
