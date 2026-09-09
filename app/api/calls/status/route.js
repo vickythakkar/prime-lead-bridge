@@ -144,6 +144,13 @@ export async function POST(request) {
       if (!recordingUrl && existingLog.recording_url) {
         logData.recording_url = existingLog.recording_url;
       }
+      
+      // Preserve specific statuses from being overwritten by the generic terminal 'completed'
+      const specificStatuses = ['voicemail', 'missed', 'failed', 'busy'];
+      if (mappedStatus === 'completed' && specificStatuses.includes(existingLog.status)) {
+        logData.status = existingLog.status;
+      }
+      
       await supabaseAdmin
         .from('call_logs')
         .update(logData)
