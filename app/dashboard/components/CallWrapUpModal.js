@@ -62,33 +62,20 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId, i
     
     try {
       // 1. Update call log if we have the call SID or ID
-      if (callDetails?.callSid) {
-        const { data: callLog } = await supabase
-          .from('call_logs')
-          .select('id')
-          .eq('twilio_call_sid', callDetails.callSid)
-          .maybeSingle();
-
-        if (callLog) {
-          await supabase.from('call_logs').update({
-            disposition: form.disposition,
-            notes: form.notes
-          }).eq('id', callLog.id);
-        } else {
-          await supabase.from('call_logs').insert({
-            twilio_call_sid: callDetails.callSid,
-            organization_id: orgId,
-            disposition: form.disposition,
-            notes: form.notes,
-            call_type: 'outbound'
-          });
-        }
-      } else if (initialData?.id) {
-        await supabase.from('call_logs').update({
+      const res = await fetch('/api/calls/wrapup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callSid: callDetails?.callSid,
+          id: initialData?.id,
+          orgId,
           disposition: form.disposition,
           notes: form.notes
-        }).eq('id', initialData.id);
-      }
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update call log');
+
 
       // 2. Handle Contact Status for "Do Not Call"
       if (form.disposition === 'Do Not Call' && callDetails?.phoneNumber) {
@@ -272,10 +259,18 @@ export default function CallWrapUpModal({ isOpen, onClose, callDetails, orgId, i
                 onClick={async () => {
                   if (confirm('Are you sure you want to clear these details?')) {
                     setSaving(true);
-                    if (callDetails?.callSid) {
-                      await supabase.from('call_logs').update({ notes: null, disposition: null }).eq('twilio_call_sid', callDetails.callSid);
-                    } else if (initialData?.id) {
-                      await supabase.from('call_logs').update({ notes: null, disposition: null }).eq('id', initialData.id);
+                    if (callDetails?.callSid || initialData?.id) {
+                      await fetch('/api/calls/wrapup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          callSid: callDetails?.callSid,
+                          id: initialData?.id,
+                          orgId,
+                          disposition: null,
+                          notes: null
+                        })
+                      });
                     }
                     setSaving(false);
                     onClose(true); // pass true to indicate changes
