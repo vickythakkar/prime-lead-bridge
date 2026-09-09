@@ -85,7 +85,11 @@ export default function BillingDashboard() {
   const planName = currentPlan.name;
   const includedMinutes = currentPlan.included_minutes;
   const baseMonthlyCost = currentPlan.base_price;
-  const overageRate = currentPlan.overage_rate;
+
+  const customRate = org.ivr_flow_config?.rate_per_minute;
+  const overageRate = customRate !== null && customRate !== undefined && customRate !== ''
+    ? parseFloat(customRate)
+    : currentPlan.overage_rate;
   
   const overageMinutes = Math.max(0, stats.totalMinutes - includedMinutes);
   const estimatedOverageCost = overageMinutes * overageRate;

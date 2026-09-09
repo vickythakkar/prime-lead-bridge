@@ -45,12 +45,15 @@ export async function POST(request) {
 
           if (planData) {
             includedMins = planData.included_minutes || 0;
-            perMinRate = parseFloat(planData.overage_rate || 0);
+            const customRateStr = org.ivr_flow_config?.rate_per_minute;
+            perMinRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== ''
+              ? parseFloat(customRateStr)
+              : parseFloat(planData.overage_rate || 0);
           } else {
             // Fallback for custom PAYG overrides or legacy
-            const orgRate = org.ivr_flow_config?.rate_per_minute;
-            if (orgRate !== null && orgRate !== undefined && orgRate !== '') {
-              perMinRate = parseFloat(orgRate);
+            const customRateStr = org.ivr_flow_config?.rate_per_minute;
+            if (customRateStr !== null && customRateStr !== undefined && customRateStr !== '') {
+              perMinRate = parseFloat(customRateStr);
             }
           }
           

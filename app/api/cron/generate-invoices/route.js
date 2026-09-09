@@ -103,7 +103,10 @@ export async function GET(request) {
 
         if (planObj) {
           baseFee = parseFloat(planObj.base_price);
-          perMinRate = parseFloat(planObj.overage_rate);
+          const customRateStr = org.ivr_flow_config?.rate_per_minute;
+          perMinRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== ''
+            ? parseFloat(customRateStr)
+            : parseFloat(planObj.overage_rate);
         } else {
           baseFee = 5.00; // legacy default
           perMinRate = orgRate;
