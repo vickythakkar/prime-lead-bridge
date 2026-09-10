@@ -9,7 +9,11 @@ export default function MyNumbers() {
   const [agentPhone, setAgentPhone] = useState(null);
   
   // Admin Rates
-  const [rates, setRates] = useState({ monthly: 0, setup: 0, perMinute: 0 });
+  const [rates, setRates] = useState({ monthly: 5, setup: 0, perMinute: 0 });
+  
+  // Subscription Plans
+  const [plans, setPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   // Search state
   const [areaCode, setAreaCode] = useState('');
@@ -57,10 +61,16 @@ export default function MyNumbers() {
       const { data: adminData } = await supabase.from('admin_settings').select('*').eq('id', 1).single();
       if (adminData) {
         setRates({
-          monthly: adminData.monthly_number_charge,
+          monthly: 5,
           setup: adminData.one_time_number_charge,
           perMinute: adminData.broker_per_minute_charge
         });
+      }
+
+      // Load Subscription Plans
+      const { data: plansData } = await supabase.from('subscription_plans').select('*').order('base_price', { ascending: true });
+      if (plansData && plansData.length > 0) {
+        setPlans(plansData);
       }
 
       // Load Org Numbers
@@ -74,12 +84,17 @@ export default function MyNumbers() {
       
       if (agentError) {
         console.error("Error fetching agent:", agentError);
-        // Try fallback to just get the first agent if RLS isn't strict yet
         const { data: fallback } = await supabase.from('agents').select('organization_id, cell_phone').eq('id', session.user.id).single();
         if (fallback) {
           setOrgId(fallback.organization_id);
           setAgentPhone(fallback.cell_phone);
           fetchNumbers(fallback.organization_id);
+          // Load org's current plan
+          const { data: orgData } = await supabase.from('organizations').select('subscription_plan').eq('id', fallback.organization_id).single();
+          if (orgData?.subscription_plan && plansData) {
+            const orgPlan = plansData.find(p => p.id === orgData.subscription_plan);
+            if (orgPlan) setSelectedPlan(orgPlan);
+          }
         } else {
           setLoading(false);
         }
@@ -87,6 +102,12 @@ export default function MyNumbers() {
         setOrgId(agentData.organization_id);
         setAgentPhone(agentData.cell_phone);
         fetchNumbers(agentData.organization_id);
+        // Load org's current plan
+        const { data: orgData } = await supabase.from('organizations').select('subscription_plan').eq('id', agentData.organization_id).single();
+        if (orgData?.subscription_plan && plansData) {
+          const orgPlan = plansData.find(p => p.id === orgData.subscription_plan);
+          if (orgPlan) setSelectedPlan(orgPlan);
+        }
       } else {
         setLoading(false);
       }
@@ -117,7 +138,7 @@ export default function MyNumbers() {
   }
 
   async function handlePurchase() {
-    if (!selectedNumber || !orgId) return;
+    if (!selectedNumber || !orgId || !selectedPlan) return;
 
     // Send request to live provisioning API
     try {
@@ -130,6 +151,9 @@ export default function MyNumbers() {
       const data = await res.json();
       
       if (res.ok && data.success && data.number) {
+        // Save the selected plan to the organization
+        await supabase.from('organizations').update({ subscription_plan: selectedPlan.id }).eq('id', orgId);
+        
         setNumbers([data.number, ...numbers]);
         setSelectedNumber(null);
         setSearchResults([]);
@@ -351,16 +375,46 @@ export default function MyNumbers() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Monthly Recurring Fee:</span>
-                    <span className="text-white">${rates.monthly}</span>
+                    <span className="text-white">$5</span>
                   </div>
+                  
+                  {/* Plan Selector */}
+                  <div className="pt-2 border-t border-white/10">
+                    <label className="block text-sm font-medium text-slate-400 mb-2">Usage Plan:</label>
+                    <select
+                      className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                      value={selectedPlan?.id || ''}
+                      onChange={(e) => {
+                        const plan = plans.find(p => p.id === e.target.value);
+                        setSelectedPlan(plan || null);
+                      }}
+                    >
+                      <option value="">Select a plan...</option>
+                      {plans.map(plan => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} — ${plan.overage_rate}/min {plan.included_minutes > 0 ? `(${plan.included_minutes} mins included)` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Per-Minute Usage Rate:</span>
-                    <span className="text-white">${rates.perMinute}/min</span>
+                    <span className="text-white font-medium">
+                      {selectedPlan ? `$${selectedPlan.overage_rate}/min` : '—'}
+                    </span>
                   </div>
+                  {selectedPlan && selectedPlan.included_minutes > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Included Minutes:</span>
+                      <span className="text-emerald-400 font-medium">{selectedPlan.included_minutes} mins</span>
+                    </div>
+                  )}
                 </div>
                 <button 
                   onClick={handlePurchase}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
+                  disabled={!selectedPlan}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
                 >
                   Confirm & Buy Number
                 </button>
