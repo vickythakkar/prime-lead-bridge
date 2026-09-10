@@ -392,7 +392,7 @@ export default function MyNumbers() {
                       <option value="">Select a plan...</option>
                       {plans.map(plan => (
                         <option key={plan.id} value={plan.id}>
-                          {plan.name} — ${plan.overage_rate}/min {plan.included_minutes > 0 ? `(${plan.included_minutes} mins included)` : ''}
+                          {plan.name} — ${plan.base_price}/mo — ${plan.overage_rate}/min {plan.included_minutes > 0 ? `(${plan.included_minutes} mins included)` : ''}
                         </option>
                       ))}
                     </select>
