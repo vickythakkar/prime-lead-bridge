@@ -130,7 +130,7 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
             <div className="bg-slate-950/50 rounded-xl border border-slate-700 p-2 sm:p-4 overflow-x-auto">
               <div className="min-w-[600px]">
                 <IVRFlowBuilder 
-                  flow={config.flow || {}} 
+                  value={config.flow || {}} 
                   onChange={(newFlow) => setConfig({ ...config, flow: newFlow })}
                   teammates={teammates}
                 />
