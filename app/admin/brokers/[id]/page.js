@@ -339,34 +339,6 @@ export default function OrganizationDetailsPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10">
-                <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider">IVR & Routing</h3>
-                
-                <div className="space-y-4">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.play_ivr_greeting} onChange={e => setSettings({...settings, play_ivr_greeting: e.target.checked})} />
-                    <span className="text-white font-medium">Play IVR Greeting Menu</span>
-                  </label>
-
-                  {settings.play_ivr_greeting && (
-                    <div className="pl-8">
-                      <label className="block text-sm font-medium text-slate-400 mb-2">Custom Greeting Text (Optional)</label>
-                      <textarea className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 h-24" value={settings.ivr_greeting} onChange={e => setSettings({...settings, ivr_greeting: e.target.value})} placeholder="E.g. Thank you for calling Homelystic..."></textarea>
-                    </div>
-                  )}
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.receive_office_calls} onChange={e => setSettings({...settings, receive_office_calls: e.target.checked})} />
-                    <span className="text-white font-medium">Route 'Press 1' directly to Web Dialer (Office)</span>
-                  </label>
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.enable_listing_lookup} onChange={e => setSettings({...settings, enable_listing_lookup: e.target.checked})} />
-                    <span className="text-white font-medium">Enable Property Lookup (Press 2)</span>
-                  </label>
-                </div>
-              </div>
-
               {/* Email Notifications */}
               <div className="pt-4 border-t border-white/10">
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Email Notifications</h3>
