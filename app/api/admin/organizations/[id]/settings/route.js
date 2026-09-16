@@ -30,8 +30,13 @@ export async function POST(request, { params }) {
       }
     }
 
+    // Add pending discount fields
+    if (updates.pending_discount_type !== undefined) safeUpdates.pending_discount_type = updates.pending_discount_type;
+    if (updates.pending_discount_amount !== undefined) safeUpdates.pending_discount_amount = parseFloat(updates.pending_discount_amount || 0);
+
     // Handle missing columns by stuffing them into ivr_flow_config JSONB
-    if (updates.service_active !== undefined || updates.rate_per_minute !== undefined) {
+    const emailTogglesPresent = updates.email_voicemail !== undefined || updates.email_missed_call !== undefined || updates.email_invoice !== undefined || updates.email_follow_up_reminder !== undefined;
+    if (updates.service_active !== undefined || updates.rate_per_minute !== undefined || emailTogglesPresent) {
       const { data: existingOrg } = await supabaseAdmin
         .from('organizations')
         .select('ivr_flow_config')
@@ -41,6 +46,14 @@ export async function POST(request, { params }) {
       const newConfig = existingOrg?.ivr_flow_config || {};
       if (updates.service_active !== undefined) newConfig.service_active = updates.service_active;
       if (updates.rate_per_minute !== undefined) newConfig.rate_per_minute = updates.rate_per_minute;
+      
+      if (emailTogglesPresent) {
+        newConfig.email_preferences = newConfig.email_preferences || {};
+        if (updates.email_voicemail !== undefined) newConfig.email_preferences.voicemail = !!updates.email_voicemail;
+        if (updates.email_missed_call !== undefined) newConfig.email_preferences.missed_call = !!updates.email_missed_call;
+        if (updates.email_invoice !== undefined) newConfig.email_preferences.invoice = !!updates.email_invoice;
+        if (updates.email_follow_up_reminder !== undefined) newConfig.email_preferences.follow_up = !!updates.email_follow_up_reminder;
+      }
       
       safeUpdates.ivr_flow_config = newConfig;
     }

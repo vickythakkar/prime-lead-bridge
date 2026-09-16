@@ -98,9 +98,14 @@ export async function POST(request) {
       pending_discount_amount: pending_discount_amount ? parseFloat(pending_discount_amount) : 0,
     };
 
-    // Add billing overrides if provided - store in ivr_flow_config since columns don't exist yet
-    const ivrFlowConfig = {};
+    // Add billing overrides and email toggles to ivr_flow_config
+    const ivrFlowConfig = { email_preferences: {} };
     if (rate_per_minute) ivrFlowConfig.rate_per_minute = parseFloat(rate_per_minute);
+    
+    if (body.email_voicemail !== undefined) ivrFlowConfig.email_preferences.voicemail = !!body.email_voicemail;
+    if (body.email_missed_call !== undefined) ivrFlowConfig.email_preferences.missed_call = !!body.email_missed_call;
+    if (body.email_invoice !== undefined) ivrFlowConfig.email_preferences.invoice = !!body.email_invoice;
+    if (body.email_follow_up_reminder !== undefined) ivrFlowConfig.email_preferences.follow_up = !!body.email_follow_up_reminder;
     
     if (Object.keys(ivrFlowConfig).length > 0) {
       insertData.ivr_flow_config = ivrFlowConfig;

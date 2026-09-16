@@ -166,7 +166,7 @@ export async function POST(request) {
     // ONLY insert voicemail on the 'completed' webhook for recordings to prevent duplicates
     const recordingStatus = formData.get('RecordingStatus');
     if (finalRecordingUrl && (isVoicemail || recordingSource === 'RecordVerb')) {
-      if (!recordingStatus || recordingStatus === 'completed') {
+      if (recordingStatus === 'completed') {
         const { data: existingVm } = await supabaseAdmin.from('voicemails').select('id').eq('recording_url', finalRecordingUrl).maybeSingle();
         
         if (!existingVm) {
@@ -184,16 +184,18 @@ export async function POST(request) {
       try {
         const { data: orgInfo } = await supabaseAdmin
           .from('organizations')
-          .select('notify_email, contact_email')
+          .select('notify_email, contact_email, ivr_flow_config')
           .eq('id', orgId)
           .single();
           
         const recipientEmail = orgInfo?.notify_email || orgInfo?.contact_email;
-        if (recipientEmail) {
+        const emailEnabled = orgInfo?.ivr_flow_config?.email_preferences?.voicemail ?? true;
+        
+        if (recipientEmail && emailEnabled) {
           await sendEmail({
             to: recipientEmail,
             subject: 'New Voicemail Received - Prime Lead Bridge',
-            html: getVoicemailEmailHtml(finalFrom, dialCallDuration ? parseInt(dialCallDuration, 10) : 0, finalRecordingUrl)
+            html: getVoicemailEmailHtml(finalFrom, vmDuration, finalRecordingUrl)
           });
         }
       } catch (emailErr) {
@@ -215,12 +217,14 @@ export async function POST(request) {
       try {
         const { data: orgInfo } = await supabaseAdmin
           .from('organizations')
-          .select('notify_email, contact_email')
+          .select('notify_email, contact_email, ivr_flow_config')
           .eq('id', orgId)
           .single();
           
         const recipientEmail = orgInfo?.notify_email || orgInfo?.contact_email;
-        if (recipientEmail) {
+        const emailEnabled = orgInfo?.ivr_flow_config?.email_preferences?.missed_call ?? true;
+        
+        if (recipientEmail && emailEnabled) {
           await sendEmail({
             to: recipientEmail,
             subject: `Missed call from ${finalFrom}`,

@@ -90,7 +90,8 @@ export async function PATCH(request, { params }) {
     if (body.pending_discount_amount !== undefined) updateData.pending_discount_amount = parseFloat(body.pending_discount_amount || 0);
 
     // Merge ivr_flow_config updates
-    if (body.rate_per_minute !== undefined || body.overage_multiplier !== undefined || body.payment_window_days !== undefined) {
+    const emailTogglesPresent = body.email_voicemail !== undefined || body.email_missed_call !== undefined || body.email_invoice !== undefined || body.email_follow_up_reminder !== undefined;
+    if (body.rate_per_minute !== undefined || body.overage_multiplier !== undefined || body.payment_window_days !== undefined || emailTogglesPresent) {
       // First fetch existing config
       const { data: existingOrg } = await supabaseAdmin.from('organizations').select('ivr_flow_config').eq('id', id).single();
       const newConfig = { ...(existingOrg?.ivr_flow_config || {}) };
@@ -99,6 +100,14 @@ export async function PATCH(request, { params }) {
       if (body.overage_multiplier !== undefined) newConfig.overage_multiplier = parseFloat(body.overage_multiplier) || null;
       if (body.payment_window_days !== undefined) newConfig.payment_window_days = parseFloat(body.payment_window_days) || null;
       
+      if (emailTogglesPresent) {
+        newConfig.email_preferences = newConfig.email_preferences || {};
+        if (body.email_voicemail !== undefined) newConfig.email_preferences.voicemail = !!body.email_voicemail;
+        if (body.email_missed_call !== undefined) newConfig.email_preferences.missed_call = !!body.email_missed_call;
+        if (body.email_invoice !== undefined) newConfig.email_preferences.invoice = !!body.email_invoice;
+        if (body.email_follow_up_reminder !== undefined) newConfig.email_preferences.follow_up = !!body.email_follow_up_reminder;
+      }
+
       updateData.ivr_flow_config = newConfig;
     }
 

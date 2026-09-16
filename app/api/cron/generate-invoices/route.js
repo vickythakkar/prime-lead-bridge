@@ -200,7 +200,8 @@ export async function GET(request) {
         // Send Invoice Email to Broker
         if (sendEmail && getInvoiceEmailHtml && totalAmount > 0) {
           const brokerEmail = org.notify_email || org.contact_email;
-          if (brokerEmail) {
+          const emailEnabled = org.ivr_flow_config?.email_preferences?.invoice ?? true;
+          if (brokerEmail && emailEnabled) {
             const planName = planObj ? planObj.name.toUpperCase() : (planId === 'pay_as_you_go' ? 'PAY AS YOU GO' : planId.toUpperCase());
             const monthStr = prevMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
             await sendEmail({

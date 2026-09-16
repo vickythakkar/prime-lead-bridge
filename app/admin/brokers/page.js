@@ -10,7 +10,7 @@ export default function AllClientsPage() {
   const [editingOrg, setEditingOrg] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const initial = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', subscription_plan: 'pay_as_you_go', notify_email: '', rate_per_minute: '', overage_multiplier: '', payment_window_days: '', pending_discount_type: 'fixed', pending_discount_amount: '' };
+  const initial = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', subscription_plan: 'pay_as_you_go', notify_email: '', rate_per_minute: '', overage_multiplier: '', payment_window_days: '', pending_discount_type: 'fixed', pending_discount_amount: '', email_voicemail: true, email_missed_call: true, email_invoice: true, email_follow_up_reminder: true };
   const [form, setForm] = useState(initial);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
@@ -68,7 +68,11 @@ export default function AllClientsPage() {
       overage_multiplier: org.overage_multiplier || '',
       payment_window_days: org.payment_window_days || '',
       pending_discount_type: org.pending_discount_type || 'fixed',
-      pending_discount_amount: org.pending_discount_amount || ''
+      pending_discount_amount: org.pending_discount_amount || '',
+      email_voicemail: org.ivr_flow_config?.email_preferences?.voicemail ?? true,
+      email_missed_call: org.ivr_flow_config?.email_preferences?.missed_call ?? true,
+      email_invoice: org.ivr_flow_config?.email_preferences?.invoice ?? true,
+      email_follow_up_reminder: org.ivr_flow_config?.email_preferences?.follow_up ?? true
     });
     setShowModal(true);
   }
@@ -311,6 +315,29 @@ export default function AllClientsPage() {
                     <label className="block text-xs font-medium text-slate-400 mb-1">Amount</label>
                     <input type="number" step="0.01" min="0" placeholder="0.00" className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" value={form.pending_discount_amount} onChange={e => setForm({ ...form, pending_discount_amount: e.target.value })} />
                   </div>
+                </div>
+              </div>
+
+              {/* Email Notifications */}
+              <div className="border-t border-white/10 pt-5 mt-5">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Email Notifications</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3">
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-950/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-900" checked={form.email_voicemail} onChange={e => setForm({ ...form, email_voicemail: e.target.checked })} />
+                    <span className="text-sm text-slate-300">🎙️ Voicemail Notifications</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-950/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-900" checked={form.email_missed_call} onChange={e => setForm({ ...form, email_missed_call: e.target.checked })} />
+                    <span className="text-sm text-slate-300">📞 Missed Call Notifications</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-950/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-900" checked={form.email_invoice} onChange={e => setForm({ ...form, email_invoice: e.target.checked })} />
+                    <span className="text-sm text-slate-300">📄 Monthly Invoices</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-950/50 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-900" checked={form.email_follow_up_reminder} onChange={e => setForm({ ...form, email_follow_up_reminder: e.target.checked })} />
+                    <span className="text-sm text-slate-300">✅ Follow-up Reminders</span>
+                  </label>
                 </div>
               </div>
 

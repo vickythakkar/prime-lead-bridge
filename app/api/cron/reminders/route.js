@@ -20,7 +20,7 @@ export async function GET(request) {
     
     const { data: dueTasks, error } = await supabaseAdmin
       .from('tasks')
-      .select('*, organizations(id, name, contact_email)')
+      .select('*, organizations(id, name, contact_email, ivr_flow_config)')
       .eq('status', 'pending')
       .lte('due_date', endOfTodayUTC.toISOString());
 
@@ -57,7 +57,8 @@ export async function GET(request) {
       }
 
       // 3B. Send Email Summary
-      if (org && org.contact_email) {
+      const emailEnabled = org?.ivr_flow_config?.email_preferences?.follow_up ?? true;
+      if (org && org.contact_email && emailEnabled) {
         const html = getTasksReminderEmailHtml(org.name, tasks);
         await sendEmail({
           to: [org.contact_email],

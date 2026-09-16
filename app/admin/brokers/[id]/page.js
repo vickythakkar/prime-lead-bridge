@@ -58,7 +58,11 @@ export default function OrganizationDetailsPage() {
           service_active: json.organization.ivr_flow_config?.service_active !== false,
           rate_per_minute: json.organization.ivr_flow_config?.rate_per_minute || '',
           pending_discount_type: json.organization.pending_discount_type || 'fixed',
-          pending_discount_amount: json.organization.pending_discount_amount || ''
+          pending_discount_amount: json.organization.pending_discount_amount || '',
+          email_voicemail: json.organization.ivr_flow_config?.email_preferences?.voicemail ?? true,
+          email_missed_call: json.organization.ivr_flow_config?.email_preferences?.missed_call ?? true,
+          email_invoice: json.organization.ivr_flow_config?.email_preferences?.invoice ?? true,
+          email_follow_up_reminder: json.organization.ivr_flow_config?.email_preferences?.follow_up ?? true
         });
       } else {
         alert('Failed to load organization');
@@ -359,6 +363,29 @@ export default function OrganizationDetailsPage() {
                   <label className="flex items-center space-x-3 cursor-pointer">
                     <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.enable_listing_lookup} onChange={e => setSettings({...settings, enable_listing_lookup: e.target.checked})} />
                     <span className="text-white font-medium">Enable Property Lookup (Press 2)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Email Notifications */}
+              <div className="pt-4 border-t border-white/10">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Email Notifications</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.email_voicemail} onChange={e => setSettings({...settings, email_voicemail: e.target.checked})} />
+                    <span className="text-white font-medium">🎙️ Voicemail Notifications</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.email_missed_call} onChange={e => setSettings({...settings, email_missed_call: e.target.checked})} />
+                    <span className="text-white font-medium">📞 Missed Call Notifications</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.email_invoice} onChange={e => setSettings({...settings, email_invoice: e.target.checked})} />
+                    <span className="text-white font-medium">📄 Monthly Invoices</span>
+                  </label>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-500 rounded border-white/20 bg-slate-900" checked={settings.email_follow_up_reminder} onChange={e => setSettings({...settings, email_follow_up_reminder: e.target.checked})} />
+                    <span className="text-white font-medium">✅ Follow-up Reminders</span>
                   </label>
                 </div>
               </div>
