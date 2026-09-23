@@ -73,8 +73,17 @@ export default function DashboardOverview() {
         estimatedInvoice = baseCost + overageCost;
       }
 
+      // Today's new leads
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0); // Start of today in UTC
+      const { count: todayLeadsCount } = await supabase.from('leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', oId)
+        .gte('created_at', todayStart.toISOString());
+
       setStats({
         totalLeads: leadsCount || 0,
+        todayLeads: todayLeadsCount || 0,
         activeProperties: propsCount || 0,
         activeNumbers: numsCount || 0,
         potentialInvoice: estimatedInvoice,
@@ -127,7 +136,12 @@ export default function DashboardOverview() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <StatsCard title="Total Leads" value={stats.totalLeads} trend="3 new today" trendUp={true} />
+            <StatsCard 
+              title="Total Leads" 
+              value={stats.totalLeads} 
+              trend={stats.todayLeads > 0 ? `${stats.todayLeads} new today` : undefined} 
+              trendUp={stats.todayLeads > 0} 
+            />
             <StatsCard title="Active Properties" value={stats.activeProperties} />
             <StatsCard title="Active Numbers" value={stats.activeNumbers} />
             <StatsCard title="Minutes Used" value={stats.planLimit === 0 ? `${stats.minutesUsed}` : `${stats.minutesUsed}/${stats.planLimit}`} />
