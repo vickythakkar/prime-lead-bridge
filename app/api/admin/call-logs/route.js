@@ -11,7 +11,7 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from('call_logs')
-      .select('*, organizations(name, company_name), contacts(name)')
+      .select('id, created_at, from_number, to_number, direction, status, duration, recording_url, seen, organizations(name, company_name), contacts(name)')
       .order('created_at', { ascending: false })
       .limit(200);
 

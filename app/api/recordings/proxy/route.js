@@ -30,7 +30,8 @@ export async function GET(request) {
         return new Response(buffer, {
           headers: {
             'Content-Type': response.headers.get('Content-Type') || 'audio/x-wav',
-            'Content-Disposition': 'inline'
+            'Content-Disposition': 'inline',
+            'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
           }
         });
       } else {
@@ -40,7 +41,8 @@ export async function GET(request) {
         return new Response(buffer, {
           headers: {
             'Content-Type': response.headers.get('Content-Type') || 'audio/mpeg',
-            'Content-Disposition': 'inline'
+            'Content-Disposition': 'inline',
+            'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
           }
         });
       }
@@ -62,7 +64,8 @@ export async function GET(request) {
       return new Response(buffer, {
         headers: {
           'Content-Type': 'audio/webm', // Client recordings are usually webm
-          'Content-Disposition': 'inline'
+          'Content-Disposition': 'inline',
+          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
         }
       });
     }

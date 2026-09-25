@@ -48,6 +48,7 @@ export async function GET(request) {
           'Accept-Ranges': 'bytes',
           'Content-Length': chunksize.toString(),
           'Content-Type': 'audio/mpeg',
+          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
         },
       });
     }
@@ -59,6 +60,7 @@ export async function GET(request) {
         'Accept-Ranges': 'bytes',
         'Content-Length': totalSize.toString(),
         'Content-Type': 'audio/mpeg',
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
       },
     });
 

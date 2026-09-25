@@ -10,9 +10,10 @@ export async function GET(request) {
     
     let query = supabaseAdmin
       .from('contacts')
-      .select('*, organizations(company_name, name)')
+      .select('id, name, phone, email, company, notes, created_at, organization_id, organizations(company_name, name)')
       .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
       
     if (orgId) {
       query = query.eq('organization_id', orgId);

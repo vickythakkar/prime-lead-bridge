@@ -26,11 +26,12 @@ export async function GET(request) {
     const { data, error } = await supabaseAdmin
       .from('voicemails')
       .select(`
-        *,
-        contact:contacts(*)
+        id, from_number, to_number, duration, recording_url, created_at, listened,
+        contact:contacts(id, name, phone, email, company)
       `)
       .eq('organization_id', orgId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) throw error;
 

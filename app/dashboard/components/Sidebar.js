@@ -43,8 +43,8 @@ export default function Sidebar() {
         };
 
         fetchCounts();
-        // Poll every 30 seconds
-        const interval = setInterval(fetchCounts, 30000);
+        // Poll every 120 seconds
+        const interval = setInterval(fetchCounts, 120000);
         return () => clearInterval(interval);
       }
     }

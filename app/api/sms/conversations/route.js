@@ -32,8 +32,9 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from('messages')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, from_number, to_number, body, direction, is_read, created_at, organization_id')
+      .order('created_at', { ascending: false })
+      .limit(500);
       
     if (!isAdmin && orgId) {
       query = query.eq('organization_id', orgId);

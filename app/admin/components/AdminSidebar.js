@@ -35,7 +35,7 @@ export default function AdminSidebar() {
     };
 
     fetchAdminCounts();
-    const interval = setInterval(fetchAdminCounts, 30000);
+    const interval = setInterval(fetchAdminCounts, 120000); // 2 minutes
     return () => clearInterval(interval);
   }, [pathname]);
 
