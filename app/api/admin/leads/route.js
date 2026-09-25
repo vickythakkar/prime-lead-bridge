@@ -11,7 +11,7 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from('leads')
-      .select('id, name, phone, email, notes, status, created_at, organization_id, properties(address, organization_id), organizations(name, company_name)')
+      .select('*, properties(*), organizations(*)')
       .order('created_at', { ascending: false })
       .limit(200);
 

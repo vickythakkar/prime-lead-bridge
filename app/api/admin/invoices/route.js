@@ -14,7 +14,7 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from('invoices')
-      .select('id, amount, status, created_at, total_amount, subtotal, discount_amount, due_date, organizations(name, company_name)')
+      .select('*, organizations(*)')
       .order('created_at', { ascending: false })
       .limit(200);
 

@@ -26,8 +26,8 @@ export async function GET(request) {
     const { data, error } = await supabaseAdmin
       .from('voicemails')
       .select(`
-        id, from_number, to_number, duration, recording_url, created_at, listened,
-        contact:contacts(id, name, phone, email, company)
+        *,
+        contact:contacts(*)
       `)
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })

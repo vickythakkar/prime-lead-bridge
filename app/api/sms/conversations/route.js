@@ -32,7 +32,7 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from('messages')
-      .select('id, from_number, to_number, body, direction, is_read, created_at, organization_id')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
       
