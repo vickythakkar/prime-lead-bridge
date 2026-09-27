@@ -213,7 +213,7 @@ export async function POST(request) {
       sendPushToAdmin({ ...vmPush, url: '/admin/voicemails' }).catch(() => {});
     }
     }
-    } else if ((mappedStatus === 'missed' || isVoicemail) && callStatus === 'completed' && !finalRecordingUrl && !recordingStatus) {
+    } else if ((mappedStatus === 'missed' || isVoicemail) && ['completed', 'no-answer', 'canceled', 'busy', 'failed'].includes(callStatus) && !finalRecordingUrl && !recordingStatus) {
       try {
         const { data: orgInfo } = await supabaseAdmin
           .from('organizations')
