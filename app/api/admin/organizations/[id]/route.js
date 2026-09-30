@@ -58,12 +58,74 @@ export async function GET(request, { params }) {
       .eq('organization_id', id)
       .order('created_at', { ascending: false });
 
+    // Calculate current month estimated bill
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+    const { data: currentMonthCalls } = await supabaseAdmin
+      .from('call_logs')
+      .select('duration')
+      .eq('organization_id', id)
+      .gte('created_at', startOfMonth);
+      
+    const totalSeconds = currentMonthCalls ? currentMonthCalls.reduce((acc, call) => acc + (call.duration || 0), 0) : 0;
+    const totalMinutes = Math.ceil(totalSeconds / 60);
+
+    const { data: adminSettings } = await supabaseAdmin.from('admin_settings').select('*').eq('id', 1).maybeSingle();
+    const { data: plans } = await supabaseAdmin.from('subscription_plans').select('*');
+
+    const activePlanId = org.subscription_plan || 'pay_as_you_go';
+    const currentPlan = (plans || []).find(p => p.id === activePlanId) || {
+      name: 'Pay As You Go',
+      base_price: 5,
+      included_minutes: 0,
+      overage_rate: adminSettings?.broker_per_minute_charge || 0.05
+    };
+
+    const planRate = currentPlan.overage_rate;
+    const customRateStr = org.ivr_flow_config?.rate_per_minute;
+    const customRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== '' ? parseFloat(customRateStr) : null;
+    let displayRate = planRate;
+    if (customRate !== null) {
+      displayRate = customRate < planRate ? planRate : customRate;
+    }
+
+    const overageMinutes = Math.max(0, totalMinutes - currentPlan.included_minutes);
+    const estimatedOverageCost = overageMinutes * displayRate;
+    
+    let rateDiscountAmount = 0;
+    if (customRate !== null && customRate < planRate) {
+      rateDiscountAmount = estimatedOverageCost - (overageMinutes * customRate);
+    }
+    const subtotal = currentPlan.base_price + estimatedOverageCost;
+
+    let userDiscount = 0;
+    if (org.pending_discount_amount && parseFloat(org.pending_discount_amount) > 0) {
+      const discountVal = parseFloat(org.pending_discount_amount);
+      if (org.pending_discount_type === 'percentage') {
+        userDiscount = (subtotal * discountVal) / 100;
+      } else {
+        userDiscount = discountVal;
+      }
+    }
+    const totalEstimatedBill = Math.max(0, subtotal - (rateDiscountAmount + userDiscount));
+
+    const estimatedInvoice = {
+      id: 'estimated-current',
+      invoice_number: 'Estimated',
+      created_at: new Date().toISOString(),
+      month_year: `${new Date().toLocaleDateString()} (Current)`,
+      total_amount: totalEstimatedBill,
+      status: 'pending'
+    };
+
+    const allInvoices = [estimatedInvoice, ...(invoices || [])];
+
     return Response.json({
       organization: org,
       numbers: numbers || [],
       agents: agents || [],
       callLogs: callLogsWithUrls,
-      invoices: invoices || []
+      invoices: allInvoices
     });
   } catch (err) {
     console.error('Error fetching org details:', err);

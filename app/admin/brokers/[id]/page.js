@@ -389,7 +389,7 @@ export default function OrganizationDetailsPage() {
                 <tbody className="divide-y divide-white/5">
                   {(data.invoices || []).map(inv => (
                     <tr key={inv.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 font-mono text-xs text-indigo-300 font-medium">{inv.id.slice(0, 8).toUpperCase()}</td>
+                      <td className="px-6 py-4 font-mono text-xs text-indigo-300 font-medium">{inv.invoice_number || inv.id?.slice(0, 8).toUpperCase()}</td>
                       <td className="px-6 py-4 text-slate-300 text-sm">{inv.month_year || `${inv.billing_period_start || '—'}`}</td>
                       <td className="px-6 py-4 text-right text-sm font-medium text-white">
                         ${parseFloat(inv.total_amount || 0).toFixed(2)}
