@@ -15,15 +15,24 @@ export default function ForgotPassword() {
     setError(null);
     setMessage('');
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setMessage('Password reset instructions sent to your email.');
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setError(data.error || 'Failed to send reset email.');
+      } else {
+        setMessage('Password reset instructions sent to your email.');
+      }
+    } catch (err) {
+      setError('A network error occurred. Please try again.');
     }
+
     setLoading(false);
   };
 
@@ -74,3 +83,4 @@ export default function ForgotPassword() {
     </div>
   );
 }
+
