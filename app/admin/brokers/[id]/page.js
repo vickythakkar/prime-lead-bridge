@@ -264,7 +264,7 @@ export default function OrganizationDetailsPage() {
                 </div>
 
                 {availableNumbers.length > 0 && (
-                  <div className="space-y-2 mt-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-2 mt-4 pr-2">
                     {availableNumbers.map(n => (
                       <div key={n.phoneNumber} className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-slate-800/50">
                         <div>
@@ -429,7 +429,7 @@ export default function OrganizationDetailsPage() {
             <div className="px-6 py-5 border-b border-white/10 bg-white/[0.02]">
               <h2 className="text-lg font-semibold text-white">Agents</h2>
             </div>
-            <div className="p-0 max-h-80 overflow-y-auto custom-scrollbar divide-y divide-white/5">
+            <div className="p-0 divide-y divide-white/5">
               {data.agents.map(agent => (
                 <div key={agent.id} className="p-4 hover:bg-white/[0.02] transition-colors flex justify-between items-center">
                   <div>
@@ -449,7 +449,7 @@ export default function OrganizationDetailsPage() {
             <div className="px-6 py-5 border-b border-white/10 bg-white/[0.02]">
               <h2 className="text-lg font-semibold text-white">Recent Call Logs</h2>
             </div>
-            <div className="p-0 max-h-[500px] overflow-y-auto custom-scrollbar divide-y divide-white/5">
+            <div className="p-0 divide-y divide-white/5">
               {data.callLogs.map(log => (
                 <div key={log.id} className="p-4 hover:bg-white/[0.02] transition-colors">
                   <div className="flex justify-between items-start mb-1">

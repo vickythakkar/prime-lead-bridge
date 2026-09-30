@@ -108,7 +108,7 @@ export async function GET(request) {
     });
 
     // Load Admin Rates
-    const { data: adminData } = await supabaseAdmin.from('admin_settings').select('*').eq('id', 1).single();
+    const { data: adminData } = await supabaseAdmin.from('admin_settings').select('*').eq('id', 1).maybeSingle();
     const { data: plansData } = await supabaseAdmin.from('subscription_plans').select('*');
 
     let currentRevenueAmount = 0;
