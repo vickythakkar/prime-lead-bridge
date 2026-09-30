@@ -3,7 +3,22 @@ import twilio from 'twilio';
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
 export async function POST(request) {
+  const signature = request.headers.get('x-twilio-signature');
+  const url = request.url;
   const formData = await request.formData();
+  
+  const params = Object.fromEntries(formData.entries());
+  if (process.env.NODE_ENV === 'production') {
+    const isValid = twilio.validateRequest(
+      process.env.TWILIO_AUTH_TOKEN,
+      signature,
+      url,
+      params
+    );
+    if (!isValid) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+  }
   
   function formatE164(number) {
     if (!number) return '';

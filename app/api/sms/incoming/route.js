@@ -6,7 +6,24 @@ const MessagingResponse = twilio.twiml.MessagingResponse;
 
 export async function POST(request) {
   try {
+    const signature = request.headers.get('x-twilio-signature');
+    const url = request.url;
     const formData = await request.formData();
+    
+    // Validate Twilio Signature
+    const params = Object.fromEntries(formData.entries());
+    if (process.env.NODE_ENV === 'production') {
+      const isValid = twilio.validateRequest(
+        process.env.TWILIO_AUTH_TOKEN,
+        signature,
+        url,
+        params
+      );
+      if (!isValid) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+    }
+
     const from = formData.get('From');
     const to = formData.get('To');
     const body = formData.get('Body');

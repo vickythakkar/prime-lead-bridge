@@ -144,7 +144,7 @@ export default function BillingDashboard() {
   const handleDownloadInvoice = async () => {
     // Fetch call logs for the current billing cycle
     const now = new Date();
-    const cycleStart = org.billing_cycle_start ? new Date(org.billing_cycle_start) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const cycleStart = org.billing_cycle_start ? new Date(org.billing_cycle_start) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     
     const { data: callLogs } = await supabase
       .from('call_logs')
@@ -363,3 +363,4 @@ export default function BillingDashboard() {
     </div>
   );
 }
+
