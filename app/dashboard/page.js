@@ -29,8 +29,8 @@ export default function DashboardOverview() {
       const oId = agentData.organization_id;
 
       // Org & Billing
-      const { data: orgData } = await supabase.from('organizations').select('*').eq('id', oId).single();
-      const { data: adminData } = await supabase.from('admin_settings').select('*').eq('id', 1).single();
+      const { data: orgData } = await supabase.from('organizations').select('*').eq('id', oId).maybeSingle();
+      const { data: adminData } = await supabase.from('admin_settings').select('*').eq('id', 1).maybeSingle();
       const { data: plansData } = await supabase.from('subscription_plans').select('*');
       
       // Data counts
@@ -50,13 +50,13 @@ export default function DashboardOverview() {
       let planName = 'Pay As You Go';
       let planLimit = 0;
 
-      if (orgData && adminData && plansData) {
+      if (orgData) {
         const activePlanId = orgData.subscription_plan || 'pay_as_you_go';
-        const currentPlan = plansData.find(p => p.id === activePlanId) || {
+        const currentPlan = (plansData || []).find(p => p.id === activePlanId) || {
           name: 'Pay As You Go',
           base_price: 5,
           included_minutes: 0,
-          overage_rate: adminData.broker_per_minute_charge
+          overage_rate: adminData?.broker_per_minute_charge || 0.05
         };
 
         planName = currentPlan.name;

@@ -62,7 +62,7 @@ export async function POST(request) {
       twilioAccountSid,
       twilioApiKey,
       twilioApiSecret,
-      { identity: identity, ttl: 86400 }
+      { identity: identity, ttl: 43200 } // 12 hours to avoid boundary rejections
     );
 
     const voiceGrant = new VoiceGrant({
