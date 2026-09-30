@@ -1,12 +1,30 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import twilio from 'twilio';
 
 export async function POST(request) {
   try {
+    const signature = request.headers.get('x-twilio-signature');
+    const url = request.url;
     const formData = await request.formData();
     
+    // Validate Twilio Signature
+    const params = Object.fromEntries(formData.entries());
+    if (process.env.NODE_ENV === 'production') {
+      const isValid = twilio.validateRequest(
+        process.env.TWILIO_AUTH_TOKEN,
+        signature,
+        url,
+        params
+      );
+      if (!isValid) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+    }
+
     const callSid = formData.get('CallSid');
     const dialCallDuration = formData.get('DialCallDuration');
     const callDuration = formData.get('CallDuration'); // Fallback if DialCallDuration is missing
+
     
     // Use DialCallDuration (time connected to agent), fallback to CallDuration (total time in Twilio)
     const durationStr = dialCallDuration || callDuration;
@@ -62,7 +80,7 @@ export async function POST(request) {
           if (includedMins > 0) {
             // 4. Calculate total minutes used THIS MONTH (excluding this call)
             const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
             
             const { data: pastCalls } = await supabaseAdmin
               .from('call_logs')

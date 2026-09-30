@@ -33,7 +33,12 @@ export async function POST(request) {
       exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
     };
     
-    const token = Buffer.from(JSON.stringify(tokenPayload)).toString('base64');
+    const crypto = require('crypto');
+    const SECRET = process.env.JWT_SECRET || 'plb-admin-fallback-secret-key-32chars!!';
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const encodedPayload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+    const signature = crypto.createHmac('sha256', SECRET).update(`${header}.${encodedPayload}`).digest('base64url');
+    const token = `${header}.${encodedPayload}.${signature}`;
 
     return Response.json({ 
       token,

@@ -62,7 +62,7 @@ export async function POST(request) {
       twilioAccountSid,
       twilioApiKey,
       twilioApiSecret,
-      { identity: identity }
+      { identity: identity, ttl: 86400 }
     );
 
     const voiceGrant = new VoiceGrant({

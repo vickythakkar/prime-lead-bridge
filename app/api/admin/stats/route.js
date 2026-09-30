@@ -95,10 +95,10 @@ export async function GET(request) {
       orgBreakdown[call.organization_id].seconds += (call.duration || 0);
     });
 
-    // Get org names
+    // Get org names and ivr_flow_config
     const { data: orgs } = await supabaseAdmin
       .from('organizations')
-      .select('id, name, company_name, subscription_plan')
+      .select('id, name, company_name, subscription_plan, ivr_flow_config, pending_discount_amount, pending_discount_type')
       .neq('id', ADMIN_ORG_ID);
 
     const prevOrgBreakdown = {};
@@ -106,6 +106,10 @@ export async function GET(request) {
       if (!prevOrgBreakdown[call.organization_id]) prevOrgBreakdown[call.organization_id] = 0;
       prevOrgBreakdown[call.organization_id] += (call.duration || 0);
     });
+
+    // Load Admin Rates
+    const { data: adminData } = await supabaseAdmin.from('admin_settings').select('*').eq('id', 1).single();
+    const { data: plansData } = await supabaseAdmin.from('subscription_plans').select('*');
 
     let currentRevenueAmount = 0;
     let prevRevenueAmount = 0;
@@ -119,18 +123,64 @@ export async function GET(request) {
       let cost = 0;
       let prevCost = 0;
       
-      const plan = (org.subscription_plan || 'PAY_AS_YOU_GO').toUpperCase();
+      const activePlanId = org.subscription_plan || 'pay_as_you_go';
+      const currentPlan = (plansData || []).find(p => p.id === activePlanId) || {
+        name: 'Pay As You Go',
+        base_price: 5,
+        included_minutes: 0,
+        overage_rate: adminData?.broker_per_minute_charge || 0.05
+      };
+
+      const baseMonthlyCost = currentPlan.base_price;
+      const planRate = currentPlan.overage_rate;
+      const planLimit = currentPlan.included_minutes;
       
-      if (plan === 'PAY_AS_YOU_GO') {
-        cost = 5.00 + (mins * 0.05);
-        prevCost = 5.00 + (prevMins * 0.05);
-      } else if (plan === 'STARTER') {
-        cost = 49.00 + (mins > 500 ? (mins - 500) * 0.12 : 0);
-        prevCost = 49.00 + (prevMins > 500 ? (prevMins - 500) * 0.12 : 0);
-      } else if (plan === 'GROWTH') {
-        cost = 89.00 + (mins > 1000 ? (mins - 1000) * 0.10 : 0);
-        prevCost = 89.00 + (prevMins > 1000 ? (prevMins - 1000) * 0.10 : 0);
+      const customRateStr = org.ivr_flow_config?.rate_per_minute;
+      const customRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== ''
+        ? parseFloat(customRateStr)
+        : null;
+      
+      let displayRate = planRate;
+      let rateDiscountAmountCurrent = 0;
+      let rateDiscountAmountPrev = 0;
+
+      if (customRate !== null) {
+        if (customRate < planRate) {
+          displayRate = planRate;
+        } else {
+          displayRate = customRate;
+        }
       }
+
+      const overageMins = Math.max(0, mins - planLimit);
+      const prevOverageMins = Math.max(0, prevMins - planLimit);
+      
+      const estimatedOverageCost = overageMins * displayRate;
+      const prevEstimatedOverageCost = prevOverageMins * displayRate;
+      
+      if (customRate !== null && customRate < planRate) {
+        rateDiscountAmountCurrent = estimatedOverageCost - (overageMins * customRate);
+        rateDiscountAmountPrev = prevEstimatedOverageCost - (prevOverageMins * customRate);
+      }
+      
+      const subtotal = baseMonthlyCost + estimatedOverageCost;
+      const prevSubtotal = baseMonthlyCost + prevEstimatedOverageCost;
+      
+      let userDiscount = 0;
+      let prevUserDiscount = 0;
+      if (org.pending_discount_amount && parseFloat(org.pending_discount_amount) > 0) {
+        const discountVal = parseFloat(org.pending_discount_amount);
+        if (org.pending_discount_type === 'percentage') {
+          userDiscount = (subtotal * discountVal) / 100;
+          prevUserDiscount = (prevSubtotal * discountVal) / 100;
+        } else {
+          userDiscount = discountVal;
+          prevUserDiscount = discountVal;
+        }
+      }
+      
+      cost = Math.max(0, subtotal - (rateDiscountAmountCurrent + userDiscount));
+      prevCost = Math.max(0, prevSubtotal - (rateDiscountAmountPrev + prevUserDiscount));
       
       currentRevenueAmount += cost;
       prevRevenueAmount += prevCost;
@@ -141,7 +191,7 @@ export async function GET(request) {
         calls: orgBreakdown[org.id]?.calls || 0,
         minutes: mins,
         usage: mins,
-        status: plan,
+        status: currentPlan.name.toUpperCase(),
         estimatedCost: cost.toFixed(2),
       };
     });

@@ -29,8 +29,9 @@ export default function DashboardOverview() {
       const oId = agentData.organization_id;
 
       // Org & Billing
-      const { data: orgData } = await supabase.from('organizations').select('subscription_plan').eq('id', oId).single();
+      const { data: orgData } = await supabase.from('organizations').select('*').eq('id', oId).single();
       const { data: adminData } = await supabase.from('admin_settings').select('*').eq('id', 1).single();
+      const { data: plansData } = await supabase.from('subscription_plans').select('*');
       
       // Data counts
       const { count: leadsCount } = await supabase.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', oId);
@@ -49,28 +50,59 @@ export default function DashboardOverview() {
       let planName = 'Pay As You Go';
       let planLimit = 0;
 
-      if (orgData) {
-        const plan = orgData.subscription_plan || 'pay_as_you_go';
-        let baseCost = 5;
-        let includedMins = 0;
-        let overageRate = 0.05;
+      if (orgData && adminData && plansData) {
+        const activePlanId = orgData.subscription_plan || 'pay_as_you_go';
+        const currentPlan = plansData.find(p => p.id === activePlanId) || {
+          name: 'Pay As You Go',
+          base_price: 5,
+          included_minutes: 0,
+          overage_rate: adminData.broker_per_minute_charge
+        };
 
-        if (plan === 'starter') {
-          planName = 'Starter';
-          baseCost = 39;
-          includedMins = 500;
-          overageRate = 0.12;
-        } else if (plan === 'growth') {
-          planName = 'Growth';
-          baseCost = 79;
-          includedMins = 1000;
-          overageRate = 0.10;
+        planName = currentPlan.name;
+        planLimit = currentPlan.included_minutes;
+        
+        const baseMonthlyCost = currentPlan.base_price;
+        const planRate = currentPlan.overage_rate;
+
+        const customRateStr = orgData.ivr_flow_config?.rate_per_minute;
+        const customRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== ''
+          ? parseFloat(customRateStr)
+          : null;
+        
+        let displayRate = planRate;
+        let rateDiscountAmount = 0;
+
+        if (customRate !== null) {
+          if (customRate < planRate) {
+            displayRate = planRate;
+          } else {
+            displayRate = customRate;
+          }
         }
 
-        planLimit = includedMins;
-        const overageMins = Math.max(0, totalMinutes - includedMins);
-        const overageCost = overageMins * overageRate;
-        estimatedInvoice = baseCost + overageCost;
+        const overageMinutes = Math.max(0, totalMinutes - planLimit);
+        const estimatedOverageCost = overageMinutes * displayRate;
+        
+        if (customRate !== null && customRate < planRate) {
+          const actualCost = overageMinutes * customRate;
+          rateDiscountAmount = estimatedOverageCost - actualCost;
+        }
+        
+        const subtotal = baseMonthlyCost + estimatedOverageCost;
+        
+        let userDiscount = 0;
+        if (orgData.pending_discount_amount && parseFloat(orgData.pending_discount_amount) > 0) {
+          const discountVal = parseFloat(orgData.pending_discount_amount);
+          if (orgData.pending_discount_type === 'percentage') {
+            userDiscount = (subtotal * discountVal) / 100;
+          } else {
+            userDiscount = discountVal;
+          }
+        }
+        
+        const totalDiscount = rateDiscountAmount + userDiscount;
+        estimatedInvoice = Math.max(0, subtotal - totalDiscount);
       }
 
       // Today's new leads

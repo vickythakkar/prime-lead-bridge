@@ -22,8 +22,8 @@ export async function GET(request) {
     }
 
     // ── 2. Generate invoices for PREVIOUS month ────────────────
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of prev month
+    const prevMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    const prevMonthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)); // Last day of prev month
 
     const billingPeriodStart = prevMonthStart.toISOString().split('T')[0];
     const billingPeriodEnd = prevMonthEnd.toISOString().split('T')[0];
@@ -87,7 +87,7 @@ export async function GET(request) {
           .select('duration, cost_broker')
           .eq('organization_id', org.id)
           .gte('created_at', prevMonthStart.toISOString())
-          .lt('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
+          .lt('created_at', new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString());
 
         const totalCalls = (calls || []).length;
         const totalSeconds = (calls || []).reduce((sum, c) => sum + (c.duration || 0), 0);
