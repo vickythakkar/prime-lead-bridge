@@ -12,6 +12,12 @@ export default function AllClientsPage() {
 
   const initial = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', subscription_plan: 'pay_as_you_go', notify_email: '', rate_per_minute: '', overage_multiplier: '', payment_window_days: '', pending_discount_type: 'fixed', pending_discount_amount: '', email_voicemail: true, email_missed_call: true, email_invoice: true, email_follow_up_reminder: true };
   const [form, setForm] = useState(initial);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
@@ -94,6 +100,7 @@ export default function AllClientsPage() {
       setShowModal(false);
       setEditingOrg(null);
       setForm(initial);
+      showToast(editingOrg ? 'Organization updated successfully.' : 'Organization created successfully.');
     } catch (err) {
       alert('Error: ' + err.message);
     } finally {
@@ -349,6 +356,15 @@ export default function AllClientsPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3.5 rounded-full shadow-2xl border z-[9999] animate-in fade-in slide-in-from-bottom-5 ${toast.type === 'error' ? 'bg-red-500/90 border-red-500/20 text-white' : 'bg-emerald-500/90 border-emerald-500/20 text-white backdrop-blur-md'}`}>
+          <span className="font-semibold text-sm whitespace-nowrap">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100 ml-2">
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
+          </button>
         </div>
       )}
     </div>
