@@ -38,6 +38,20 @@ export default function ResetPassword() {
     if (error) {
       setError(error.message);
     } else {
+      // Get the current session to get the token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        // Trigger the security confirmation email
+        await fetch('/api/auth/confirm-password-change', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }).catch(err => console.error('Failed to trigger confirmation email', err));
+      }
+
       setMessage('Password updated successfully. Redirecting to login...');
       setTimeout(() => {
         router.push('/login');

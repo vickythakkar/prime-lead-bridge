@@ -45,6 +45,30 @@ export async function POST(request) {
       return Response.json({ error: 'Database error while updating password.' }, { status: 500 });
     }
 
+    // Send the confirmation email
+    try {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      await resend.emails.send({
+        from: 'Prime Admin <info@primerealops.com>',
+        to: payload.email,
+        subject: 'Security Alert: Admin Password Changed',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+            <h2 style="color: #333;">Admin Password Changed</h2>
+            <p style="color: #555; line-height: 1.5;">This is an automated confirmation that the password for your Prime Lead Bridge Admin account (<strong>${payload.email}</strong>) has been successfully updated.</p>
+            <p style="color: #d97706; font-size: 14px; line-height: 1.5; padding: 10px; background-color: #fef3c7; border-radius: 4px; border: 1px solid #fde68a;">
+              <strong>Security Notice:</strong> If you did not make this change, please contact the IT support team immediately as your account may be compromised.
+            </p>
+          </div>
+        `
+      });
+    } catch (emailErr) {
+      console.error('Failed to send admin confirmation email:', emailErr);
+      // We don't fail the password reset if the email fails
+    }
+
     return Response.json({ success: true });
   } catch (err) {
     console.error('Admin Password Reset API Error:', err);
