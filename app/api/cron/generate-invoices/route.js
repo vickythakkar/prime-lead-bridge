@@ -68,6 +68,8 @@ export async function GET(request) {
 
     if (orgs) {
       for (const org of orgs) {
+        if (org.company_name === 'Prime Real Ops') continue; // Do not generate invoices for admin
+
         // Check if invoice already exists for this billing period
         const { data: existing } = await supabaseAdmin
           .from('invoices')
@@ -110,6 +112,14 @@ export async function GET(request) {
           const customRateStr = org.ivr_flow_config?.rate_per_minute;
           const customRate = customRateStr !== null && customRateStr !== undefined && customRateStr !== '' ? parseFloat(customRateStr) : null;
           
+          // --- FALLBACK FOR MISSING cost_broker ---
+          if (usageCost === 0 && totalMinutes > 0) {
+            const fallbackBillableMins = Math.max(0, totalMinutes - (planObj.included_minutes || 0));
+            const fallbackRate = customRate !== null ? customRate : planRate;
+            usageCost = fallbackBillableMins * fallbackRate;
+          }
+          // ----------------------------------------
+          
           if (customRate !== null) {
             perMinRate = customRate;
             if (customRate < planRate) {
@@ -136,6 +146,12 @@ export async function GET(request) {
             finalBillableMinutes = planRate > 0 ? Math.round(usageCost / planRate) : Math.max(0, totalMinutes - (planObj.included_minutes || 0));
           }
         } else {
+          // --- FALLBACK FOR MISSING cost_broker ---
+          if (usageCost === 0 && totalMinutes > 0) {
+            usageCost = totalMinutes * orgRate;
+          }
+          // ----------------------------------------
+          
           baseFee = 5.00; // legacy default
           perMinRate = orgRate;
           displayRate = orgRate;
