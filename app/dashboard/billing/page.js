@@ -144,7 +144,7 @@ export default function BillingDashboard() {
   const handleDownloadInvoice = async () => {
     // Fetch call logs for the current billing cycle
     const now = new Date();
-    const cycleStart = org.billing_cycle_start ? new Date(org.billing_cycle_start) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const cycleStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     
     const { data: callLogs } = await supabase
       .from('call_logs')
@@ -216,7 +216,7 @@ export default function BillingDashboard() {
           <div className="flex justify-between items-start mb-6 relative z-10">
             <div>
               <h2 className="text-xl font-bold text-white">{planName}</h2>
-              <p className="text-slate-400 text-sm mt-1">Renews on {new Date(new Date(org.billing_cycle_start || new Date()).setMonth(new Date().getMonth() + 1)).toLocaleDateString()}</p>
+              <p className="text-slate-400 text-sm mt-1">Renews on {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}</p>
             </div>
             <div className="text-right">
               <span className="text-3xl font-bold text-white">${baseMonthlyCost}</span>
