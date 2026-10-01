@@ -142,6 +142,9 @@ export default function VoicemailsPage() {
                               controls 
                               src={audioLink} 
                               onPlay={() => { if (!vm.listened) markListened(vm.id); }}
+                              onError={() => {
+                                setVoicemails(prev => prev.map(v => v.id === vm.id ? { ...v, recording_url: null } : v));
+                              }}
                               className="h-9 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" 
                             />
                           ) : (

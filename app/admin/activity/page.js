@@ -247,6 +247,9 @@ export default function AdminActivityLog() {
                             <audio 
                               controls 
                               src={call.audio_link}
+                              onError={() => {
+                                setCalls(prev => prev.map(c => c.id === call.id ? { ...c, audio_link: null } : c));
+                              }}
                               className="h-10 w-full rounded-full [&::-webkit-media-controls-panel]:bg-slate-200"
                             />
                           </div>

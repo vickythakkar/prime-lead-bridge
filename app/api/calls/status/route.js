@@ -123,6 +123,12 @@ export async function POST(request) {
     // so we just leave finalRecordingUrl as the original Twilio URL 
     // and rely on Twilio's native storage.
 
+    // Do not save a ghost recording URL if Twilio did not actually record anything
+    const recordingStatus = formData.get('RecordingStatus');
+    if (recordingStatus === 'absent' || recordingDuration === '0' || durationVal === 0) {
+      finalRecordingUrl = null;
+    }
+
     const logData = {
       organization_id: orgId,
       twilio_call_sid: callSid,
@@ -164,7 +170,6 @@ export async function POST(request) {
     const recordingSource = formData.get('RecordingSource');
 
     // ONLY insert voicemail on the 'completed' webhook for recordings to prevent duplicates
-    const recordingStatus = formData.get('RecordingStatus');
     if (finalRecordingUrl && (isVoicemail || recordingSource === 'RecordVerb')) {
       if (recordingStatus === 'completed') {
         const { data: existingVm } = await supabaseAdmin.from('voicemails').select('id').eq('recording_url', finalRecordingUrl).maybeSingle();

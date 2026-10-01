@@ -140,6 +140,9 @@ export default function AdminVoicemails() {
                             controls 
                             src={vm.audio_link} 
                             onPlay={() => { if (!vm.listened) markListened(vm.id); }}
+                            onError={() => {
+                              setVoicemails(prev => prev.map(v => v.id === vm.id ? { ...v, audio_link: null } : v));
+                            }}
                             className="h-9 w-[300px] rounded-full [&::-webkit-media-controls-panel]:bg-slate-200" 
                           />
                         ) : (
