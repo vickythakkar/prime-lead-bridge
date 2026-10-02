@@ -155,6 +155,7 @@ export async function POST(request) {
       const specificStatuses = ['voicemail', 'missed', 'failed', 'busy'];
       if (mappedStatus === 'completed' && specificStatuses.includes(existingLog.status)) {
         logData.status = existingLog.status;
+        mappedStatus = existingLog.status; // Inherit for subsequent email logic
       }
       
       await supabaseAdmin
@@ -218,7 +219,7 @@ export async function POST(request) {
       sendPushToAdmin({ ...vmPush, url: '/admin/voicemails' }).catch(() => {});
     }
     }
-    } else if (direction === 'inbound' && (mappedStatus === 'missed' || isVoicemail) && ['completed', 'no-answer', 'canceled', 'busy', 'failed'].includes(callStatus) && !finalRecordingUrl && !recordingStatus) {
+    } else if (direction === 'inbound' && mappedStatus === 'missed' && ['completed', 'no-answer', 'canceled', 'busy', 'failed'].includes(callStatus) && !finalRecordingUrl && !recordingStatus) {
       try {
         const { data: orgInfo } = await supabaseAdmin
           .from('organizations')
