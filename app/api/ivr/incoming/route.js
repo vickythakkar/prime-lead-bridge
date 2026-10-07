@@ -72,14 +72,21 @@ export async function POST(request) {
   const defaultGreeting = `Welcome to ${orgData.company_name || 'our office'}. To connect with the office, press 1.` 
     + (orgData.enable_listing_lookup !== false ? ` If you are a buyer inquiring about a property, press 2.` : ``);
   
-  const greetingText = flowConfig.greeting || numberData.ivr_greeting || defaultGreeting;
+  let greetingText = defaultGreeting;
+  if (flowConfig.greeting !== undefined && flowConfig.greeting !== null) {
+    greetingText = flowConfig.greeting;
+  } else if (numberData.ivr_greeting !== undefined && numberData.ivr_greeting !== null) {
+    greetingText = numberData.ivr_greeting;
+  }
 
   const hasFlow = flowConfig.flow && Object.keys(flowConfig.flow).length > 0;
   const hasLegacyKeyPress = flowConfig.keyPress && Object.keys(flowConfig.keyPress).length > 0;
 
   if (!hasFlow && !hasLegacyKeyPress) {
     // No routing options defined! Just play greeting and connect immediately (equivalent to pressing 1)
-    twiml.say({ voice: voiceId }, greetingText);
+    if (greetingText.trim()) {
+      twiml.say({ voice: voiceId }, greetingText);
+    }
     twiml.redirect(`/api/ivr/handle-menu?Digits=1&voice=${encodeURIComponent(voiceId)}`);
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
@@ -90,10 +97,12 @@ export async function POST(request) {
     method: 'POST',
   });
 
-  gather.say(
-    { voice: voiceId },
-    greetingText
-  );
+  if (greetingText.trim()) {
+    gather.say(
+      { voice: voiceId },
+      greetingText
+    );
+  }
 
   twiml.redirect('/api/ivr/incoming');
 

@@ -125,25 +125,6 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
             </p>
           </div>
 
-          <div className="pt-6 border-t border-white/5 space-y-3">
-            <label className="block text-sm font-medium text-slate-300">
-              Voicemail Greeting Message
-            </label>
-            <textarea
-              rows={3}
-              value={config.voicemail_message}
-              onChange={(e) => setConfig({ ...config, voicemail_message: e.target.value })}
-              className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
-              placeholder="e.g. The agent is currently unavailable. Please leave a message after the beep."
-            />
-            <p className="text-xs text-slate-500 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              This is the message played when sending a caller to voicemail or when no agents answer.
-            </p>
-          </div>
-
           <div className="pt-4 border-t border-white/5">
             <label className="block text-sm font-medium text-slate-300 mb-4">
               Routing Workflow
@@ -158,6 +139,25 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="pt-6 border-t border-white/5 space-y-3">
+          <label className="block text-sm font-medium text-slate-300">
+            Voicemail Greeting Message
+          </label>
+          <textarea
+            rows={3}
+            value={config.voicemail_message}
+            onChange={(e) => setConfig({ ...config, voicemail_message: e.target.value })}
+            className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+            placeholder="e.g. The agent is currently unavailable. Please leave a message after the beep."
+          />
+          <p className="text-xs text-slate-500 flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            This is the message played when sending a caller to voicemail or when no agents answer.
+          </p>
         </div>
 
         <div className="pt-6 border-t border-white/10 flex justify-end">
