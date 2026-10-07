@@ -111,7 +111,6 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
               Main Greeting Message
             </label>
             <textarea
-              required
               rows={3}
               value={config.greeting}
               onChange={(e) => setConfig({ ...config, greeting: e.target.value })}
@@ -131,7 +130,6 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
               Voicemail Greeting Message
             </label>
             <textarea
-              required
               rows={3}
               value={config.voicemail_message}
               onChange={(e) => setConfig({ ...config, voicemail_message: e.target.value })}
