@@ -123,7 +123,7 @@ export default function CallLogs() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[1050px]">
+            <table className="w-full text-left">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
                   <th className="px-4 py-3 text-sm font-semibold text-slate-300 whitespace-nowrap">Type</th>
@@ -223,7 +223,7 @@ export default function CallLogs() {
                       {call.duration ? `${call.duration}s` : '0s'}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-2 w-[260px] shrink-0">
+                      <div className="flex flex-col gap-2 w-[300px] shrink-0">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           <div className="flex items-center gap-2">

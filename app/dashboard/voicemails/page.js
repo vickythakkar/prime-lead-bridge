@@ -114,7 +114,7 @@ export default function VoicemailsPage() {
                       <td className="px-5 py-4 text-slate-400 text-sm">{new Date(vm.created_at).toLocaleString()}</td>
                       <td className="px-5 py-4 text-slate-300 text-sm">{vm.duration ? `${vm.duration}s` : '0s'}</td>
                       <td className="px-5 py-4">
-                        <div className="flex flex-col gap-2 w-[280px] shrink-0">
+                        <div className="flex flex-col gap-2 w-[320px] shrink-0">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                             <div className="flex items-center gap-1">
