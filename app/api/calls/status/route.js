@@ -252,7 +252,24 @@ export async function POST(request) {
       twiml.redirect(`/api/ivr/handle-menu?path=${fallbackPath}&To=${encodeURIComponent(finalTo)}`);
     } else if (fallback === 'voicemail' && dialCallStatus && ['no-answer', 'busy', 'failed', 'canceled'].includes(dialCallStatus)) {
       // The dial failed or timed out, redirect to voicemail node
-      twiml.say({ voice: 'Polly.Matthew-Neural' }, 'The agent is currently unavailable. Please leave a message after the beep.');
+      let vmMessage = 'The agent is currently unavailable. Please leave a message after the beep.';
+      if (finalTo) {
+        try {
+          const { data: numData } = await supabaseAdmin
+            .from('organization_numbers')
+            .select('ivr_flow_config')
+            .eq('organization_id', orgId)
+            .ilike('phone_number', `%${finalTo.replace(/\\D/g, '').slice(-10)}`)
+            .maybeSingle();
+          if (numData?.ivr_flow_config?.voicemail_message) {
+            vmMessage = numData.ivr_flow_config.voicemail_message;
+          }
+        } catch (e) {
+          console.error('Failed to fetch custom voicemail message:', e);
+        }
+      }
+      
+      twiml.say({ voice: 'Polly.Matthew-Neural' }, vmMessage);
       twiml.record({
         action: `/api/calls/status?org_id=${orgId}&is_voicemail=true`,
         recordingStatusCallback: `/api/calls/status?org_id=${orgId}&is_voicemail=true`,

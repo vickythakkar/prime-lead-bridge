@@ -192,8 +192,9 @@ export async function POST(request) {
   
   else if (action === 'voicemail') {
     const fromNumber = formData.get('From');
+    const vmMessage = actionData.voicemail_message || flowConfig.voicemail_message || 'Our office is currently unavailable. Please leave a message after the beep.';
 
-    twiml.say({ voice: voiceId }, 'Our office is currently unavailable. Please leave a message after the beep.');
+    twiml.say({ voice: voiceId }, vmMessage);
     twiml.record({
       action: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,
       recordingStatusCallback: `/api/calls/status?org_id=${orgData.id}&is_voicemail=true`,

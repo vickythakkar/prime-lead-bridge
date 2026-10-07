@@ -11,6 +11,7 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
   // Default config if none exists
   const [config, setConfig] = useState({
     greeting: numberData.ivr_greeting || 'Thank you for calling our office. Please listen to the following menu options.',
+    voicemail_message: 'The agent is currently unavailable. Please leave a message after the beep.',
     flow: {}
   });
   const [teammates, setTeammates] = useState([]);
@@ -21,11 +22,13 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
       if (initialConfig && Object.keys(initialConfig).length > 0) {
         setConfig({
           greeting: initialConfig.greeting || config.greeting,
+          voicemail_message: initialConfig.voicemail_message || config.voicemail_message,
           flow: initialConfig.flow || {}
         });
       } else {
         setConfig({
           greeting: numberData.ivr_greeting || config.greeting,
+          voicemail_message: config.voicemail_message,
           flow: {}
         });
       }
@@ -120,6 +123,26 @@ export default function NumberIVRBuilder({ numberData, onSaved }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               This is the first message the caller will hear. It should explain the keypad options you configure below.
+            </p>
+          </div>
+
+          <div className="pt-6 border-t border-white/5 space-y-3">
+            <label className="block text-sm font-medium text-slate-300">
+              Voicemail Greeting Message
+            </label>
+            <textarea
+              required
+              rows={3}
+              value={config.voicemail_message}
+              onChange={(e) => setConfig({ ...config, voicemail_message: e.target.value })}
+              className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+              placeholder="e.g. The agent is currently unavailable. Please leave a message after the beep."
+            />
+            <p className="text-xs text-slate-500 flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              This is the message played when sending a caller to voicemail or when no agents answer.
             </p>
           </div>
 
