@@ -144,11 +144,12 @@ export async function POST(request) {
     // Upsert
 
     if (existingLog) {
-      if (durationVal === 0 && existingLog.duration > 0) {
-        logData.duration = existingLog.duration;
+      // Prevent race conditions: don't overwrite with nulls if the webhook doesn't provide the data
+      if (durationVal === 0) {
+        delete logData.duration;
       }
-      if (!recordingUrl && existingLog.recording_url) {
-        logData.recording_url = existingLog.recording_url;
+      if (!finalRecordingUrl) {
+        delete logData.recording_url;
       }
       
       // Preserve specific statuses from being overwritten by the generic terminal 'completed'
