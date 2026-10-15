@@ -63,9 +63,10 @@ export async function POST(request) {
     let mappedStatus = callStatus || 'completed'; // default if missing
     
     const isVoicemail = searchParams.get('is_voicemail') === 'true';
+    const recordingSource = formData.get('RecordingSource');
 
-    // For outbound dials specifically
-    if (isVoicemail) {
+    // For voicemails specifically (either via flag or RecordVerb source)
+    if (isVoicemail || recordingSource === 'RecordVerb') {
       mappedStatus = 'voicemail';
     } else if (dialCallStatus) {
       if (['completed', 'answered'].includes(dialCallStatus)) mappedStatus = 'completed';
@@ -158,6 +159,12 @@ export async function POST(request) {
         logData.status = existingLog.status;
         mappedStatus = existingLog.status; // Inherit for subsequent email logic
       }
+
+      // If an inbound call has a recording attached or left a voicemail, its true status is 'voicemail'
+      if (direction === 'inbound' && (finalRecordingUrl || existingLog.recording_url || isVoicemail || recordingSource === 'RecordVerb')) {
+        logData.status = 'voicemail';
+        mappedStatus = 'voicemail';
+      }
       
       await supabaseAdmin
         .from('call_logs')
@@ -168,8 +175,6 @@ export async function POST(request) {
         .from('call_logs')
         .insert(logData);
     }
-
-    const recordingSource = formData.get('RecordingSource');
 
     // ONLY insert voicemail on the 'completed' webhook for recordings to prevent duplicates
     if (finalRecordingUrl && (isVoicemail || recordingSource === 'RecordVerb')) {

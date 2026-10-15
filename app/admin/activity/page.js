@@ -143,7 +143,7 @@ export default function AdminActivityLog() {
                       ) : (
                         <div className="flex flex-col gap-1 items-start">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inbound</span>
-                          {call.status === 'voicemail' ? (
+                          {call.status === 'voicemail' || (call.call_type !== 'outbound' && (call.recording_url || call.audio_link)) ? (
                             <span className="text-[10px] uppercase tracking-wider text-purple-400 font-medium">Voicemail</span>
                           ) : call.status && call.status !== 'completed' && call.status !== 'in-progress' ? (
                             <span className="text-[10px] uppercase tracking-wider text-rose-400 font-medium">{call.status.replace('-', ' ')}</span>
