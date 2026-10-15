@@ -65,8 +65,12 @@ export async function POST(request) {
     const isVoicemail = searchParams.get('is_voicemail') === 'true';
     const recordingSource = formData.get('RecordingSource');
 
-    // For voicemails specifically (either via flag or RecordVerb source)
-    if (isVoicemail || recordingSource === 'RecordVerb') {
+    // ONLY mark as voicemail if this callback explicitly comes from a voicemail <Record> verb
+    // and is NOT an answered live call dial
+    const isLiveDialAnswered = dialCallStatus === 'completed' || dialCallStatus === 'answered';
+    const isActualVoicemail = !isLiveDialAnswered && (isVoicemail || recordingSource === 'RecordVerb');
+
+    if (isActualVoicemail) {
       mappedStatus = 'voicemail';
     } else if (dialCallStatus) {
       if (['completed', 'answered'].includes(dialCallStatus)) mappedStatus = 'completed';
@@ -153,17 +157,19 @@ export async function POST(request) {
         delete logData.recording_url;
       }
       
-      // Preserve specific statuses from being overwritten by the generic terminal 'completed'
-      const specificStatuses = ['voicemail', 'missed', 'failed', 'busy'];
-      if (mappedStatus === 'completed' && specificStatuses.includes(existingLog.status)) {
-        logData.status = existingLog.status;
-        mappedStatus = existingLog.status; // Inherit for subsequent email logic
-      }
-
-      // If an inbound call has a recording attached or left a voicemail, its true status is 'voicemail'
-      if (direction === 'inbound' && (finalRecordingUrl || existingLog.recording_url || isVoicemail || recordingSource === 'RecordVerb')) {
+      if (isActualVoicemail) {
         logData.status = 'voicemail';
         mappedStatus = 'voicemail';
+      } else if (isLiveDialAnswered) {
+        logData.status = 'completed';
+        mappedStatus = 'completed';
+      } else {
+        // Preserve specific statuses from being overwritten by the generic terminal 'completed'
+        const specificStatuses = ['voicemail', 'missed', 'failed', 'busy'];
+        if (mappedStatus === 'completed' && specificStatuses.includes(existingLog.status)) {
+          logData.status = existingLog.status;
+          mappedStatus = existingLog.status; // Inherit for subsequent email logic
+        }
       }
       
       await supabaseAdmin
@@ -177,7 +183,7 @@ export async function POST(request) {
     }
 
     // ONLY insert voicemail on the 'completed' webhook for recordings to prevent duplicates
-    if (finalRecordingUrl && (isVoicemail || recordingSource === 'RecordVerb')) {
+    if (finalRecordingUrl && isActualVoicemail) {
       if (recordingStatus === 'completed') {
         const { data: existingVm } = await supabaseAdmin.from('voicemails').select('id').eq('recording_url', finalRecordingUrl).maybeSingle();
         

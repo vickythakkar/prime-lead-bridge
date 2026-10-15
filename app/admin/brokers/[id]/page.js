@@ -467,11 +467,11 @@ export default function OrganizationDetailsPage() {
                   <div className="flex justify-between items-center text-xs mb-2">
                     <span className={`px-2 py-0.5 rounded uppercase font-bold tracking-wider ${
                       log.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-                      log.status === 'voicemail' || (log.call_type === 'inbound' && (log.recording_url || log.audio_link)) ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                      log.status === 'voicemail' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
                       log.status === 'missed' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
                       'bg-slate-800 text-slate-300 border border-slate-700'
                     }`}>
-                      {log.status === 'voicemail' || (log.call_type === 'inbound' && (log.recording_url || log.audio_link)) ? 'voicemail' : log.status}
+                      {log.status}
                     </span>
                     <span className="text-slate-400 font-mono">{log.duration}s</span>
                   </div>

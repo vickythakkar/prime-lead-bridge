@@ -76,7 +76,7 @@ export default function CallLogs() {
     const headers = ['Date', 'Type', 'Contact / Number', 'Property', 'Duration (seconds)', 'Recording URL'];
     const rows = calls.map(c => [
       new Date(c.created_at).toLocaleString(),
-      c.call_type === 'outbound' ? 'Outbound' : (c.status === 'voicemail' || c.audio_link || c.recording_url ? 'Inbound (Voicemail)' : 'Inbound'),
+      c.call_type === 'outbound' ? 'Outbound' : (c.status === 'voicemail' ? 'Inbound (Voicemail)' : 'Inbound'),
       c.contacts?.name || (c.call_type === 'outbound' ? c.to_number : c.from_number) || '',
       c.properties?.address || 'Office Menu',
       c.duration || 0,
@@ -150,7 +150,7 @@ export default function CallLogs() {
                       ) : (
                         <div className="flex flex-col gap-1 items-start">
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Inbound</span>
-                          {call.status === 'voicemail' || (call.call_type !== 'outbound' && (call.recording_url || call.audio_link)) ? (
+                          {call.status === 'voicemail' ? (
                             <span className="text-[10px] uppercase tracking-wider text-purple-400 font-medium">Voicemail</span>
                           ) : call.status && call.status !== 'completed' && call.status !== 'in-progress' ? (
                             <span className="text-[10px] uppercase tracking-wider text-rose-400 font-medium">{call.status.replace('-', ' ')}</span>
