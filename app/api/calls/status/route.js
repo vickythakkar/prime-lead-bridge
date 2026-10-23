@@ -192,12 +192,13 @@ export async function POST(request) {
           const vmDuration = recordingDuration ? parseInt(recordingDuration, 10) : (dialCallDuration ? parseInt(dialCallDuration, 10) : 0);
           
           await supabaseAdmin.from('voicemails').insert({
-          organization_id: orgId,
-          from_number: finalFrom,
-          recording_url: finalRecordingUrl,
-          duration: vmDuration,
-          contact_id: contactId
-        });
+            organization_id: orgId,
+            from_number: finalFrom,
+            recording_url: finalRecordingUrl,
+            duration: vmDuration,
+            contact_id: contactId,
+            listened: false
+          });
       
       try {
         const { data: orgInfo } = await supabaseAdmin

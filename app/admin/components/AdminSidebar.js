@@ -36,7 +36,12 @@ export default function AdminSidebar() {
 
     fetchAdminCounts();
     const interval = setInterval(fetchAdminCounts, 120000); // 2 minutes
-    return () => clearInterval(interval);
+    const handleUpdate = () => fetchAdminCounts();
+    window.addEventListener('notifications-updated', handleUpdate);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notifications-updated', handleUpdate);
+    };
   }, [pathname]);
 
   const links = [

@@ -9,7 +9,6 @@ export default function AdminVoicemails() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
-
   async function fetchOrgs() {
     const res = await fetch('/api/admin/organizations?include_admin=true', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
@@ -29,15 +28,39 @@ export default function AdminVoicemails() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchVoicemails(); }, [selectedOrg]);
 
-  async function markListened(id) {
-    await fetch('/api/admin/voicemails', { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-    setVoicemails(voicemails.map(v => v.id === id ? { ...v, listened: true } : v));
+  async function markListened(id, status = true) {
+    await fetch('/api/admin/voicemails', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, listened: status })
+    });
+    setVoicemails(voicemails.map(v => v.id === id ? { ...v, listened: status } : v));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('notifications-updated'));
+    }
+  }
+
+  async function markAllRead() {
+    await fetch('/api/admin/voicemails', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markAllRead: true, org_id: selectedOrg || undefined })
+    });
+    setVoicemails(voicemails.map(v => ({ ...v, listened: true })));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('notifications-updated'));
+    }
   }
 
   async function deleteVoicemail(id) {
     if (!confirm('Permanently delete this voicemail?')) return;
     const res = await fetch('/api/admin/voicemails', { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-    if (res.ok) setVoicemails(voicemails.filter(v => v.id !== id));
+    if (res.ok) {
+      setVoicemails(voicemails.filter(v => v.id !== id));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('notifications-updated'));
+      }
+    }
   }
 
   const unreadCount = voicemails.filter(v => !v.listened).length;
@@ -51,14 +74,26 @@ export default function AdminVoicemails() {
             {unreadCount > 0 ? <span className="text-indigo-400 font-medium">{unreadCount} new</span> : 'All caught up'} — global voicemail inbox.
           </p>
         </div>
-        <select
-          value={selectedOrg}
-          onChange={e => setSelectedOrg(e.target.value)}
-          className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
-        >
-          <option value="">All Organizations</option>
-          {orgs.map(o => <option key={o.id} value={o.id}>{o.company_name || o.name}</option>)}
-        </select>
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              className="bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/30 px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Mark all voicemails as read"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
+              Mark All Read
+            </button>
+          )}
+          <select
+            value={selectedOrg}
+            onChange={e => setSelectedOrg(e.target.value)}
+            className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">All Organizations</option>
+            {orgs.map(o => <option key={o.id} value={o.id}>{o.company_name || o.name}</option>)}
+          </select>
+        </div>
       </header>
 
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -108,14 +143,23 @@ export default function AdminVoicemails() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                           <div className="flex items-center gap-1">
-                            {!vm.listened && (
+                            {!vm.listened ? (
                               <button
-                                onClick={() => markListened(vm.id)}
+                                onClick={() => markListened(vm.id, true)}
                                 className="text-indigo-400 hover:text-indigo-300 transition-colors p-1.5 rounded-full hover:bg-indigo-500/10 flex items-center gap-1 text-xs font-medium"
-                                title="Mark as Listened"
+                                title="Mark as Read"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
                                 Mark Read
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => markListened(vm.id, false)}
+                                className="text-slate-400 hover:text-slate-200 transition-colors p-1.5 rounded-full hover:bg-white/5 flex items-center gap-1 text-xs font-medium"
+                                title="Mark as Unread"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><circle cx="12" cy="12" r="9" /></svg>
+                                Mark Unread
                               </button>
                             )}
                             <a 
@@ -139,7 +183,7 @@ export default function AdminVoicemails() {
                           <audio 
                             controls 
                             src={vm.audio_link} 
-                            onPlay={() => { if (!vm.listened) markListened(vm.id); }}
+                            onPlay={() => { if (!vm.listened) markListened(vm.id, true); }}
                             onError={() => {
                               setVoicemails(prev => prev.map(v => v.id === vm.id ? { ...v, audio_link: null } : v));
                             }}

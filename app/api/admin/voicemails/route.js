@@ -46,10 +46,28 @@ export async function PATCH(request) {
   if (!admin) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { id } = await request.json();
-    await supabaseAdmin.from('voicemails').update({ listened: true }).eq('id', id);
-    return Response.json({ success: true });
+    const body = await request.json();
+    
+    // Support Mark All Read
+    if (body.markAllRead) {
+      let query = supabaseAdmin.from('voicemails').update({ listened: true });
+      if (body.org_id) {
+        query = query.eq('organization_id', body.org_id);
+      }
+      query = query.or('listened.eq.false,listened.is.null');
+      const { error } = await query;
+      if (error) throw error;
+      return Response.json({ success: true });
+    }
+
+    const { id, listened = true } = body;
+    if (!id) return Response.json({ error: 'Missing voicemail ID' }, { status: 400 });
+
+    const { error } = await supabaseAdmin.from('voicemails').update({ listened }).eq('id', id);
+    if (error) throw error;
+    return Response.json({ success: true, listened });
   } catch (err) {
+    console.error('Admin voicemails PATCH error:', err);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

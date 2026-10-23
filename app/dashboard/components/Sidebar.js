@@ -31,8 +31,8 @@ export default function Sidebar() {
           try {
             const [calls, msgs, vms] = await Promise.all([
               supabase.from('call_logs').select('id', { count: 'exact', head: true }).eq('organization_id', agentData.organization_id).eq('seen', false),
-              supabase.from('messages').select('id', { count: 'exact', head: true }).eq('organization_id', agentData.organization_id).eq('is_read', false),
-              supabase.from('voicemails').select('id', { count: 'exact', head: true }).eq('organization_id', agentData.organization_id).eq('listened', false)
+              supabase.from('messages').select('id, conversations!inner(organization_id)', { count: 'exact', head: true }).eq('conversations.organization_id', agentData.organization_id).eq('is_read', false),
+              supabase.from('voicemails').select('id', { count: 'exact', head: true }).eq('organization_id', agentData.organization_id).or('listened.eq.false,listened.is.null')
             ]);
             setUnreadCalls(calls.count || 0);
             setUnreadMessages(msgs.count || 0);
@@ -45,7 +45,12 @@ export default function Sidebar() {
         fetchCounts();
         // Poll every 120 seconds
         const interval = setInterval(fetchCounts, 120000);
-        return () => clearInterval(interval);
+        const handleUpdate = () => fetchCounts();
+        window.addEventListener('notifications-updated', handleUpdate);
+        return () => {
+          clearInterval(interval);
+          window.removeEventListener('notifications-updated', handleUpdate);
+        };
       }
     }
     fetchRealtyStatusAndCounts();

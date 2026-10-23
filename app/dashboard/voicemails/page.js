@@ -48,6 +48,9 @@ export default function VoicemailsPage() {
       
       if (res.ok) {
         setVoicemails(voicemails.filter(v => v.id !== id));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notifications-updated'));
+        }
       } else {
         alert('Failed to delete voicemail');
       }
@@ -57,9 +60,12 @@ export default function VoicemailsPage() {
     }
   };
 
-  const markListened = async (id) => {
-    await supabase.from('voicemails').update({ listened: true }).eq('id', id);
-    setVoicemails(voicemails.map(v => v.id === id ? { ...v, listened: true } : v));
+  const markListened = async (id, status = true) => {
+    await supabase.from('voicemails').update({ listened: status }).eq('id', id);
+    setVoicemails(voicemails.map(v => v.id === id ? { ...v, listened: status } : v));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('notifications-updated'));
+    }
   };
 
   return (
@@ -118,14 +124,23 @@ export default function VoicemailsPage() {
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Playback</span>
                             <div className="flex items-center gap-1">
-                              {!vm.listened && (
+                              {!vm.listened ? (
                                 <button
-                                  onClick={() => markListened(vm.id)}
+                                  onClick={() => markListened(vm.id, true)}
                                   className="text-indigo-400 hover:text-indigo-300 transition-colors p-1.5 rounded-full hover:bg-indigo-500/10 flex items-center gap-1 text-xs font-medium"
                                   title="Mark as Listened"
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
                                   Mark Read
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => markListened(vm.id, false)}
+                                  className="text-slate-400 hover:text-slate-200 transition-colors p-1.5 rounded-full hover:bg-white/5 flex items-center gap-1 text-xs font-medium"
+                                  title="Mark as Unread"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><circle cx="12" cy="12" r="9" /></svg>
+                                  Mark Unread
                                 </button>
                               )}
                               <button
@@ -141,7 +156,7 @@ export default function VoicemailsPage() {
                             <audio 
                               controls 
                               src={audioLink} 
-                              onPlay={() => { if (!vm.listened) markListened(vm.id); }}
+                              onPlay={() => { if (!vm.listened) markListened(vm.id, true); }}
                               onError={() => {
                                 setVoicemails(prev => prev.map(v => v.id === vm.id ? { ...v, recording_url: null } : v));
                               }}

@@ -27,7 +27,9 @@ export default function AdminActivityLog() {
     const data = await res.json();
     setCalls(data.logs || []);
     if (!silent) setLoading(false);
-    fetch('/api/admin/call-logs', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+    fetch('/api/admin/call-logs', { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }).then(() => {
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('notifications-updated'));
+    });
   }
 
   async function handleDeleteRecording(callId) {

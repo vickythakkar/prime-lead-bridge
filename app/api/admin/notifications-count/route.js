@@ -1,4 +1,4 @@
-﻿import { supabaseAdmin } from '@/lib/supabase-admin';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyAdminToken } from '@/lib/admin-auth';
 
 export async function GET(request) {
@@ -9,7 +9,7 @@ export async function GET(request) {
     const [callsRes, messagesRes, voicemailsRes] = await Promise.all([
       supabaseAdmin.from('call_logs').select('id', { count: 'exact', head: true }).eq('seen', false),
       supabaseAdmin.from('messages').select('id', { count: 'exact', head: true }).eq('is_read', false),
-      supabaseAdmin.from('voicemails').select('id', { count: 'exact', head: true }).eq('listened', false)
+      supabaseAdmin.from('voicemails').select('id', { count: 'exact', head: true }).or('listened.eq.false,listened.is.null')
     ]);
 
     return Response.json({

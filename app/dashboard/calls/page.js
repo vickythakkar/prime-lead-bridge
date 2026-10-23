@@ -44,6 +44,9 @@ export default function CallLogs() {
         const unseenIds = data.filter(c => !c.seen).map(c => c.id);
         if (unseenIds.length > 0) {
           await supabase.from('call_logs').update({ seen: true }).in('id', unseenIds);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('notifications-updated'));
+          }
         }
       }
     }

@@ -133,6 +133,9 @@ export default function MessagesPage() {
       const unreadIds = data.filter(m => !m.is_read).map(m => m.id);
       if (unreadIds.length > 0) {
         await supabase.from('messages').update({ is_read: true }).in('id', unreadIds);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notifications-updated'));
+        }
       }
     }
   }
