@@ -14,6 +14,14 @@ export default function Settings() {
   const [invoices, setInvoices] = useState([]);
   const [currentMonthMinutes, setCurrentMonthMinutes] = useState(0);
 
+  // Sign-in Email Management
+  const [currentLoginEmail, setCurrentLoginEmail] = useState('');
+  const [newLoginEmail, setNewLoginEmail] = useState('');
+  const [syncOrgEmails, setSyncOrgEmails] = useState(true);
+  const [emailUpdating, setEmailUpdating] = useState(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState('');
+  const [emailErrorMsg, setEmailErrorMsg] = useState('');
+
   const [formData, setFormData] = useState({
     name: '',
     cell_phone: '',
@@ -34,6 +42,10 @@ export default function Settings() {
     async function loadSettings() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      
+      if (session.user?.email) {
+        setCurrentLoginEmail(session.user.email);
+      }
       
       const { data: agentData } = await supabase
         .from('agents')
@@ -129,6 +141,57 @@ export default function Settings() {
     setTimeout(() => setMessage(''), 3000);
   }
 
+  async function handleUpdateLoginEmail(e) {
+    e.preventDefault();
+    if (!newLoginEmail.trim()) return;
+
+    setEmailUpdating(true);
+    setEmailErrorMsg('');
+    setEmailSuccessMsg('');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setEmailErrorMsg('You must be logged in to update your sign-in email.');
+        setEmailUpdating(false);
+        return;
+      }
+
+      const res = await fetch('/api/user/update-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          newEmail: newLoginEmail.trim(),
+          updateOrgEmails: syncOrgEmails
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailErrorMsg(data.error || 'Failed to update sign-in email.');
+      } else {
+        setCurrentLoginEmail(data.email);
+        setNewLoginEmail('');
+        if (syncOrgEmails) {
+          setFormData(prev => ({
+            ...prev,
+            contact_email: data.email,
+            notify_email: data.email
+          }));
+        }
+        setEmailSuccessMsg(`Sign-in email successfully updated to ${data.email}! Please use this email next time you sign in.`);
+      }
+    } catch (err) {
+      console.error('Email update error:', err);
+      setEmailErrorMsg('An unexpected error occurred while updating email. Please try again.');
+    } finally {
+      setEmailUpdating(false);
+    }
+  }
+
   const renderTabs = () => (
     <div className="flex space-x-6 border-b border-white/10 mb-8">
       {['Profile'].map(tab => (
@@ -161,88 +224,186 @@ export default function Settings() {
       ) : (
         <div>
           {activeTab === 'Profile' && (
-            <div className="glass-card rounded-2xl p-8 mb-8 max-w-3xl">
-              <h2 className="text-xl font-bold text-white mb-6">Profile Settings</h2>
-              <form onSubmit={handleSave} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Company Name</label>
-                  <input 
-                    type="text" required placeholder="e.g. Prime Real Estate"
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                    value={formData.company_name} 
-                    onChange={(e) => setFormData({...formData, company_name: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-8 max-w-3xl">
+              {/* Account Login & Security Card */}
+              <div className="glass-card rounded-2xl p-8 border border-indigo-500/20">
+                <div className="flex items-start justify-between gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Your Name</label>
-                    <input 
-                      type="text" required
-                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      value={formData.name} 
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    />
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      <span>Account Login & Security</span>
+                    </h2>
+                    <p className="text-slate-400 text-sm mt-1">
+                      Manage the primary email address used to sign in to your Prime Lead Bridge account.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Your Cell Phone</label>
-                    <input 
-                      type="tel" required
-                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      value={formData.cell_phone} 
-                      onChange={(e) => setFormData({...formData, cell_phone: e.target.value})}
-                    />
+                  <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10 mt-6 mb-2">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Organization Details</h3>
+                {/* Current Login Email Display */}
+                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs uppercase font-semibold text-slate-400 tracking-wider block">Current Sign-In Email</span>
+                    <span className="text-white font-medium text-base mt-0.5 block">{currentLoginEmail || 'Loading...'}</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full self-start sm:self-auto">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    Active Sign-In Email
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={handleUpdateLoginEmail} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">General Contact Email</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">New Sign-In Email</label>
                     <input 
-                      type="email"
+                      type="email" 
+                      required 
+                      placeholder="e.g. name@company.com"
+                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                      value={newLoginEmail} 
+                      onChange={(e) => {
+                        setNewLoginEmail(e.target.value);
+                        if (emailErrorMsg) setEmailErrorMsg('');
+                      }}
+                    />
+                    <p className="text-xs text-slate-400 mt-1.5">
+                      Changing this updates your sign-in credentials immediately. Your existing password will remain unchanged.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 pt-1">
+                    <input 
+                      type="checkbox" 
+                      id="syncOrgEmails"
+                      checked={syncOrgEmails}
+                      onChange={(e) => setSyncOrgEmails(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900 cursor-pointer"
+                    />
+                    <label htmlFor="syncOrgEmails" className="text-sm text-slate-300 cursor-pointer select-none">
+                      Also update General Contact & Billing / Notification emails to match
+                    </label>
+                  </div>
+
+                  {emailErrorMsg && (
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3.5 rounded-lg text-sm flex items-start gap-2">
+                      <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{emailErrorMsg}</span>
+                    </div>
+                  )}
+
+                  {emailSuccessMsg && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-3.5 rounded-lg text-sm flex items-start gap-2">
+                      <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>{emailSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex justify-end">
+                    <button 
+                      type="submit" 
+                      disabled={emailUpdating || !newLoginEmail.trim()} 
+                      className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
+                    >
+                      {emailUpdating ? 'Updating Sign-In Email...' : 'Update Sign-In Email'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Profile & Organization Settings Card */}
+              <div className="glass-card rounded-2xl p-8">
+                <h2 className="text-xl font-bold text-white mb-6">Profile Settings</h2>
+                <form onSubmit={handleSave} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Company Name</label>
+                    <input 
+                      type="text" required placeholder="e.g. Prime Real Estate"
                       className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      value={formData.contact_email} 
-                      onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                      value={formData.company_name} 
+                      onChange={(e) => setFormData({...formData, company_name: e.target.value})}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">General Contact Phone</label>
-                    <input 
-                      type="tel"
-                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      value={formData.contact_phone} 
-                      onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Your Name</label>
+                      <input 
+                        type="text" required
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        value={formData.name} 
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Your Cell Phone</label>
+                      <input 
+                        type="tel" required
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        value={formData.cell_phone} 
+                        onChange={(e) => setFormData({...formData, cell_phone: e.target.value})}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Website URL</label>
-                    <input 
-                      type="url" placeholder="https://"
-                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      value={formData.website} 
-                      onChange={(e) => setFormData({...formData, website: e.target.value})}
-                    />
+
+                  <div className="pt-4 border-t border-white/10 mt-6 mb-2">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-1">Organization Details</h3>
+                    <p className="text-xs text-slate-400 mb-4">Contact info used for client communications, inbound leads, and public info.</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Billing / Notification Email</label>
-                    <input 
-                      type="email"
-                      className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
-                      value={formData.notify_email} 
-                      onChange={(e) => setFormData({...formData, notify_email: e.target.value})}
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">General Contact Email</label>
+                      <input 
+                        type="email"
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        value={formData.contact_email} 
+                        onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                      />
+                      <p className="text-xs text-slate-400 mt-1">Inbound client contact & public email.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">General Contact Phone</label>
+                      <input 
+                        type="tel"
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        value={formData.contact_phone} 
+                        onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Website URL</label>
+                      <input 
+                        type="url" placeholder="https://"
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        value={formData.website} 
+                        onChange={(e) => setFormData({...formData, website: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1">Billing / Notification Email</label>
+                      <input 
+                        type="email"
+                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
+                        value={formData.notify_email} 
+                        onChange={(e) => setFormData({...formData, notify_email: e.target.value})}
+                      />
+                      <p className="text-xs text-slate-400 mt-1">Lead alerts, voicemails, & billing notices.</p>
+                    </div>
                   </div>
-                </div>
-                <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                  <div className="text-sm text-emerald-400">{message}</div>
-                  <button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors">
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div className="text-sm text-emerald-400">{message}</div>
+                    <button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors">
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 

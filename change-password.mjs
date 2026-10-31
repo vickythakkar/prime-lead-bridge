@@ -9,7 +9,7 @@ const supabase = createClient(
 );
 
 async function changePassword() {
-  const email = 'vicky@diyflatfee.com';
+  const email = 'vicky@diyrealty.com';
   // CHANGE THIS TO YOUR DESIRED PASSWORD
   const newPassword = '1PavBhaji@.';
 
