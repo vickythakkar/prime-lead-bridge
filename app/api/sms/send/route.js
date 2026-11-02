@@ -3,21 +3,50 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request) {
   try {
-    const { to, text, orgId } = await request.json();
+    const payload = await request.json();
+    const to = payload.to;
+    const text = payload.text || payload.body;
+    let orgId = payload.orgId || payload.organization_id;
+    const conversationId = payload.conversationId;
 
-    if (!to || !text || !orgId) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
+    if (!to || !text) {
+      return new Response(JSON.stringify({ error: 'Missing required fields (to, text)' }), { status: 400 });
     }
 
-    // Get the org's Twilio phone number
+    // If orgId wasn't passed directly, resolve it from conversation or contact
+    if (!orgId && conversationId) {
+      const { data: conv } = await supabaseAdmin
+        .from('conversations')
+        .select('organization_id')
+        .eq('id', conversationId)
+        .maybeSingle();
+      if (conv?.organization_id) orgId = conv.organization_id;
+    }
+
+    if (!orgId) {
+      const { data: conv } = await supabaseAdmin
+        .from('conversations')
+        .select('organization_id')
+        .eq('contact_phone', to)
+        .order('last_message_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (conv?.organization_id) orgId = conv.organization_id;
+    }
+
+    if (!orgId) {
+      return new Response(JSON.stringify({ error: 'Organization ID is required to send SMS' }), { status: 400 });
+    }
+
+    // Get the org's active Twilio phone number
     const { data: numData } = await supabaseAdmin
       .from('organization_numbers')
       .select('phone_number')
       .eq('organization_id', orgId)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
-    if (!numData) {
+    if (!numData || !numData.phone_number) {
       return new Response(JSON.stringify({ error: 'No active phone number found for organization' }), { status: 404 });
     }
 
@@ -37,7 +66,7 @@ export async function POST(request) {
       .select('id')
       .eq('organization_id', orgId)
       .eq('contact_phone', to)
-      .single();
+      .maybeSingle();
 
     if (!conversation) {
       // Find or create contact first if possible
@@ -47,16 +76,16 @@ export async function POST(request) {
         .select('id')
         .eq('organization_id', orgId)
         .eq('phone', to)
-        .single();
+        .maybeSingle();
         
       if (contact) {
         contactId = contact.id;
       } else {
         const { data: newContact } = await supabaseAdmin
           .from('contacts')
-          .insert({ organization_id: orgId, phone: to, name: 'Unknown Contact' })
+          .insert({ organization_id: orgId, phone: to, name: 'Unknown ' + to })
           .select('id')
-          .single();
+          .maybeSingle();
         if (newContact) contactId = newContact.id;
       }
 
@@ -81,17 +110,28 @@ export async function POST(request) {
         .eq('id', conversation.id);
     }
 
-    // Insert message
+    // Insert outbound message
+    let insertedMessage = null;
     if (conversation) {
-      await supabaseAdmin.from('messages').insert({
-        conversation_id: conversation.id,
-        direction: 'outbound',
-        body: text,
-        message_sid: message.sid
-      });
+      const { data: newMsg } = await supabaseAdmin
+        .from('messages')
+        .insert({
+          conversation_id: conversation.id,
+          direction: 'outbound',
+          body: text,
+          message_sid: message.sid,
+          is_read: true
+        })
+        .select('*')
+        .maybeSingle();
+      insertedMessage = newMsg;
     }
 
-    return new Response(JSON.stringify({ success: true, messageSid: message.sid }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      messageSid: message.sid,
+      message: insertedMessage
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

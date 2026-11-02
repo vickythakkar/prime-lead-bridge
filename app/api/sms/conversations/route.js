@@ -6,8 +6,7 @@ export async function GET(request) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return new Response('Unauthorized', { status: 401 });
 
-    const token = authHeader.split(' ')[1];
-    
+    const token = authHeader.replace(/^Bearer\s+/i, '');
     const adminPayload = verifyAdminToken(request);
     let orgId = null;
     let isAdmin = false;
@@ -30,67 +29,96 @@ export async function GET(request) {
       orgId = agentData.organization_id;
     }
 
+    // Query conversations table with related contacts, organizations, and messages
     let query = supabaseAdmin
-      .from('messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(500);
-      
+      .from('conversations')
+      .select(`
+        id,
+        organization_id,
+        contact_phone,
+        contact_id,
+        last_message_at,
+        last_message_body,
+        is_deleted,
+        contacts ( id, name, phone, company ),
+        organizations ( id, company_name ),
+        messages ( id, body, direction, created_at, is_read, message_sid )
+      `)
+      .eq('is_deleted', false)
+      .order('last_message_at', { ascending: false });
+
     if (!isAdmin && orgId) {
       query = query.eq('organization_id', orgId);
     }
 
-    const { data: messages, error: messagesError } = await query;
+    const { data: convData, error: convError } = await query;
 
-    if (messagesError) throw messagesError;
-
-    // Mark messages as read for this org (or all if admin)
-    const unreadIds = messages.filter(m => !m.is_read).map(m => m.id);
-    if (unreadIds.length > 0) {
-      // Split into chunks of 100 to avoid request URL length limits in some cases, though .in() usually handles it
-      await supabaseAdmin.from('messages').update({ is_read: true }).in('id', unreadIds);
+    if (convError) {
+      console.error('Error querying conversations:', convError);
+      throw convError;
     }
 
-    const conversations = {};
-    const contactNumbers = new Set();
+    const conversations = (convData || []).map(c => {
+      const sortedMessages = (c.messages || []).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
 
-    messages.forEach(msg => {
-      const contactNumber = msg.direction === 'inbound' ? msg.from_number : msg.to_number;
-      if (!conversations[contactNumber]) {
-        conversations[contactNumber] = {
-          contact_number: contactNumber,
-          messages: [],
-          last_message_at: msg.created_at,
-          last_message_body: msg.body
-        };
-        contactNumbers.add(contactNumber);
+      const unreadCount = sortedMessages.filter(
+        m => !m.is_read && m.direction === 'inbound'
+      ).length;
+
+      // Clean up contact name if it is "Unknown +1..."
+      let displayName = c.contacts?.name || '';
+      if (!displayName || displayName.startsWith('Unknown')) {
+        displayName = c.contact_phone;
       }
-      conversations[contactNumber].messages.push(msg);
+
+      return {
+        id: c.id,
+        organization_id: c.organization_id,
+        organization_name: c.organizations?.company_name || 'General',
+        contact_id: c.contact_id,
+        contact_phone: c.contact_phone,
+        contact_name: displayName,
+        contact_company: c.contacts?.company || '',
+        last_message_at: c.last_message_at,
+        last_message_body: c.last_message_body,
+        messages: sortedMessages,
+        unread_count: unreadCount
+      };
     });
 
-    if (contactNumbers.size > 0) {
-      const { data: contactsData } = await supabaseAdmin
-        .from('contacts')
-        .select('*')
-        .eq('organization_id', orgId)
-        .in('phone', Array.from(contactNumbers));
-      
-      if (contactsData) {
-        contactsData.forEach(contact => {
-          if (conversations[contact.phone]) {
-            conversations[contact.phone].contact = contact;
-          }
-        });
-      }
-    }
-
-    const conversationsArray = Object.values(conversations).sort(
-      (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-    );
-
-    return Response.json({ conversations: conversationsArray });
+    return Response.json({ conversations });
   } catch (err) {
     console.error('Error fetching conversations:', err);
     return new Response('Internal Server Error', { status: 500 });
+  }
+}
+
+// Mark a conversation's messages as read
+export async function PATCH(request) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) return new Response('Unauthorized', { status: 401 });
+
+    const body = await request.json();
+    const { conversationId } = body;
+
+    if (!conversationId) {
+      return Response.json({ error: 'Missing conversationId' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .eq('is_read', false);
+
+    if (error) throw error;
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error('Error marking conversation read:', err);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
