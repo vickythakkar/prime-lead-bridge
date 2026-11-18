@@ -2,6 +2,7 @@ import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
 import { sendPushToOrg, sendPushToAdmin } from '@/lib/push-notifications';
+import { lookupCallerByPhone } from '@/lib/caller-lookup';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
@@ -50,10 +51,14 @@ export async function POST(request) {
     return new Response(twiml.toString(), { headers: { 'Content-Type': 'text/xml' } });
   }
 
+  // Look up caller contact name for push notifications
+  const callerInfo = from ? await lookupCallerByPhone(from, orgData.id) : null;
+  const callerDisplay = callerInfo?.name ? `${callerInfo.name} (${from})` : (from || 'Unknown Caller');
+
   // Send push notifications for incoming call
   const pushPayload = {
-    title: '📞 Incoming Call',
-    body: `Incoming call from ${from}`,
+    title: callerInfo?.name ? `📞 ${callerInfo.name}` : '📞 Incoming Call',
+    body: callerInfo?.name ? `Incoming call from ${callerDisplay}` : `Incoming call from ${from || 'Unknown Caller'}`,
     tag: 'incoming-call',
     url: '/dashboard/calls'
   };

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function WebDialer() {
   const {
-    device, status, activeCall, callerId, isMuted, callDuration,
+    device, status, activeCall, activeCallerInfo, callerId, isMuted, callDuration,
     handleDial, handleHangup, toggleMute, handleKeypad, formatDuration, lastDialedNumber
   } = useBrokerDialer();
   
@@ -28,8 +28,11 @@ export default function WebDialer() {
     }
   }, []);
 
-  // Sync incoming call number to the dialer display
+  // Sync incoming call number & resolved caller name to the dialer display
   useEffect(() => {
+    if (activeCallerInfo?.name) {
+      setContactName(activeCallerInfo.name);
+    }
     if (activeCall && activeCall.parameters && activeCall.parameters.From) {
       // Check if it's an incoming call (we didn't just dial it ourselves)
       if (activeCall.direction === 'INCOMING') {
@@ -41,58 +44,39 @@ export default function WebDialer() {
     } else if (activeCall && !phoneNumber && lastDialedNumber) {
       setPhoneNumber(lastDialedNumber);
     }
-  }, [activeCall, status, lastDialedNumber]);
+  }, [activeCall, activeCallerInfo, status, lastDialedNumber]);
 
-  // Live lookup contact name when phone number changes
+  // Live lookup contact name when phone number changes (handles any phone formatting)
   useEffect(() => {
+    let cancelled = false;
     async function lookupName() {
-      if (!phoneNumber || phoneNumber.length < 10) {
+      if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 7) {
         setContactName('');
         return;
       }
-      // Remove all non-numeric characters for search
-      const cleanPhone = phoneNumber.replace(/\D/g, '');
-      if (cleanPhone.length < 10) return;
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      
-      const { data: agentData } = await supabase.from('agents').select('organization_id').eq('id', session.user.id).single();
-      if (!agentData) return;
 
-      // Check contacts
-      const { data: contact } = await supabase
-        .from('contacts')
-        .select('name')
-        .eq('organization_id', agentData.organization_id)
-        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .maybeSingle();
-      
-      if (contact) {
-        setContactName(contact.name);
-        return;
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
 
-      // Check leads if not in contacts
-      const { data: lead } = await supabase
-        .from('leads')
-        .select('name')
-        .eq('organization_id', agentData.organization_id)
-        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .maybeSingle();
-
-      if (lead) {
-        setContactName(lead.name);
-      } else {
-        setContactName(''); // Clear it if neither contact nor lead is found!
+        const res = await fetch(`/api/contacts/lookup?phone=${encodeURIComponent(phoneNumber)}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) {
+          setContactName(data?.found && data?.name ? data.name : '');
+        }
+      } catch (err) {
+        console.warn('Dialer contact lookup failed:', err);
       }
     }
     
-    // Always run the lookup when the number changes, even if we had a name previously
-    const timeoutId = setTimeout(() => lookupName(), 500);
-    return () => clearTimeout(timeoutId);
+    const timeoutId = setTimeout(() => lookupName(), 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [phoneNumber]);
 
   function localHandleDial() {

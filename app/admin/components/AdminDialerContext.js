@@ -21,9 +21,36 @@ export function AdminDialerProvider({ children }) {
   const [callDuration, setCallDuration] = useState(0);
   const [lastDialedNumber, setLastDialedNumber] = useState('');
   const [incomingCall, setIncomingCall] = useState(null);
+  const [incomingCallerInfo, setIncomingCallerInfo] = useState(null);
+  const [activeCallerInfo, setActiveCallerInfo] = useState(null);
   
   const [wrapUpDetails, setWrapUpDetails] = useState(null);
   const [showWrapUp, setShowWrapUp] = useState(false);
+
+  async function lookupAdminCaller(phone) {
+    if (!phone) return null;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+      if (!token) return null;
+      const res = await fetch(`/api/contacts/lookup?phone=${encodeURIComponent(phone)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data?.found && data?.name) {
+        return {
+          name: data.name,
+          company: data.company || null,
+          role: data.role || null,
+          organizationName: data.organizationName || null,
+          phone
+        };
+      }
+    } catch (err) {
+      console.warn('Admin caller lookup failed:', err);
+    }
+    return null;
+  }
 
   // Request Notification permissions
   useEffect(() => {
@@ -34,29 +61,96 @@ export function AdminDialerProvider({ children }) {
     }
   }, []);
 
-  // Handle desktop notifications for incoming calls
+  // Resolve incoming caller name from Twilio customParameters (instant) + DB lookup fallback,
+  // and display desktop notification & tab title with caller's saved name
   useEffect(() => {
-    if (incomingCall && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      const from = incomingCall.parameters?.From || 'Unknown Caller';
-      const notification = new Notification('Incoming Call', {
-        body: `Incoming call from ${from}`,
-        requireInteraction: true
+    if (!incomingCall) {
+      setIncomingCallerInfo(null);
+      return;
+    }
+
+    let cancelled = false;
+    let notification = null;
+    const prevTitle = typeof document !== 'undefined' ? document.title : '';
+    const from = incomingCall.parameters?.From || 'Unknown Caller';
+
+    const paramName = incomingCall.customParameters?.get?.('callerName') || null;
+    const paramCompany = incomingCall.customParameters?.get?.('callerCompany') || null;
+    const paramRole = incomingCall.customParameters?.get?.('callerRole') || null;
+
+    const initialInfo = {
+      name: paramName,
+      company: paramCompany,
+      role: paramRole,
+      organizationName: null,
+      phone: from
+    };
+    setIncomingCallerInfo(initialInfo);
+
+    const updateTabTitle = (info) => {
+      if (typeof document !== 'undefined' && !cancelled) {
+        const label = info?.name ? `${info.name} (${from})` : from;
+        document.title = `📞 ${label} — Incoming Call`;
+      }
+    };
+    updateTabTitle(initialInfo);
+
+    const showDesktopNotification = (info) => {
+      if (cancelled) return;
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        const title = info?.name ? `Incoming Call: ${info.name}` : 'Incoming Call';
+        const body = info?.name ? `${info.name} (${from})` : `Incoming call from ${from}`;
+        notification = new Notification(title, {
+          body,
+          requireInteraction: true
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+    };
+
+    const closeAll = () => {
+      cancelled = true;
+      if (notification) notification.close();
+      if (typeof document !== 'undefined' && prevTitle) {
+        document.title = prevTitle;
+      }
+    };
+
+    incomingCall.on('accept', closeAll);
+    incomingCall.on('reject', closeAll);
+    incomingCall.on('disconnect', closeAll);
+    incomingCall.on('cancel', closeAll);
+
+    if (paramName) {
+      showDesktopNotification(initialInfo);
+    } else {
+      Promise.race([
+        lookupAdminCaller(from),
+        new Promise((resolve) => setTimeout(() => resolve(null), 800))
+      ]).then((resolved) => {
+        if (cancelled) return;
+        const bestInfo = resolved || initialInfo;
+        if (resolved) {
+          setIncomingCallerInfo(resolved);
+          updateTabTitle(resolved);
+        }
+        showDesktopNotification(bestInfo);
       });
 
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-
-      const closeNotification = () => notification.close();
-      
-      incomingCall.on('accept', closeNotification);
-      incomingCall.on('reject', closeNotification);
-      incomingCall.on('disconnect', closeNotification);
-      incomingCall.on('cancel', closeNotification);
-
-      return closeNotification;
+      lookupAdminCaller(from).then((resolved) => {
+        if (!cancelled && resolved) {
+          setIncomingCallerInfo(resolved);
+          updateTabTitle(resolved);
+        }
+      });
     }
+
+    return () => {
+      closeAll();
+    };
   }, [incomingCall]);
   
   const timerRef = useRef(null);
@@ -131,6 +225,7 @@ export function AdminDialerProvider({ children }) {
           }
 
           setActiveCall(null);
+          setActiveCallerInfo(null);
           setIsMuted(false);
           setLastDialedNumber('');
           stopTimer();
@@ -175,6 +270,10 @@ export function AdminDialerProvider({ children }) {
     
     setStatus('Dialing...');
     setLastDialedNumber(phoneNumber);
+    setActiveCallerInfo({ phone: phoneNumber, name: null, company: null, role: null, organizationName: null });
+    lookupAdminCaller(phoneNumber).then((resolved) => {
+      if (resolved) setActiveCallerInfo(resolved);
+    });
     try {
       const call = await device.connect({ 
         params: { targetNumber: phoneNumber, isAdmin: 'true' } 
@@ -199,6 +298,7 @@ export function AdminDialerProvider({ children }) {
         setShowWrapUp(true);
 
         setActiveCall(null);
+        setActiveCallerInfo(null);
         setIsMuted(false);
         stopTimer();
       });
@@ -206,16 +306,19 @@ export function AdminDialerProvider({ children }) {
       call.on('error', (err) => {
         setStatus('Call Failed');
         setActiveCall(null);
+        setActiveCallerInfo(null);
         stopTimer();
       });
       
       call.on('reject', () => {
         setStatus('Call Rejected');
         setActiveCall(null);
+        setActiveCallerInfo(null);
         stopTimer();
       });
     } catch (err) {
       setStatus('Call Failed');
+      setActiveCallerInfo(null);
     }
   }
 
@@ -225,11 +328,26 @@ export function AdminDialerProvider({ children }) {
 
   function acceptIncoming() {
     if (incomingCall) {
+      const acceptedInfo = incomingCallerInfo || {
+        name: incomingCall.customParameters?.get?.('callerName') || null,
+        company: incomingCall.customParameters?.get?.('callerCompany') || null,
+        role: incomingCall.customParameters?.get?.('callerRole') || null,
+        organizationName: null,
+        phone: incomingCall.parameters?.From || 'Unknown Caller'
+      };
+      setActiveCallerInfo(acceptedInfo);
+      if (!acceptedInfo.name && incomingCall.parameters?.From) {
+        lookupAdminCaller(incomingCall.parameters.From).then((resolved) => {
+          if (resolved) setActiveCallerInfo(resolved);
+        });
+      }
+
       incomingCall.accept();
       
       incomingCall.on('disconnect', () => {
         setStatus('Ready to Call');
         setActiveCall(null);
+        setActiveCallerInfo(null);
         setIsMuted(false);
         stopTimer();
       });
@@ -237,11 +355,13 @@ export function AdminDialerProvider({ children }) {
       incomingCall.on('error', (err) => {
         setStatus('Call Error');
         setActiveCall(null);
+        setActiveCallerInfo(null);
         stopTimer();
       });
 
       setActiveCall(incomingCall);
       setIncomingCall(null);
+      setIncomingCallerInfo(null);
       setStatus('Connected');
       startTimer();
     }
@@ -274,23 +394,42 @@ export function AdminDialerProvider({ children }) {
   return (
     <DialerContext.Provider value={{
       device, status, activeCall, callerId, isMuted, callDuration,
-      incomingCall, handleDial, handleHangup, toggleMute, handleKeypad, formatDuration,
+      incomingCall, incomingCallerInfo, activeCallerInfo,
+      handleDial, handleHangup, toggleMute, handleKeypad, formatDuration,
       acceptIncoming, rejectIncoming, lastDialedNumber
     }}>
       {children}
       
       {incomingCall && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-3xl p-8 w-[350px] animate-in zoom-in-95 flex flex-col items-center text-center relative overflow-hidden">
+          <div className="bg-slate-900 border border-slate-700 shadow-2xl rounded-3xl p-8 w-[360px] animate-in zoom-in-95 flex flex-col items-center text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-emerald-400 to-indigo-500 animate-pulse"></div>
-            <div className="w-20 h-20 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mb-6 relative">
+            <div className="w-20 h-20 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mb-5 relative">
               <span className="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-25 animate-ping"></span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
-              </svg>
+              {incomingCallerInfo?.name ? (
+                <span className="text-3xl font-bold text-indigo-300 relative z-10">
+                  {incomingCallerInfo.name.charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
+                </svg>
+              )}
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Incoming Call</h3>
-            <p className="text-slate-400 font-mono mb-8 text-lg">{incomingCall.parameters?.From || 'Unknown Caller'}</p>
+            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-1.5">Incoming Call</span>
+            {incomingCallerInfo?.name ? (
+              <>
+                <h3 className="text-2xl font-bold text-white mb-1 leading-tight">{incomingCallerInfo.name}</h3>
+                {(incomingCallerInfo.company || incomingCallerInfo.role || incomingCallerInfo.organizationName) && (
+                  <p className="text-indigo-300 text-xs font-medium mb-1">
+                    {[incomingCallerInfo.role, incomingCallerInfo.company || incomingCallerInfo.organizationName].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+                <p className="text-slate-400 font-mono mb-8 text-base">{incomingCall.parameters?.From || 'Unknown Caller'}</p>
+              </>
+            ) : (
+              <p className="text-white font-mono font-semibold mb-8 text-2xl">{incomingCall.parameters?.From || 'Unknown Caller'}</p>
+            )}
             
             <div className="flex gap-4 w-full">
               <button 
@@ -319,8 +458,13 @@ export function AdminDialerProvider({ children }) {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
               </div>
               <div className="flex flex-col">
-                <span className="text-white font-medium text-sm leading-tight">Call in Progress</span>
-                <span className="text-emerald-400 font-mono text-xs font-bold tracking-wider">{formatDuration(callDuration)}</span>
+                <span className="text-white font-medium text-sm leading-tight">
+                  {activeCallerInfo?.name || activeCallerInfo?.phone || 'Call in Progress'}
+                </span>
+                <span className="text-emerald-400 font-mono text-xs font-bold tracking-wider">
+                  {formatDuration(callDuration)}
+                  {activeCallerInfo?.name && activeCallerInfo?.phone ? ` · ${activeCallerInfo.phone}` : ''}
+                </span>
               </div>
             </div>
             

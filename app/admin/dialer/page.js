@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 export default function AdminDialer() {
   const searchParams = useSearchParams();
   const {
-    device, status, activeCall, callerId, isMuted, callDuration,
+    device, status, activeCall, activeCallerInfo, callerId, isMuted, callDuration,
     handleDial, handleHangup, toggleMute, handleKeypad, formatDuration, lastDialedNumber
   } = useDialer();
   
@@ -27,8 +27,15 @@ export default function AdminDialer() {
     }
   }, [searchParams]);
 
-  // Sync incoming call number to the dialer display
+  // Sync incoming call number & resolved caller name to the dialer display
   useEffect(() => {
+    if (activeCallerInfo?.name) {
+      setContactName(
+        activeCallerInfo.organizationName
+          ? `${activeCallerInfo.name} (${activeCallerInfo.organizationName})`
+          : activeCallerInfo.name
+      );
+    }
     if (activeCall && activeCall.parameters && activeCall.parameters.From) {
       if (activeCall.direction === 'INCOMING') {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -39,49 +46,43 @@ export default function AdminDialer() {
     } else if (activeCall && !phoneNumber && lastDialedNumber) {
       setPhoneNumber(lastDialedNumber);
     }
-  }, [activeCall, status, lastDialedNumber]);
+  }, [activeCall, activeCallerInfo, status, lastDialedNumber]);
 
-  // Live lookup admin contact name when phone number changes
+  // Live lookup admin contact name via authenticated admin API (handles any phone formatting & bypasses client RLS)
   useEffect(() => {
+    let cancelled = false;
     async function lookupName() {
-      if (!phoneNumber || phoneNumber.length < 10) {
+      if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 7) {
         setContactName('');
         return;
       }
-      
-      const cleanPhone = phoneNumber.replace(/\D/g, '');
-      if (cleanPhone.length < 10) return;
 
-      // Check all contacts (since admin can see all)
-      const { data: contact } = await supabase
-        .from('contacts')
-        .select('name, organizations(company_name)')
-        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .maybeSingle();
-      
-      if (contact) {
-        setContactName(contact.organizations ? `${contact.name} (${contact.organizations.company_name})` : contact.name);
-        return;
-      } 
-      
-      // Check leads
-      const { data: lead } = await supabase
-        .from('leads')
-        .select('name, organizations(company_name)')
-        .ilike('phone', `%${cleanPhone.slice(-10)}%`)
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .maybeSingle();
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+        if (!token) return;
 
-      if (lead) {
-        setContactName(lead.organizations ? `${lead.name} (${lead.organizations.company_name})` : lead.name);
-      } else {
-        setContactName('');
+        const res = await fetch(`/api/contacts/lookup?phone=${encodeURIComponent(phoneNumber)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) {
+          if (data?.found && data?.name) {
+            setContactName(data.organizationName ? `${data.name} (${data.organizationName})` : data.name);
+          } else {
+            setContactName('');
+          }
+        }
+      } catch (err) {
+        console.warn('Admin dialer contact lookup failed:', err);
       }
     }
     
-    const timeoutId = setTimeout(() => lookupName(), 500);
-    return () => clearTimeout(timeoutId);
+    const timeoutId = setTimeout(() => lookupName(), 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [phoneNumber]);
 
   function localHandleDial() {

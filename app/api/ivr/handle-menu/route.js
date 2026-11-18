@@ -1,6 +1,7 @@
 import twilio from 'twilio';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
+import { lookupCallerByPhone } from '@/lib/caller-lookup';
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
 
@@ -9,6 +10,7 @@ export async function POST(request) {
   const { searchParams } = new URL(request.url);
   const digits = formData.get('Digits') || searchParams.get('Digits');
   const to = formData.get('To');
+  const from = formData.get('From') || searchParams.get('From');
   const path = searchParams.get('path');
   const voiceId = searchParams.get('voice') || 'Polly.Matthew-Neural';
   
@@ -121,7 +123,20 @@ export async function POST(request) {
       action: `/api/calls/status?org_id=${orgData.id}${fallbackQuery}`,
       timeout: actionData.duration || actionData.timeout || 20
     });
-    dial.client(`org_${orgData.id}`);
+    const client = dial.client();
+    client.identity(`org_${orgData.id}`);
+    if (from) {
+      const callerInfo = await lookupCallerByPhone(from, orgData.id);
+      if (callerInfo?.name) {
+        client.parameter({ name: 'callerName', value: callerInfo.name });
+      }
+      if (callerInfo?.company) {
+        client.parameter({ name: 'callerCompany', value: callerInfo.company });
+      }
+      if (callerInfo?.role) {
+        client.parameter({ name: 'callerRole', value: callerInfo.role });
+      }
+    }
   } 
   
   // Helper to normalize phone numbers for comparison
